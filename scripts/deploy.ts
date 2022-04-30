@@ -13,14 +13,37 @@ async function main() {
   // manually to make sure everything is compiled
   // await hre.run('compile');
 
+  // the first address is the default msg.sender
+  const [signer] = await ethers.getSigners()
+
   // We get the contract to deploy
   const Settings = await ethers.getContractFactory("Settings");
-  // Just go with the defaults
   const settings = await Settings.deploy();
-
   await settings.deployed();
-
   console.log("Settings deployed to:", settings.address);
+
+  const VaultFactory = await ethers.getContractFactory("ERC721VaultFactory");
+  const vaultFactory = await VaultFactory.deploy(settings.address);
+  await vaultFactory.deployed();
+  console.log("VaultFactory deployed to:", vaultFactory.address);
+
+  const DummyNFT = await ethers.getContractFactory("ERC721PresetMinterPauserAutoId");
+  const dummyNFT = await DummyNFT.deploy("Dummy", "DMY", "co-museum.com/dummy-nft");
+  await dummyNFT.deployed();
+  console.log("DummyNFT deployed to:", dummyNFT.address);
+
+  // dummyNFT.mint(signer.address)
+  // // TODO: get tokenID from Transfer event and use it in vaultFactory.mint
+
+  // await vaultFactory.mint(
+  //   "Dummy Frac", // name
+  //   "DMYF", // symbol
+  //   dummyNFT.address, // token
+  //   0, // id
+  //   10000, // supply
+  //   10, // listPrice
+  //   0, // fee
+  // )
 }
 
 // We recommend this pattern to be able to use async/await everywhere
