@@ -1,0 +1,3 @@
+[submodule "contracts/fractional"]
+	path = contracts/fractional
+	url = git@github.com:fractional-company/contracts.git
