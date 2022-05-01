@@ -3,9 +3,9 @@
 //
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
-import { EventType } from "@ethersproject/abstract-provider";
 import { BigNumberish, utils } from "ethers";
 import { ethers } from "hardhat";
+import { TokenVault } from "../typechain";
 
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
@@ -17,6 +17,7 @@ async function main() {
 
   // the first address is the default msg.sender
   const [signer] = await ethers.getSigners()
+  console.log("Default signer:", signer.address)
 
   // We get the contract to deploy
   const Settings = await ethers.getContractFactory("Settings");
@@ -44,13 +45,27 @@ async function main() {
       "DMYF", // symbol
       dummyNFT.address, // token
       tokenId,
-      10000, // supply
+      utils.parseEther("10000"), // supply
       10, // listPrice
       0, // fee
     )
 
     dummyNFT.removeAllListeners()
   })
+
+  vaultFactory.on("Mint",
+    async (
+      token: string,
+      id: BigNumberish,
+      listPrice: BigNumberish,
+      vault: string,
+      vaultId: BigNumberish,
+      event: Event
+    ) => {
+      console.log("Fractionalised token address:", vault)
+      vaultFactory.removeAllListeners()
+    }
+  )
 
   await dummyNFT.mint(signer.address)
 }

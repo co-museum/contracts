@@ -1,3 +1,21 @@
+# Running the local dev environment
+
+Running `yarn hardhat node` followed by
+`yarn ldeploy` should always produce the same output, reproduced below for convenience:
+```
+Settings deployed to: 0xd6add4444D873B4DEe4256ef1f9486ff4554A100
+VaultFactory deployed to: 0xd93dF4266355432f112B8826346CE18EFF1A4EE0
+DummyNFT deployed to: 0x17ee101B2BFaae3452d04F1cb2f4e671210E4cb4
+Token ID: BigNumber { value: "0" }
+Fractionalised token address: 0x21B99E15Fa25664487C243d3f4ab8daFB82f0707
+```
+
+After that connect to the hardhat network at `http://localhost:8545`, with a chain
+ID of `31337`. Input this info into your wallet to connect to the network and create
+custom tokens using the addresses listed above so you can see the relevant balances.
+
+Make sure you're using one of the accounts specified in `hardhat.config.ts`
+
 # Advanced Sample Hardhat Project
 
 This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
