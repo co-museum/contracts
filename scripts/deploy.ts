@@ -3,6 +3,8 @@
 //
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
+import { EventType } from "@ethersproject/abstract-provider";
+import { BigNumberish, utils } from "ethers";
 import { ethers } from "hardhat";
 
 async function main() {
@@ -32,20 +34,25 @@ async function main() {
   await dummyNFT.deployed();
   console.log("DummyNFT deployed to:", dummyNFT.address);
 
-  dummyNFT.mint(signer.address)
-  // id defaults to 0 in Counter.sol
-  const tokenId = 0
-  dummyNFT.approve(vaultFactory.address, tokenId)
+  dummyNFT.on("Transfer", async (from: string, to: string, _tokenId: BigNumberish, event: Event) => {
+    console.log("Token ID:", _tokenId)
+    const tokenId = _tokenId
+    await dummyNFT.approve(vaultFactory.address, tokenId)
 
-  await vaultFactory.mint(
-    "Dummy Frac", // name
-    "DMYF", // symbol
-    dummyNFT.address, // token
-    tokenId,
-    10000, // supply
-    10, // listPrice
-    0, // fee
-  )
+    await vaultFactory.mint(
+      "Dummy Frac", // name
+      "DMYF", // symbol
+      dummyNFT.address, // token
+      tokenId,
+      10000, // supply
+      10, // listPrice
+      0, // fee
+    )
+
+    dummyNFT.removeAllListeners()
+  })
+
+  await dummyNFT.mint(signer.address)
 }
 
 // We recommend this pattern to be able to use async/await everywhere
