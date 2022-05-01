@@ -32,18 +32,20 @@ async function main() {
   await dummyNFT.deployed();
   console.log("DummyNFT deployed to:", dummyNFT.address);
 
-  // dummyNFT.mint(signer.address)
-  // // TODO: get tokenID from Transfer event and use it in vaultFactory.mint
+  dummyNFT.mint(signer.address)
+  // id defaults to 0 in Counter.sol
+  const tokenId = 0
+  dummyNFT.approve(vaultFactory.address, tokenId)
 
-  // await vaultFactory.mint(
-  //   "Dummy Frac", // name
-  //   "DMYF", // symbol
-  //   dummyNFT.address, // token
-  //   0, // id
-  //   10000, // supply
-  //   10, // listPrice
-  //   0, // fee
-  // )
+  await vaultFactory.mint(
+    "Dummy Frac", // name
+    "DMYF", // symbol
+    dummyNFT.address, // token
+    tokenId,
+    10000, // supply
+    10, // listPrice
+    0, // fee
+  )
 }
 
 // We recommend this pattern to be able to use async/await everywhere
