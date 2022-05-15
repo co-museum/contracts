@@ -1,7 +1,14 @@
+# Environment Configs
+
+1. `yarn install`
+2. `yarn install --save-dev hardhat`
+
+
 # Running the local dev environment
 
 Running `yarn hardhat node` followed by
 `yarn ldeploy` should always produce the same output, reproduced below for convenience:
+`yarn ldeployNFTs` should produce results of redeeming/releasing NFTs and locking/unlocking ERC20s
 ```
 Settings deployed to: 0xd6add4444D873B4DEe4256ef1f9486ff4554A100
 VaultFactory deployed to: 0xd93dF4266355432f112B8826346CE18EFF1A4EE0

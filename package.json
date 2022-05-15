@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "ldeploy": "hardhat run --network localhost scripts/deploy.ts"
+    "ldeploy": "hardhat run --network localhost scripts/deploy.ts",
+    "ldeployNFTs": "hardhat run --network localhost scripts/deployMembershipNFTs.ts"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.0",
