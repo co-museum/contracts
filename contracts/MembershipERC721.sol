@@ -3,10 +3,10 @@ pragma solidity ^0.8.0;
 
 import "./fractional/OpenZeppelin/access/Ownable.sol";
 import "./fractional/OpenZeppelin/token/ERC721/ERC721.sol";
-import "./fractional/OpenZeppelin/token/ERC20/IERC20.sol";
+import "./fractional/ERC721TokenVault.sol";
 
 contract MembershipERC721 is ERC721, Ownable {
-    IERC20 public erc20;
+    TokenVault public erc20;
 
     enum TierType {
         GENESIS,
@@ -16,12 +16,52 @@ contract MembershipERC721 is ERC721, Ownable {
 
     struct Tier {
         uint16 currId;
-        uint16 maxId;
-        uint16 price;
-        uint16[] refundedIds;
+        uint16 end;
+        uint256 price;
+        uint16[] releasedIds;
     }
 
-    mapping(TierType => Tier) private tiers;
+    uint16[] private friendIdStack;
+    uint16[] private foundationIdStack;
+    uint16[] private genesisIdStack;
+
+    Tier private friendTier =
+        Tier({
+            currId: 0,
+            end: 100,
+            price: 40000 * 10**erc20.decimals(),
+            releasedIds: friendIdStack
+        });
+
+    Tier private foundationTier =
+        Tier({
+            currId: friendTier.end,
+            end: 1100,
+            price: 4000 * 10**erc20.decimals(),
+            releasedIds: foundationIdStack
+        });
+
+    Tier private genesisTier =
+        Tier({
+            currId: foundationTier.end,
+            end: 11100,
+            price: 400 * 10**erc20.decimals(),
+            releasedIds: genesisIdStack
+        });
+
+    function getTier(uint16 id) private view returns (Tier storage) {
+        if (id < genesisTier.end) {
+            return genesisTier;
+        }
+        if (id < foundationTier.end) {
+            return foundationTier;
+        }
+        if (id < friendTier.end) {
+            return friendTier;
+        }
+
+        revert("id out of range");
+    }
 
     constructor(
         string memory name_,
@@ -30,50 +70,49 @@ contract MembershipERC721 is ERC721, Ownable {
         string memory baseURI_
     ) ERC721(name_, symbol_) {
         _setBaseURI(baseURI_);
-        erc20 = IERC20(erc20_);
-
-        tiers[TierType.GENESIS] = Tier({
-            currId: 0,
-            maxId: 99,
-            price: 40000,
-            refundedIds: []
-        });
-        tiers[TierType.FOUNDATION] = Tier({
-            currId: 100,
-            maxId: 1099,
-            price: 4000,
-            refundedIds: []
-        });
-        tiers[TierType.FRIEND] = Tier({
-            currId: 1100,
-            maxId: 11099,
-            price: 400,
-            refundedIds: []
-        });
+        erc20 = TokenVault(erc20_);
     }
 
-    function _nextID(TierType tier_) private returns (uint16) {
-        Tier memory tier = tiers[tier_];
-        uint16 res;
+    function _redeem(Tier storage tier) private {
+        require(
+            erc20.balanceOf(msg.sender) >= tier.price,
+            "insufficient balance"
+        );
 
-        if (tier.currId < tier.maxId) {
-            res = tier.currId;
-            tier.currId++;
+        erc20.approve(address(this), tier.price);
+        erc20.transferFrom(msg.sender, address(this), tier.price);
+        uint16 id;
+        if (tier.releasedIds.length > 0) {
+            id = tier.releasedIds[tier.releasedIds.length - 1];
+            tier.releasedIds.pop();
         } else {
-            // TODO: check if it is reverted properly
-            // TODO: does empty array cause revert as expected?
-            res = tier.refundedIds.pop();
+            require(
+                tier.currId < tier.end - 1,
+                "cannot mint more tokens at tier"
+            );
+            id = tier.currId;
+            tier.currId++;
         }
-
-        return res;
+        _safeMint(msg.sender, id);
     }
 
-    function mint(TierType tier_) public {
-        Tier memory tier = tiers[tier_];
-        uint256 price = tier.price * erc20.decimals();
-        require(erc20.balanceOf(msg.sender) >= price, "insufficient balance");
-        erc20.approve(address(this), price);
-        erc20.transferFrom(msg.sender, address(this), price);
-        _safeMint(msg.sender, _nextID());
+    function redeemGenesis() public {
+        _redeem(genesisTier);
+    }
+
+    function redeemFoundation() public {
+        _redeem(foundationTier);
+    }
+
+    function redeemFriend() public {
+        _redeem(friendTier);
+    }
+
+    function release(uint16 id) public {
+        // NOTE: fail early if ID is invalid
+        Tier storage tier = getTier(id);
+        approve(address(this), id);
+        transferFrom(msg.sender, address(0), id);
+        erc20.transfer(msg.sender, tier.price);
     }
 }
