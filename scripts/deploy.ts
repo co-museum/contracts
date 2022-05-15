@@ -5,7 +5,7 @@
 // Runtime Environment's members available in the global scope.
 import { BigNumberish, utils } from "ethers";
 import { ethers } from "hardhat";
-import { ERC20, TokenVault } from "../typechain";
+import { TokenVault } from "../typechain";
 
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
@@ -16,11 +16,8 @@ async function main() {
   // await hre.run('compile');
 
   // the first address is the default msg.sender
-  const [signer] = await ethers.getSigners();
-  console.log("Default signer:", signer.address);
-
-
-  console.log("\n\nDeploying Fractional Protocol and testing it...");
+  const [signer] = await ethers.getSigners()
+  console.log("Default signer:", signer.address)
 
   // We get the contract to deploy
   const Settings = await ethers.getContractFactory("Settings");
@@ -33,42 +30,30 @@ async function main() {
   await vaultFactory.deployed();
   console.log("VaultFactory deployed to:", vaultFactory.address);
 
-  const DummyNFT = await ethers.getContractFactory(
-    "ERC721PresetMinterPauserAutoId"
-  );
-  const dummyNFT = await DummyNFT.deploy(
-    "Dummy",
-    "DMY",
-    "co-museum.com/dummy-nft"
-  );
+  const DummyNFT = await ethers.getContractFactory("ERC721PresetMinterPauserAutoId");
+  const dummyNFT = await DummyNFT.deploy("Dummy", "DMY", "co-museum.com/dummy-nft");
   await dummyNFT.deployed();
   console.log("DummyNFT deployed to:", dummyNFT.address);
 
-  dummyNFT.on(
-    "Transfer",
-    async (from: string, to: string, _tokenId: BigNumberish, event: Event) => {
-      console.log("Token ID:", _tokenId);
-      const tokenId = _tokenId;
-      await dummyNFT.approve(vaultFactory.address, tokenId);
+  dummyNFT.on("Transfer", async (from: string, to: string, _tokenId: BigNumberish, event: Event) => {
+    console.log("Token ID:", _tokenId)
+    const tokenId = _tokenId
+    await dummyNFT.approve(vaultFactory.address, tokenId)
 
-      await vaultFactory.mint(
-        "Dummy Frac", // name
-        "DMYF", // symbol
-        dummyNFT.address, // token
-        tokenId,
-        utils.parseEther("10000"), // supply
-        10, // listPrice
-        0 // fee
-      );
+    await vaultFactory.mint(
+      "Dummy Frac", // name
+      "DMYF", // symbol
+      dummyNFT.address, // token
+      tokenId,
+      utils.parseEther("10000"), // supply
+      10, // listPrice
+      0, // fee
+    )
 
-      dummyNFT.removeAllListeners();
-    }
-  );
+    dummyNFT.removeAllListeners()
+  })
 
-  var tokenAddress = "";
-
-  await vaultFactory.on(
-    "Mint",
+  vaultFactory.on("Mint",
     async (
       token: string,
       id: BigNumberish,
@@ -77,14 +62,12 @@ async function main() {
       vaultId: BigNumberish,
       event: Event
     ) => {
-      console.log("Fractionalised token address:", vault);
-      tokenAddress = vault;
-      vaultFactory.removeAllListeners();
+      console.log("Fractionalised token address:", vault)
+      vaultFactory.removeAllListeners()
     }
-  );
+  )
 
-  await dummyNFT.mint(signer.address);
-
+  await dummyNFT.mint(signer.address)
 }
 
 // We recommend this pattern to be able to use async/await everywhere
