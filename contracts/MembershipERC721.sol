@@ -3,16 +3,14 @@ pragma solidity ^0.8.0;
 
 import "./fractional/OpenZeppelin/access/Ownable.sol";
 import "./fractional/OpenZeppelin/token/ERC721/ERC721.sol";
-import "./fractional/ERC721TokenVault.sol";
+import "./fractional/OpenZeppelin/token/ERC20/IERC20.sol";
+
+interface IERC20Decimal is IERC20 {
+    function decimals() external view returns (uint8);
+}
 
 contract MembershipERC721 is ERC721, Ownable {
-    TokenVault public erc20;
-
-    enum TierType {
-        GENESIS,
-        FOUNDATION,
-        FRIEND
-    }
+    IERC20Decimal public erc20;
 
     struct Tier {
         uint16 currId;
@@ -70,7 +68,7 @@ contract MembershipERC721 is ERC721, Ownable {
         string memory baseURI_
     ) ERC721(name_, symbol_) {
         _setBaseURI(baseURI_);
-        erc20 = TokenVault(erc20_);
+        erc20 = IERC20Decimal(erc20_);
     }
 
     function _redeem(Tier storage tier) private {
@@ -79,7 +77,6 @@ contract MembershipERC721 is ERC721, Ownable {
             "insufficient balance"
         );
 
-        erc20.approve(address(this), tier.price);
         erc20.transferFrom(msg.sender, address(this), tier.price);
         uint16 id;
         if (tier.releasedIds.length > 0) {
@@ -109,10 +106,8 @@ contract MembershipERC721 is ERC721, Ownable {
     }
 
     function release(uint16 id) public {
-        // NOTE: fail early if ID is invalid
         Tier storage tier = getTier(id);
-        approve(address(this), id);
-        transferFrom(msg.sender, address(0), id);
         erc20.transfer(msg.sender, tier.price);
+        transferFrom(msg.sender, address(0), id);
     }
 }
