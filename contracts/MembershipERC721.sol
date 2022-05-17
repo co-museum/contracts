@@ -2,18 +2,19 @@
 pragma solidity ^0.8.0;
 
 import "./fractional/OpenZeppelin/access/Ownable.sol";
-import "./fractional/OpenZeppelin/token/ERC721/ERC721.sol";
+import "./fractional/OpenZeppelin/token/ERC721/ERC721Burnable.sol";
 import "./fractional/OpenZeppelin/token/ERC20/IERC20.sol";
 
 interface IERC20Decimal is IERC20 {
     function decimals() external view returns (uint8);
 }
 
-contract MembershipERC721 is ERC721 {
+contract MembershipERC721 is ERC721Burnable {
     IERC20Decimal public erc20;
 
     struct Tier {
         uint16 currId;
+        uint256 start;
         uint16 end;
         uint256 price;
         uint16[] releasedIds;
@@ -23,9 +24,9 @@ contract MembershipERC721 is ERC721 {
     uint16[] private foundationIdStack;
     uint16[] private genesisIdStack;
 
-    Tier private friendTier;
-    Tier private foundationTier;
-    Tier private genesisTier;
+    Tier public friendTier;
+    Tier public foundationTier;
+    Tier public genesisTier;
 
     function getTier(uint16 id) private view returns (Tier storage) {
         if (id < genesisTier.end) {
@@ -50,24 +51,27 @@ contract MembershipERC721 is ERC721 {
         _setBaseURI(baseURI_);
         erc20 = IERC20Decimal(erc20_);
 
-        friendTier = Tier({
+        genesisTier = Tier({
             currId: 0,
+            start: 0,
             end: 100,
-            price: 400 * 10**erc20.decimals(),
+            price: 40000 * 10**erc20.decimals(),
             releasedIds: friendIdStack
         });
 
         foundationTier = Tier({
-            currId: friendTier.end,
+            currId: genesisTier.end,
+            start: genesisTier.end,
             end: 1100,
             price: 4000 * 10**erc20.decimals(),
             releasedIds: foundationIdStack
         });
 
-        genesisTier = Tier({
+        friendTier = Tier({
             currId: foundationTier.end,
+            start: foundationTier.end,
             end: 11100,
-            price: 40000 * 10**erc20.decimals(),
+            price: 400 * 10**erc20.decimals(),
             releasedIds: genesisIdStack
         });
     }
@@ -109,6 +113,6 @@ contract MembershipERC721 is ERC721 {
     function release(uint16 id) public {
         Tier storage tier = getTier(id);
         erc20.transfer(msg.sender, tier.price);
-        safeTransferFrom(msg.sender, address(0), id);
+        burn(id);
     }
 }
