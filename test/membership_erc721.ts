@@ -4,11 +4,11 @@ import { ethers } from "hardhat";
 import { ERC20Mock } from "../typechain";
 import { MembershipERC721 } from "../typechain/MembershipERC721";
 
-describe("MembershipERC721", function () {
+describe("MembershipERC721", () => {
   let mockERC20: ERC20Mock;
   let membershipERC721: MembershipERC721;
 
-  this.beforeEach(async function () {
+  beforeEach(async () => {
     const [signer] = await ethers.getSigners()
 
     const MockERC20 = await ethers.getContractFactory("ERC20Mock");
@@ -24,13 +24,18 @@ describe("MembershipERC721", function () {
     await membershipERC721.deployed();
   })
 
-  it("should reedeem genesis", async function () {
-    const [signer, user] = await ethers.getSigners()
-    const amt = ethers.utils.parseEther("40000")
+  it("should redeem genesis", async () => {
+    const [_, user] = await ethers.getSigners()
+    const amt = ethers.utils.parseUnits("40000", await mockERC20.decimals())
 
+    mockERC20.connect(user).approve(
+      membershipERC721.address,
+      ethers.constants.MaxUint256,
+    )
     mockERC20.transfer(user.address, amt)
-    mockERC20.approve(membershipERC721.address, amt)
 
-    await membershipERC721.redeemGenesis()
+    await membershipERC721.connect(user).redeemGenesis()
+    expect(await mockERC20.balanceOf(user.address)).to.be.equal(0, "not locking correct amount of ERC20")
+    expect(await membershipERC721.balanceOf(user.address)).to.be.equal(1, "not transferring membership NFT")
   });
 });
