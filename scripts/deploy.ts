@@ -5,7 +5,6 @@
 // Runtime Environment's members available in the global scope.
 import { BigNumberish, utils } from "ethers";
 import { ethers } from "hardhat";
-import { TokenVault } from "../typechain";
 
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command

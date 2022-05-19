@@ -14,11 +14,14 @@ contract MembershipERC721 is ERC721Burnable {
 
     struct Tier {
         uint16 currId;
-        uint256 start;
+        uint16 start;
         uint16 end;
         uint256 price;
         uint16[] releasedIds;
     }
+
+    event Redeem(address indexed owner, uint16 indexed id);
+    event Release(address indexed owner, uint16 indexed id);
 
     uint16[] private friendIdStack;
     uint16[] private foundationIdStack;
@@ -46,7 +49,10 @@ contract MembershipERC721 is ERC721Burnable {
         string memory name_,
         string memory symbol_,
         address erc20_,
-        string memory baseURI_
+        string memory baseURI_,
+        uint16 genesisEnd,
+        uint16 foundationEnd,
+        uint16 friendEnd
     ) ERC721(name_, symbol_) {
         _setBaseURI(baseURI_);
         erc20 = IERC20Decimal(erc20_);
@@ -54,48 +60,46 @@ contract MembershipERC721 is ERC721Burnable {
         genesisTier = Tier({
             currId: 0,
             start: 0,
-            end: 100,
+            end: genesisEnd,
             price: 40000 * 10**erc20.decimals(),
             releasedIds: friendIdStack
         });
 
         foundationTier = Tier({
-            currId: genesisTier.end,
-            start: genesisTier.end,
-            end: 1100,
+            currId: genesisEnd,
+            start: genesisEnd,
+            end: foundationEnd,
             price: 4000 * 10**erc20.decimals(),
             releasedIds: foundationIdStack
         });
 
         friendTier = Tier({
-            currId: foundationTier.end,
-            start: foundationTier.end,
-            end: 11100,
+            currId: foundationEnd,
+            start: foundationEnd,
+            end: friendEnd,
             price: 400 * 10**erc20.decimals(),
             releasedIds: genesisIdStack
         });
     }
 
     function _redeem(Tier storage tier) private {
-        require(
-            erc20.balanceOf(msg.sender) >= tier.price,
-            "insufficient balance"
-        );
-
-        erc20.transferFrom(msg.sender, address(this), tier.price);
         uint16 id;
         if (tier.releasedIds.length > 0) {
             id = tier.releasedIds[tier.releasedIds.length - 1];
             tier.releasedIds.pop();
         } else {
-            require(
-                tier.currId < tier.end - 1,
-                "cannot mint more tokens at tier"
-            );
+            require(tier.currId < tier.end, "cannot mint more tokens at tier");
             id = tier.currId;
             tier.currId++;
         }
+        emit Redeem(msg.sender, id);
         _safeMint(msg.sender, id);
+
+        require(
+            erc20.balanceOf(msg.sender) >= tier.price,
+            "insufficient balance"
+        );
+        erc20.transferFrom(msg.sender, address(this), tier.price);
     }
 
     function redeemGenesis() public {
@@ -113,6 +117,8 @@ contract MembershipERC721 is ERC721Burnable {
     function release(uint16 id) public {
         Tier storage tier = getTier(id);
         erc20.transfer(msg.sender, tier.price);
+        tier.releasedIds.push(id);
+        emit Release(msg.sender, id);
         burn(id);
     }
 }

@@ -2,6 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
+import { removeAllListeners } from "process";
 import { ERC20Mock } from "../typechain";
 import { MembershipERC721 } from "../typechain/MembershipERC721";
 
@@ -16,15 +17,20 @@ describe("MembershipERC721", () => {
 
     const MockERC20 = await ethers.getContractFactory("ERC20Mock");
     mockERC20 = await MockERC20.deploy(
-      "Mock", "MCK", signer.address, ethers.utils.parseEther("44400")
+      "Mock", "MCK", signer.address, ethers.utils.parseEther("4000000")
     )
     await mockERC20.deployed()
 
     const MembershipERC721 = await ethers.getContractFactory("MembershipERC721");
     membershipERC721 = await MembershipERC721.deploy(
-      "Membership", "MBR", mockERC20.address, "https://example.com"
+      "Membership", "MBR", mockERC20.address, "https://example.com", 2, 4, 6
     );
     await membershipERC721.deployed();
+
+    mockERC20.approve(
+      membershipERC721.address,
+      ethers.constants.MaxUint256,
+    )
 
     mockERC20.connect(user).approve(
       membershipERC721.address,
@@ -77,9 +83,9 @@ describe("MembershipERC721", () => {
   })
 
   describe("release", () => {
-    let genesisId: BigNumber;
-    let foundationId: BigNumber;
-    let friendId: BigNumber;
+    let genesisId: number;
+    let foundationId: number;
+    let friendId: number;
 
     before(async () => {
       genesisId = (await membershipERC721.genesisTier()).start
@@ -117,4 +123,71 @@ describe("MembershipERC721", () => {
       expect(await mockERC20.balanceOf(user.address)).to.be.equal(amt, "not releasing correct amount of ERC20")
     })
   })
+
+  describe("running out of tokens", () => {
+    it("runs out of genesis", async () => {
+      const start = (await membershipERC721.genesisTier()).start
+      const end = (await membershipERC721.genesisTier()).end
+      for (let i = start; i < end; i++) {
+        await membershipERC721.redeemGenesis()
+      }
+      expect(membershipERC721.redeemGenesis()).to.be.reverted
+    })
+
+    it("runs out of foundation", async () => {
+      const start = (await membershipERC721.foundationTier()).start
+      const end = (await membershipERC721.foundationTier()).end
+      for (let i = start; i < end; i++) {
+        await membershipERC721.redeemFoundation()
+      }
+      expect(membershipERC721.redeemFoundation()).to.be.reverted
+    })
+
+    it("runs out of friend", async () => {
+      const start = (await membershipERC721.friendTier()).start
+      const end = (await membershipERC721.friendTier()).end
+      for (let i = start; i < end; i++) {
+        await membershipERC721.redeemFriend()
+      }
+      expect(membershipERC721.redeemFriend()).to.be.reverted
+    })
+  })
+
+  describe("redeem released", () => {
+    it("redeems released genesis", async () => {
+      const start = (await membershipERC721.genesisTier()).start
+      membershipERC721.on("Redeem", async (owner: string, id: number, event: Event) => {
+        console.log('here')
+        expect(id).to.equal(start)
+      })
+      await membershipERC721.redeemGenesis()
+      await membershipERC721.release(start)
+      await membershipERC721.redeemGenesis()
+    })
+
+    it("redeems released foundation", async () => {
+      const start = (await membershipERC721.foundationTier()).start
+      membershipERC721.on("Redeem", async (owner: string, id: number, event: Event) => {
+        expect(id).to.equal(start)
+      })
+      await membershipERC721.redeemFoundation()
+      await membershipERC721.release(start)
+      await membershipERC721.redeemFoundation()
+    })
+
+    it("redeems released friend", async () => {
+      const start = (await membershipERC721.friendTier()).start
+      membershipERC721.on("Redeem", async (owner: string, id: number, event: Event) => {
+        expect(id).to.equal(start)
+      })
+      await membershipERC721.redeemFriend()
+      await membershipERC721.release(start)
+      await membershipERC721.redeemFriend()
+    })
+
+    // TODO: fix redeem released tests
+    // TODO: add github workflow
+  })
+
+  // TODO: test round robin (with stacks)
 });
