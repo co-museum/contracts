@@ -34,7 +34,7 @@ contract TimedAllowanceCrowdsale is Crowdsale {
      * @dev Reverts if not in crowdsale time range.
      */
     modifier onlyWhileOpen {
-        require(isOpen(), "TimedCrowdsale: not open");
+        // require(isOpen(), "TimedCrowdsale: not open");
         _;
     }
 
@@ -50,7 +50,7 @@ contract TimedAllowanceCrowdsale is Crowdsale {
     * @param openTime Crowdsale opening time
      * @param closeTime Crowdsale closing time
      */
-    constructor (uint256 r, address payable w, IERC20 t, address tw, uint256 openTime, uint256 closeTime, KycContract _kyc) Crowdsale(r,w,t) {
+    constructor (uint256 r, address payable w, IERC20 t, IERC20 usdc, address tw, uint256 openTime, uint256 closeTime, KycContract _kyc) Crowdsale(r,w,t, usdc) {
         require(tw != address(0), "Tken wallet is the zero address");
         // solhint-disable-next-line not-rely-on-time
         require(openTime >= block.timestamp, "Opening time is before current time");
