@@ -10,13 +10,13 @@ import "hardhat/console.sol";
 
 /**
  * @title Crowdsale
- * @dev Crowdsale is a base contract for managing a token crowdsale,
- * allowing investors to purchase tokens with ether. This contract implements
- * such functionality in its most fundamental form and can be extended to provide additional
- * functionality and/or custom behavior.
- * The external interface represents the basic interface for purchasing tokens, and conforms
- * the base architecture for crowdsales. It is *not* intended to be modified / overridden.
- * The internal interface conforms the extensible and modifiable surface of crowdsales. Override
+ * @dev Crowdsale is a base contract for managing the Co-museum crowdsale,
+ * allowing investors to purchase tokens with ERC20 compliant stablecoins including USDC and USDT. 
+ * This contract implements such functionality in its most fundamental form 
+ * and can be extended to provide additional functionality and/or custom behavior.
+ * The external interface represents the basic interface for purchasing tokens, and 
+ * conforms the base architecture for Co-museum crowdsales. The internal interface 
+ * conforms the extensible and modifiable surface of crowdsales. Override
  * the methods to add functionality. Consider using 'super' where appropriate to concatenate
  * behavior.
  */
@@ -30,6 +30,9 @@ contract Crowdsale is Context, ReentrancyGuard {
      // The USDC instance the contract will accept as a valid means of payment
     IERC20 public _usdc;
 
+    // The USDC instance the contract will accept as a valid means of payment
+    IERC20 public _usdt;
+
     // Address where funds are collected
     address payable private _wallet;
 
@@ -40,8 +43,11 @@ contract Crowdsale is Context, ReentrancyGuard {
     // 0.000001 USDC will give you 1 unit, or 0.000001 TOK.
     uint256 private _rate;
 
-    // Amount of wei raised
+    // Amount of usdc raised
     uint256 private _usdcRaised;
+
+    // Amount of usdt raised
+    uint256 private _usdtRaised;
 
     /**
      * Event for token purchase logging
@@ -53,15 +59,18 @@ contract Crowdsale is Context, ReentrancyGuard {
     event TokensPurchased(address indexed purchaser, address indexed beneficiary, uint256 value, uint256 amount);
 
     /**
-     * @param r Number of token units a buyer gets per wei
-     * @dev The rate is the conversion between wei and the smallest and indivisible
-     * token unit. So, if you are using a rate of 1 with a ERC20Detailed token
-     * with 3 decimals called TOK, 1 wei will give you 1 unit, or 0.001 TOK.
+     * @param r Number of token units a buyer gets per usdc/usdt
+     * @dev The rate is the conversion between the smallest and indivisible unit of
+     * usdt/usdc and the smallest and indivisible token unit.
+     * For example, if you are using a rate of 1 with a ERC20Detailed token
+     * with 6 decimals called TOK, 1 * 10 ^ (-6) USDC/USDT will give you 1 unit, or 1 * 10 ^ (-6) TOK.
+     * We are assuming that our token has 6 decimal places in the example above.
      * @param w Address where collected funds will be forwarded to
      * @param t Address of the token being sold
      * @param usdc Address of the usdc being accepted as payment
+     * @param usdt Address of the usdt being accepted as payment
      */
-    constructor (uint256 r, address payable w, IERC20 t, IERC20 usdc) {
+    constructor (uint256 r, address payable w, IERC20 t, IERC20 usdc, IERC20 usdt) {
         require(r > 0, "Crowdsale: rate is 0");
         require(w != address(0), "Crowdsale: wallet is the zero address");
         require(address(t) != address(0), "Crowdsale: token is the zero address");
@@ -70,6 +79,7 @@ contract Crowdsale is Context, ReentrancyGuard {
         _wallet = w;
         _token = t;
         _usdc = usdc;
+        _usdt = usdt;
 }
 
     /**
@@ -78,8 +88,10 @@ contract Crowdsale is Context, ReentrancyGuard {
      * of 2300, which is not enough to call buyTokens. Consider calling
      * buyTokens directly when purchasing tokens from a contract.
      */
+    event Received(address, uint);
     receive() external payable {
-        buyTokens(_msgSender(), 1);
+        emit Received(msg.sender, msg.value);
+        // buyTokens(_msgSender(), 1);
 }
 
     /**
@@ -97,7 +109,7 @@ contract Crowdsale is Context, ReentrancyGuard {
     }
 
     /**
-     * @return the number of token units a buyer gets per smallest unit of usdc.
+     * @return the number of token units a buyer gets per smallest unit of usdc/usdt.
      */
     function rate() public view returns (uint256) {
         return _rate;
@@ -111,30 +123,42 @@ contract Crowdsale is Context, ReentrancyGuard {
     }
 
     /**
+     * @return the amount of usdt raised - this number has to be divided by 10^6 by the user..
+     */
+    function usdtRaised() public view returns (uint256) {
+        return _usdtRaised;
+    }
+
+    /**
      * @dev low level token purchase ***DO NOT OVERRIDE***
      * This function has a non-reentrancy guard, so it shouldn't be called by
      * another `nonReentrant` function.
      * @param beneficiary Recipient of the token purchase
      */
-    function buyTokens(address beneficiary, uint256 usdcAmount) public virtual nonReentrant payable {
-        _preValidatePurchase(beneficiary, usdcAmount);
-
+    function buyTokens(address beneficiary, uint256 usdAmount, IERC20 stablecoin) public virtual nonReentrant payable {
+        _preValidatePurchase(beneficiary, usdAmount, stablecoin);
+    
         // calculate token amount to be created
-        uint256 tokens = _getTokenAmount(usdcAmount);
-
-        // transfer usdc to our wallet
-        console.log(_usdc.transferFrom( msg.sender, _wallet, usdcAmount));
+        uint256 tokens = _getTokenAmount(usdAmount);
 
         // update state
-        _usdcRaised = _usdcRaised.add(usdcAmount);
+        if (stablecoin == _usdc) {
+            // transfer usdc to our wallet
+            _usdc.transferFrom( msg.sender, _wallet, usdAmount);
 
+            _usdcRaised = _usdcRaised.add(usdAmount);
+        } else if (stablecoin == _usdt) {
+            // transfer usdt to our wallet
+            _usdt.transferFrom( msg.sender, _wallet, usdAmount);
+        } 
+        
         _processPurchase(beneficiary, tokens);
-        emit TokensPurchased(_msgSender(), beneficiary, usdcAmount, tokens);
+        emit TokensPurchased(_msgSender(), beneficiary, usdAmount, tokens);
 
-        _updatePurchasingState(beneficiary, usdcAmount);
+        _updatePurchasingState(beneficiary, usdAmount);
 
         // _forwardFunds();
-        _postValidatePurchase(beneficiary, usdcAmount);
+        _postValidatePurchase(beneficiary, usdAmount);
     }
 
     /**
@@ -144,11 +168,13 @@ contract Crowdsale is Context, ReentrancyGuard {
      *     super._preValidatePurchase(beneficiary, weiAmount);
      *     require(weiRaised().add(weiAmount) <= cap);
      * @param beneficiary Address performing the token purchase
-     * @param usdcAmount Value in wei involved in the purchase
+     * @param usdAmount Value in wei involved in the purchase
      */
-    function _preValidatePurchase(address beneficiary, uint256 usdcAmount) virtual internal view {
-        require(beneficiary != address(0), "Crowdsale: beneficiary is the zero address");
-        require(usdcAmount != 0, "Crowdsale: usdcAmount is 0");
+    function _preValidatePurchase(address beneficiary, uint256 usdAmount, IERC20 stablecoin) virtual internal view {
+        require(beneficiary != address(0), "Beneficiary is the zero address");
+        require(usdAmount != 0, "usdAmount is 0");
+        require(_usdc == stablecoin || _usdt == stablecoin, "Incorrect stablecoin provided");
+
         this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
     }
 
@@ -186,19 +212,19 @@ contract Crowdsale is Context, ReentrancyGuard {
      * @dev Override for extensions that require an internal state to check for validity (current user contributions,
      * etc.)
      * @param beneficiary Address receiving the tokens
-     * @param usdcAmount Value in usdc involved in the purchase
+     * @param usdAmount Value in usdc involved in the purchase
      */
-    function _updatePurchasingState(address beneficiary, uint256 usdcAmount) virtual internal {
+    function _updatePurchasingState(address beneficiary, uint256 usdAmount) virtual internal {
         // solhint-disable-previous-line no-empty-blocks
     }
 
     /**
      * @dev Override to extend the way in which ether is converted to tokens.
-     * @param usdcAmount Value of usdc to be converted into tokens
+     * @param usdAmount Value of usdc to be converted into tokens
      * @return Number of tokens that can be purchased with the specified _weiAmount
      */
-    function _getTokenAmount(uint256 usdcAmount) virtual internal view returns (uint256) {
-        return usdcAmount.mul(_rate);
+    function _getTokenAmount(uint256 usdAmount) virtual internal view returns (uint256) {
+        return usdAmount.mul(_rate);
     }
 
     /**

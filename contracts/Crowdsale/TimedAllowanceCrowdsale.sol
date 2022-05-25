@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./Crowdsale.sol";
-import "./KycContract.sol";
+import "./WhitelistContract.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -21,7 +21,7 @@ contract TimedAllowanceCrowdsale is Crowdsale {
     uint256 private _openingTime;
     uint256 private _closingTime;
 
-    KycContract private kyc;
+    WhitelistContract private whitelist;
 
     /**
      * Event for crowdsale extending
@@ -50,17 +50,17 @@ contract TimedAllowanceCrowdsale is Crowdsale {
     * @param openTime Crowdsale opening time
      * @param closeTime Crowdsale closing time
      */
-    constructor (uint256 r, address payable w, IERC20 t, IERC20 usdc, address tw, uint256 openTime, uint256 closeTime, KycContract _kyc) Crowdsale(r,w,t, usdc) {
+    constructor (uint256 r, address payable w, IERC20 t, IERC20 usdc,  IERC20 usdt, address tw, uint256 openTime, uint256 closeTime, WhitelistContract _kyc) Crowdsale(r,w,t, usdc, usdt) {
         require(tw != address(0), "Tken wallet is the zero address");
         // solhint-disable-next-line not-rely-on-time
-        require(openTime >= block.timestamp, "Opening time is before current time");
+        require(openTime >= block.timestamp, "Opening time before current time");
         // solhint-disable-next-line max-line-length
-        require(closeTime > openTime, "Opening time is not before closing time");
+        require(closeTime > openTime, "Opening time isn't before closing time");
 
         _openingTime = openTime;
         _closingTime = closeTime;
         _tokenWallet = tw;
-        kyc = _kyc;
+        whitelist = _kyc;
     }
 
     /**
@@ -121,15 +121,15 @@ contract TimedAllowanceCrowdsale is Crowdsale {
     /**
      * @dev Extend parent behavior requiring to be within contributing period.
      * @param beneficiary Token purchaser
-     * @param weiAmount Amount of wei contributed
+     * @param usdAmount Amount of usd contributed in terms of 6 decimal places
      */
-    function _preValidatePurchase(address beneficiary, uint256 weiAmount) internal onlyWhileOpen override view {
-        super._preValidatePurchase(beneficiary, weiAmount);
-        require(kyc.kycCompleted(beneficiary), "KYC not completed yet, aborting");
+    function _preValidatePurchase(address beneficiary, uint256 usdAmount, IERC20 stablecoin) internal onlyWhileOpen override view {
+        super._preValidatePurchase(beneficiary, usdAmount, stablecoin);
+        require(whitelist.whitelistCompleted(beneficiary), "KYC not completed yet, aborting");
     }
 
     /**
-     * @dev Extend crowdsale.
+     * @dev Extend crowdsaƒle.
      * @param newClosingTime Crowdsale closing time
      */
     function _extendTime(uint256 newClosingTime) internal {

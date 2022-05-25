@@ -56,6 +56,7 @@ async function main() {
    await kycContract.deployed();
    console.log("\n\n");
 
+
     // mock USDC token and distribute amongst two users
     const TimedAllowanceCrowdsale = await ethers.getContractFactory("TimedAllowanceCrowdsale");
     const timedAllowanceCrowdsale = await TimedAllowanceCrowdsale.deploy(1, wallet.address, sampleBKLN.address, usdcToken.address, wallet.address,
@@ -72,6 +73,9 @@ async function main() {
      console.log("user1USDCBalance:", user1USDCBalance);
      var user1BLKNBalance = await sampleBKLN.balanceOf(user1.address);
      console.log("user1BLKNBalance:", user1BLKNBalance);
+
+
+ 
 }
 
 // We recommend this pattern to be able to use async/await everywhere

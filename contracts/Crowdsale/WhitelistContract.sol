@@ -3,18 +3,18 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract KycContract is Ownable {
+contract WhitelistContract is Ownable {
     mapping(address => bool) public allowed;
 
-    function setKycCompleted(address _addr) public onlyOwner {
+    function setWhitelistCompleted(address _addr) public onlyOwner {
         allowed[_addr] = true;
     }
 
-    function setKycRevoked(address _addr) public onlyOwner {
+    function setWhitelistRevoked(address _addr) public onlyOwner {
         allowed[_addr] = false;
     }
 
-    function kycCompleted(address _addr) public view returns(bool) {
+    function whitelistCompleted(address _addr) public view returns(bool) {
         return allowed[_addr];
     }
 }
