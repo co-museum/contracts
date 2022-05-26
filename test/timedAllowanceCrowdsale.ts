@@ -155,10 +155,14 @@ describe("TimedAllowanceCrowdsale", () => {
   });
 
   describe("Crowdsale with Whitelist", () => {
-    describe("Crowdsale where buyers are whitelisted", () => async () => {
+    describe("Crowdsale where buyers are whitelisted", () => {
       describe("when one user buys BKLNs that is less than the total supply with USDC", () => {
         it("then the BKLN tokens should be reflected in the users wallet and stable coins removed from their wallet.", async () => {
-          await whitelistContract.setWhitelistCompleted(userOne.address);
+          // await whitelistContract.setWhitelistCompleted(userOne.address);
+          await timedAllowanceCrowdsale.setCap(
+            userOne.address,
+            totalSupplyOfERC20 / 4
+          );
 
           await timedAllowanceCrowdsale
             .connect(userOne)
@@ -169,26 +173,34 @@ describe("TimedAllowanceCrowdsale", () => {
             );
           expect(await mockERC20.balanceOf(userOne.address)).to.be.equal(
             totalSupplyOfERC20 / 4,
-            "userOne has 1000000000000 units of BKLNs"
+            "userOne has ${totalSupplyOfERC20 / 4}$ units of BKLNs"
           );
           expect(await mockUSDC.balanceOf(userOne.address)).to.be.equal(
             totalSupplyOfMockUSDC / 2 - totalSupplyOfERC20 / 4,
-            "userOne has 3000000000000 units of USDC left"
+            "userOne has ${totalSupplyOfMockUSDC / 2 - totalSupplyOfERC20 / 4}$ units of USDC left"
           );
           expect(await timedAllowanceCrowdsale.remainingTokens()).to.be.equal(
             totalSupplyOfERC20 - totalSupplyOfERC20 / 4,
-            "userOne has 3000000000000 units of USDC left"
+            "there are ${totalSupplyOfERC20 - totalSupplyOfERC20 / 4}$ remaining tokens"
           );
           expect(await mockUSDC.balanceOf(wallet.address)).to.be.equal(
-            totalSupplyOfMockUSDC / 2 - totalSupplyOfERC20 / 4,
-            "userOne has 1000000000000 units of USDC left"
+            totalSupplyOfERC20 / 4,
+            "wallet has $totalSupplyOfERC20 / 4$ units of USDC left"
           );
         });
 
         describe("when multiple users buy BKLNs that is less than the total supply using USDT and USDC", () => {
           it("when both users buy BKLNs", async () => {
-            await whitelistContract.setWhitelistCompleted(userOne.address);
-            await whitelistContract.setWhitelistCompleted(userTwo.address);
+            // await whitelistContract.setWhitelistCompleted(userOne.address);
+            // await whitelistContract.setWhitelistCompleted(userTwo.address);
+            await timedAllowanceCrowdsale.setCap(
+              userOne.address,
+              totalSupplyOfERC20 / 4
+            );
+            await timedAllowanceCrowdsale.setCap(
+              userTwo.address,
+              totalSupplyOfERC20 / 4
+            );
 
             await timedAllowanceCrowdsale
               .connect(userOne)
@@ -208,17 +220,24 @@ describe("TimedAllowanceCrowdsale", () => {
               totalSupplyOfERC20 / 4,
               "userOne has 1000000000000 units of BKLNs"
             );
+
             expect(await mockERC20.balanceOf(userTwo.address)).to.be.equal(
               totalSupplyOfERC20 / 4,
-              "userTwo has 1000000000000 units of BKLNs"
+              "userTwo has ${totalSupplyOfERC20 / 4}$ units of BKLNs"
             );
+
             expect(await mockUSDC.balanceOf(userOne.address)).to.be.equal(
-              totalSupplyOfMockUSDC / 2 - totalSupplyOfMockUSDC / 4,
-              "userOne has 1000000000000 units of USDC left"
+              totalSupplyOfMockUSDC / 2 - totalSupplyOfERC20 / 4,
+              "userOne has ${totalSupplyOfMockUSDC / 2 - totalSupplyOfERC20 / 4}$ units of USDC left"
             );
             expect(await mockUSDT.balanceOf(userTwo.address)).to.be.equal(
-              totalSupplyOfMockUSDT / 2 - totalSupplyOfMockUSDC / 4,
-              "userTwo has 1000000000000 units of USDC left"
+              totalSupplyOfMockUSDT / 2 - totalSupplyOfERC20 / 4,
+              "userTwo has ${totalSupplyOfMockUSDT / 2 - totalSupplyOfERC20 / 4}$ units of USDC left"
+            );
+
+            expect(await timedAllowanceCrowdsale.remainingTokens()).to.be.equal(
+              totalSupplyOfERC20 - totalSupplyOfERC20 / 2,
+              "there are ${totalSupplyOfERC20 - totalSupplyOfERC20 / 2}$ remaining tokens"
             );
           });
         });
@@ -226,18 +245,30 @@ describe("TimedAllowanceCrowdsale", () => {
 
       describe("when multiple users try to buy BKLNs that is more than the total supply using USDT and USD", () => {
         it("only purchases BLKNs that are within the purchasing limits", async () => {
-          await whitelistContract.setWhitelistCompleted(userOne.address);
-          await whitelistContract.setWhitelistCompleted(userTwo.address);
-          await timedAllowanceCrowdsale
-            .connect(userOne)
-            .buyTokens(userOne.address, 4000000000001, mockUSDC.address);
+          await timedAllowanceCrowdsale.setCap(
+            userOne.address,
+            totalSupplyOfERC20 / 4
+          );
+          const usdcBalanceOfUserOne = await mockUSDC.balanceOf(
+            userOne.address
+          );
+          await expect(
+            timedAllowanceCrowdsale
+              .connect(userOne)
+              .buyTokens(
+                userOne.address,
+                totalSupplyOfERC20 * 2,
+                mockUSDC.address
+              )
+          ).to.be.revertedWith("beneficiary's cap exceeded");
+
           expect(await mockERC20.balanceOf(userOne.address)).to.be.equal(
             0,
             "userOne has 0 units of BKLNs"
           );
           expect(await mockUSDC.balanceOf(userOne.address)).to.be.equal(
-            totalSupplyOfMockUSDC / 2,
-            "userOne has 5000000000000 units of USDC left"
+            usdcBalanceOfUserOne,
+            "userOne has ${usdcBalanceOfUserOne}$ units of USDC left"
           );
         });
       });

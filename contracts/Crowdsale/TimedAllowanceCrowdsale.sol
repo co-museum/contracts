@@ -12,16 +12,18 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
  * @title AllowanceCrowdsale
  * @dev Extension of Crowdsale where tokens are held by a wallet, which approves an allowance to the crowdsale.
  */
-contract TimedAllowanceCrowdsale is Crowdsale {
+contract TimedAllowanceCrowdsale is Crowdsale, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     address private _tokenWallet;
-
     uint256 private _openingTime;
     uint256 private _closingTime;
 
     WhitelistContract private whitelist;
+
+    mapping(address => uint256) private _contributions;
+    mapping(address => uint256) private _caps;
 
     /**
      * Event for crowdsale extending
@@ -125,7 +127,9 @@ contract TimedAllowanceCrowdsale is Crowdsale {
      */
     function _preValidatePurchase(address beneficiary, uint256 usdAmount, IERC20 stablecoin) internal onlyWhileOpen override view {
         super._preValidatePurchase(beneficiary, usdAmount, stablecoin);
-        require(whitelist.whitelistCompleted(beneficiary), "KYC not completed yet, aborting");
+        // TODO: Remove the whitelist scenario - the cap with automatically create a whitelist
+        // require(whitelist.whitelistCompleted(beneficiary), "KYC not completed yet, aborting");
+        require(_contributions[beneficiary].add(usdAmount) <= _caps[beneficiary], "beneficiary's cap exceeded");
     }
 
     /**
@@ -136,8 +140,44 @@ contract TimedAllowanceCrowdsale is Crowdsale {
         require(!hasClosed(), "Already closed");
         // solhint-disable-next-line max-line-length
         require(newClosingTime > _closingTime, "New closing time is before current closing time");
-
         emit TimedCrowdsaleExtended(_closingTime, newClosingTime);
         _closingTime = newClosingTime;
+    }
+
+    /**
+     * @dev Sets a specific beneficiary's maximum contribution.
+     * @param beneficiary Address to be capped
+     * @param cap Wei limit for individual contribution
+     */
+    function setCap(address beneficiary, uint256 cap) external onlyOwner {
+        _caps[beneficiary] = cap;
+    }
+
+    /**
+     * @dev Returns the cap of a specific beneficiary.
+     * @param beneficiary Address whose cap is to be checked
+     * @return Current cap for individual beneficiary
+     */
+    function getCap(address beneficiary) public view returns (uint256) {
+        return _caps[beneficiary];
+    }
+
+    /**
+     * @dev Returns the amount contributed so far by a specific beneficiary.
+     * @param beneficiary Address of contributor
+     * @return Beneficiary contribution so far
+     */
+    function getContribution(address beneficiary) public view returns (uint256) {
+        return _contributions[beneficiary];
+    }
+
+     /**
+     * @dev Extend parent behavior to update beneficiary contributions.
+     * @param beneficiary Token purchaser
+     * @param usdAmount Amount of wei contributed
+     */
+    function _updatePurchasingState(address beneficiary, uint256 usdAmount) override internal {
+        super._updatePurchasingState(beneficiary, usdAmount);
+        _contributions[beneficiary] = _contributions[beneficiary].add(usdAmount);
     }
 }
