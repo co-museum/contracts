@@ -82,6 +82,26 @@ contract MembershipERC721 is ERC721Burnable {
         });
     }
 
+    function release(uint16 id) external {
+        Tier storage tier = getTier(id);
+        erc20.transfer(msg.sender, tier.price);
+        tier.releasedIds.push(id);
+        emit Release(msg.sender, id);
+        burn(id);
+    }
+
+    function redeemGenesis() external {
+        _redeem(genesisTier);
+    }
+
+    function redeemFoundation() external {
+        _redeem(foundationTier);
+    }
+
+    function redeemFriend() external {
+        _redeem(friendTier);
+    }
+
     function _redeem(Tier storage tier) private {
         uint16 id;
         if (tier.releasedIds.length > 0) {
@@ -100,25 +120,5 @@ contract MembershipERC721 is ERC721Burnable {
             "insufficient balance"
         );
         erc20.transferFrom(msg.sender, address(this), tier.price);
-    }
-
-    function redeemGenesis() public {
-        _redeem(genesisTier);
-    }
-
-    function redeemFoundation() public {
-        _redeem(foundationTier);
-    }
-
-    function redeemFriend() public {
-        _redeem(friendTier);
-    }
-
-    function release(uint16 id) public {
-        Tier storage tier = getTier(id);
-        erc20.transfer(msg.sender, tier.price);
-        tier.releasedIds.push(id);
-        emit Release(msg.sender, id);
-        burn(id);
     }
 }
