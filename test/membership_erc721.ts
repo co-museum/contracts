@@ -1,8 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { removeAllListeners } from "process";
 import { ERC20Mock } from "../typechain";
 import { MembershipERC721 } from "../typechain/MembershipERC721";
 
