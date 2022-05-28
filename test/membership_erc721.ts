@@ -1,8 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { removeAllListeners } from "process";
 import { ERC20Mock } from "../typechain";
 import { MembershipERC721 } from "../typechain/MembershipERC721";
 
@@ -156,38 +154,41 @@ describe("MembershipERC721", () => {
   describe("redeem released", () => {
     it("redeems released genesis", async () => {
       const start = (await membershipERC721.genesisTier()).start
-      membershipERC721.on("Redeem", async (owner: string, id: number, event: Event) => {
-        console.log('here')
-        expect(id).to.equal(start)
-      })
-      await membershipERC721.redeemGenesis()
-      await membershipERC721.release(start)
-      await membershipERC721.redeemGenesis()
+      await expect(membershipERC721.redeemGenesis()).to.emit(
+        membershipERC721, "Redeem"
+      ).withArgs(signer.address, start)
+      await expect(membershipERC721.release(start)).to.emit(
+        membershipERC721, "Release"
+      ).withArgs(signer.address, start)
+      await expect(membershipERC721.redeemGenesis()).to.emit(
+        membershipERC721, "Redeem"
+      ).withArgs(signer.address, start)
     })
 
     it("redeems released foundation", async () => {
       const start = (await membershipERC721.foundationTier()).start
-      membershipERC721.on("Redeem", async (owner: string, id: number, event: Event) => {
-        expect(id).to.equal(start)
-      })
-      await membershipERC721.redeemFoundation()
-      await membershipERC721.release(start)
-      await membershipERC721.redeemFoundation()
+      await expect(membershipERC721.redeemFoundation()).to.emit(
+        membershipERC721, "Redeem"
+      ).withArgs(signer.address, start)
+      await expect(membershipERC721.release(start)).to.emit(
+        membershipERC721, "Release"
+      ).withArgs(signer.address, start)
+      await expect(membershipERC721.redeemFoundation()).to.emit(
+        membershipERC721, "Redeem"
+      ).withArgs(signer.address, start)
     })
 
     it("redeems released friend", async () => {
       const start = (await membershipERC721.friendTier()).start
-      membershipERC721.on("Redeem", async (owner: string, id: number, event: Event) => {
-        expect(id).to.equal(start)
-      })
-      await membershipERC721.redeemFriend()
-      await membershipERC721.release(start)
-      await membershipERC721.redeemFriend()
+      await expect(membershipERC721.redeemFriend()).to.emit(
+        membershipERC721, "Redeem"
+      ).withArgs(signer.address, start)
+      await expect(membershipERC721.release(start)).to.emit(
+        membershipERC721, "Release"
+      ).withArgs(signer.address, start)
+      await expect(membershipERC721.redeemFriend()).to.emit(
+        membershipERC721, "Redeem"
+      ).withArgs(signer.address, start)
     })
-
-    // TODO: fix redeem released tests
-    // TODO: add github workflow
   })
-
-  // TODO: test round robin (with stacks)
 });
