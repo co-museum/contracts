@@ -30,12 +30,15 @@ contract TimedAllowanceCrowdsale is Crowdsale, Ownable {
      * @param newClosingTime new closing time
      * @param prevClosingTime old closing time
      */
-    event TimedCrowdsaleExtended(uint256 prevClosingTime, uint256 newClosingTime); 
+    event TimedCrowdsaleExtended(
+        uint256 prevClosingTime,
+        uint256 newClosingTime
+    );
 
     /**
      * @dev Reverts if not in crowdsale time range.
      */
-    modifier onlyWhileOpen {
+    modifier onlyWhileOpen() {
         // require(isOpen(), "TimedCrowdsale: not open");
         _;
     }
@@ -52,10 +55,23 @@ contract TimedAllowanceCrowdsale is Crowdsale, Ownable {
     * @param openTime Crowdsale opening time
      * @param closeTime Crowdsale closing time
      */
-    constructor (uint256 r, address payable w, IERC20 t, IERC20 usdc,  IERC20 usdt, address tw, uint256 openTime, uint256 closeTime, WhitelistContract _kyc) Crowdsale(r,w,t, usdc, usdt) {
+    constructor(
+        uint256 r,
+        address payable w,
+        address t,
+        address usdc,
+        address usdt,
+        address tw,
+        uint256 openTime,
+        uint256 closeTime,
+        WhitelistContract _kyc
+    ) Crowdsale(r, w, t, usdc, usdt) {
         require(tw != address(0), "Tken wallet is the zero address");
         // solhint-disable-next-line not-rely-on-time
-        require(openTime >= block.timestamp, "Opening time before current time");
+        require(
+            openTime >= block.timestamp,
+            "Opening time before current time"
+        );
         // solhint-disable-next-line max-line-length
         require(closeTime > openTime, "Opening time isn't before closing time");
 
@@ -77,7 +93,11 @@ contract TimedAllowanceCrowdsale is Crowdsale, Ownable {
      * @return Amount of tokens left in the allowance
      */
     function remainingTokens() public view returns (uint256) {
-        return Math.min(token().balanceOf(_tokenWallet), token().allowance(_tokenWallet, address(this)));
+        return
+            Math.min(
+                token().balanceOf(_tokenWallet),
+                token().allowance(_tokenWallet, address(this))
+            );
     }
 
     /**
@@ -85,11 +105,14 @@ contract TimedAllowanceCrowdsale is Crowdsale, Ownable {
      * @param beneficiary Token purchaser
      * @param tokenAmount Amount of tokens purchased
      */
-    function _deliverTokens(address beneficiary, uint256 tokenAmount) override internal {
+    function _deliverTokens(address beneficiary, uint256 tokenAmount)
+        internal
+        override
+    {
         token().safeTransferFrom(_tokenWallet, beneficiary, tokenAmount);
     }
 
-       /**
+    /**
      * @return the crowdsale opening time.
      */
     function openingTime() public view returns (uint256) {
@@ -108,7 +131,8 @@ contract TimedAllowanceCrowdsale is Crowdsale, Ownable {
      */
     function isOpen() public view returns (bool) {
         // solhint-disable-next-line not-rely-on-time
-        return block.timestamp >= _openingTime && block.timestamp <= _closingTime;
+        return
+            block.timestamp >= _openingTime && block.timestamp <= _closingTime;
     }
 
     /**
@@ -125,11 +149,18 @@ contract TimedAllowanceCrowdsale is Crowdsale, Ownable {
      * @param beneficiary Token purchaser
      * @param usdAmount Amount of usd contributed in terms of 6 decimal places
      */
-    function _preValidatePurchase(address beneficiary, uint256 usdAmount, IERC20 stablecoin) internal onlyWhileOpen override view {
+    function _preValidatePurchase(
+        address beneficiary,
+        uint256 usdAmount,
+        IERC20 stablecoin
+    ) internal view override onlyWhileOpen {
         super._preValidatePurchase(beneficiary, usdAmount, stablecoin);
         // TODO: Remove the whitelist scenario - the cap with automatically create a whitelist
         // require(whitelist.whitelistCompleted(beneficiary), "KYC not completed yet, aborting");
-        require(_contributions[beneficiary].add(usdAmount) <= _caps[beneficiary], "beneficiary's cap exceeded");
+        require(
+            _contributions[beneficiary].add(usdAmount) <= _caps[beneficiary],
+            "beneficiary's cap exceeded"
+        );
     }
 
     /**
@@ -139,7 +170,10 @@ contract TimedAllowanceCrowdsale is Crowdsale, Ownable {
     function _extendTime(uint256 newClosingTime) internal {
         require(!hasClosed(), "Already closed");
         // solhint-disable-next-line max-line-length
-        require(newClosingTime > _closingTime, "New closing time is before current closing time");
+        require(
+            newClosingTime > _closingTime,
+            "New closing time is before current closing time"
+        );
         emit TimedCrowdsaleExtended(_closingTime, newClosingTime);
         _closingTime = newClosingTime;
     }
@@ -167,17 +201,26 @@ contract TimedAllowanceCrowdsale is Crowdsale, Ownable {
      * @param beneficiary Address of contributor
      * @return Beneficiary contribution so far
      */
-    function getContribution(address beneficiary) public view returns (uint256) {
+    function getContribution(address beneficiary)
+        public
+        view
+        returns (uint256)
+    {
         return _contributions[beneficiary];
     }
 
-     /**
+    /**
      * @dev Extend parent behavior to update beneficiary contributions.
      * @param beneficiary Token purchaser
      * @param usdAmount Amount of wei contributed
      */
-    function _updatePurchasingState(address beneficiary, uint256 usdAmount) override internal {
+    function _updatePurchasingState(address beneficiary, uint256 usdAmount)
+        internal
+        override
+    {
         super._updatePurchasingState(beneficiary, usdAmount);
-        _contributions[beneficiary] = _contributions[beneficiary].add(usdAmount);
+        _contributions[beneficiary] = _contributions[beneficiary].add(
+            usdAmount
+        );
     }
 }
