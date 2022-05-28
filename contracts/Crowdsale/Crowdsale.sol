@@ -30,7 +30,7 @@ contract Crowdsale is Context, ReentrancyGuard {
      // The USDC instance the contract will accept as a valid means of payment
     IERC20 public _usdc;
 
-    // The USDC instance the contract will accept as a valid means of payment
+    // The USDT instance the contract will accept as a valid means of payment
     IERC20 public _usdt;
 
     // Address where funds are collected
@@ -70,16 +70,16 @@ contract Crowdsale is Context, ReentrancyGuard {
      * @param usdc Address of the usdc being accepted as payment
      * @param usdt Address of the usdt being accepted as payment
      */
-    constructor (uint256 r, address payable w, IERC20 t, IERC20 usdc, IERC20 usdt) {
+    constructor (uint256 r, address payable w, address t, address usdc, address usdt) {
         require(r > 0, "Crowdsale: rate is 0");
         require(w != address(0), "Crowdsale: wallet is the zero address");
         require(address(t) != address(0), "Crowdsale: token is the zero address");
 
         _rate = r;
         _wallet = w;
-        _token = t;
-        _usdc = usdc;
-        _usdt = usdt;
+        _token = IERC20(t);
+        _usdc = IERC20(usdc);
+        _usdt = IERC20(usdt);
 }
 
     /**
