@@ -1,0 +1,13 @@
+name: CI
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: borales/actions-yarn@v2.3.0
+        with:
+          cmd: install
+      - run: yarn hardhat compile
+      - run: yarn hardhat test

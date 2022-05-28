@@ -1,79 +1,124 @@
-// SPDX-License-Identifier:
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
 import "./fractional/OpenZeppelin/access/Ownable.sol";
-import "./fractional/OpenZeppelin/token/ERC721/ERC721.sol";
+import "./fractional/OpenZeppelin/token/ERC721/ERC721Burnable.sol";
 import "./fractional/OpenZeppelin/token/ERC20/IERC20.sol";
 
-contract MembershipERC721 is ERC721, Ownable {
-    IERC20 public erc20;
+interface IERC20Decimal is IERC20 {
+    function decimals() external view returns (uint8);
+}
 
-    enum TierType {
-        GENESIS,
-        FOUNDATION,
-        FRIEND
-    }
+contract MembershipERC721 is ERC721Burnable {
+    IERC20Decimal public erc20;
 
     struct Tier {
         uint16 currId;
-        uint16 maxId;
-        uint16 price;
-        uint16[] refundedIds;
+        uint16 start;
+        uint16 end;
+        uint256 price;
+        uint16[] releasedIds;
     }
 
-    mapping(TierType => Tier) private tiers;
+    event Redeem(address indexed owner, uint16 indexed id);
+    event Release(address indexed owner, uint16 indexed id);
+
+    uint16[] private friendIdStack;
+    uint16[] private foundationIdStack;
+    uint16[] private genesisIdStack;
+
+    Tier public friendTier;
+    Tier public foundationTier;
+    Tier public genesisTier;
+
+    function getTier(uint16 id) private view returns (Tier storage) {
+        if (id < genesisTier.end) {
+            return genesisTier;
+        }
+        if (id < foundationTier.end) {
+            return foundationTier;
+        }
+        if (id < friendTier.end) {
+            return friendTier;
+        }
+
+        revert("id out of range");
+    }
 
     constructor(
         string memory name_,
         string memory symbol_,
         address erc20_,
-        string memory baseURI_
+        string memory baseURI_,
+        uint16 genesisEnd,
+        uint16 foundationEnd,
+        uint16 friendEnd
     ) ERC721(name_, symbol_) {
         _setBaseURI(baseURI_);
-        erc20 = IERC20(erc20_);
+        erc20 = IERC20Decimal(erc20_);
 
-        tiers[TierType.GENESIS] = Tier({
+        genesisTier = Tier({
             currId: 0,
-            maxId: 99,
-            price: 40000,
-            refundedIds: []
+            start: 0,
+            end: genesisEnd,
+            price: 40000 * 10**erc20.decimals(),
+            releasedIds: friendIdStack
         });
-        tiers[TierType.FOUNDATION] = Tier({
-            currId: 100,
-            maxId: 1099,
-            price: 4000,
-            refundedIds: []
+
+        foundationTier = Tier({
+            currId: genesisEnd,
+            start: genesisEnd,
+            end: foundationEnd,
+            price: 4000 * 10**erc20.decimals(),
+            releasedIds: foundationIdStack
         });
-        tiers[TierType.FRIEND] = Tier({
-            currId: 1100,
-            maxId: 11099,
-            price: 400,
-            refundedIds: []
+
+        friendTier = Tier({
+            currId: foundationEnd,
+            start: foundationEnd,
+            end: friendEnd,
+            price: 400 * 10**erc20.decimals(),
+            releasedIds: genesisIdStack
         });
     }
 
-    function _nextID(TierType tier_) private returns (uint16) {
-        Tier memory tier = tiers[tier_];
-        uint16 res;
+    function release(uint16 id) external {
+        Tier storage tier = getTier(id);
+        erc20.transfer(msg.sender, tier.price);
+        tier.releasedIds.push(id);
+        emit Release(msg.sender, id);
+        burn(id);
+    }
 
-        if (tier.currId < tier.maxId) {
-            res = tier.currId;
-            tier.currId++;
+    function redeemGenesis() external {
+        _redeem(genesisTier);
+    }
+
+    function redeemFoundation() external {
+        _redeem(foundationTier);
+    }
+
+    function redeemFriend() external {
+        _redeem(friendTier);
+    }
+
+    function _redeem(Tier storage tier) private {
+        uint16 id;
+        if (tier.releasedIds.length > 0) {
+            id = tier.releasedIds[tier.releasedIds.length - 1];
+            tier.releasedIds.pop();
         } else {
-            // TODO: check if it is reverted properly
-            // TODO: does empty array cause revert as expected?
-            res = tier.refundedIds.pop();
+            require(tier.currId < tier.end, "cannot mint more tokens at tier");
+            id = tier.currId;
+            tier.currId++;
         }
+        emit Redeem(msg.sender, id);
+        _safeMint(msg.sender, id);
 
-        return res;
-    }
-
-    function mint(TierType tier_) public {
-        Tier memory tier = tiers[tier_];
-        uint256 price = tier.price * erc20.decimals();
-        require(erc20.balanceOf(msg.sender) >= price, "insufficient balance");
-        erc20.approve(address(this), price);
-        erc20.transferFrom(msg.sender, address(this), price);
-        _safeMint(msg.sender, _nextID());
+        require(
+            erc20.balanceOf(msg.sender) >= tier.price,
+            "insufficient balance"
+        );
+        erc20.transferFrom(msg.sender, address(this), tier.price);
     }
 }
