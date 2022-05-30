@@ -8,7 +8,6 @@ import {
   IERC20,
   WhitelistContract,
   TimedAllowanceCrowdsale,
-  USDCToken,
 } from "../typechain";
 import { MembershipERC721 } from "../typechain/MembershipERC721";
 
