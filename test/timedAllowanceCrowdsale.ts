@@ -6,7 +6,6 @@ import { removeAllListeners } from "process";
 import {
   ERC20Mock,
   IERC20,
-  WhitelistContract,
   TimedAllowanceCrowdsale,
 } from "../typechain";
 import { MembershipERC721 } from "../typechain/MembershipERC721";
@@ -19,7 +18,6 @@ describe("TimedAllowanceCrowdsale", () => {
   let userOne: SignerWithAddress;
   let userTwo: SignerWithAddress;
   let wallet: SignerWithAddress;
-  let whitelistContract: WhitelistContract;
   let timedAllowanceCrowdsale: TimedAllowanceCrowdsale;
   const totalSupplyOfERC20 = 4000000000000;
   const totalSupplyOfMockUSDC = 10000000000000;
@@ -108,12 +106,6 @@ describe("TimedAllowanceCrowdsale", () => {
       "userTwo has 5000000000000 units of USDT"
     );
 
-    const WhitelistContract = await ethers.getContractFactory(
-      "WhitelistContract"
-    );
-    whitelistContract = await WhitelistContract.deploy();
-    await whitelistContract.deployed();
-
     const blockNumBefore = await ethers.provider.getBlockNumber();
     const blockBefore = await ethers.provider.getBlock(blockNumBefore);
     const openingTime = (await blockBefore.timestamp) + 4 * 3600 * 1000;
@@ -132,7 +124,6 @@ describe("TimedAllowanceCrowdsale", () => {
       wallet.address,
       openingTime,
       closingTime,
-      whitelistContract.address
     );
     await timedAllowanceCrowdsale.deployed();
 
@@ -157,7 +148,6 @@ describe("TimedAllowanceCrowdsale", () => {
     describe("Crowdsale where buyers are whitelisted", () => {
       describe("when one user buys BKLNs that is less than the total supply with USDC", () => {
         it("then the BKLN tokens should be reflected in the users wallet and stable coins removed from their wallet.", async () => {
-          // await whitelistContract.setWhitelistCompleted(userOne.address);
           await timedAllowanceCrowdsale.setCap(
             userOne.address,
             totalSupplyOfERC20 / 4
@@ -190,8 +180,6 @@ describe("TimedAllowanceCrowdsale", () => {
 
         describe("when multiple users buy BKLNs that is less than the total supply using USDT and USDC", () => {
           it("when both users buy BKLNs", async () => {
-            // await whitelistContract.setWhitelistCompleted(userOne.address);
-            // await whitelistContract.setWhitelistCompleted(userTwo.address);
             await timedAllowanceCrowdsale.setCap(
               userOne.address,
               totalSupplyOfERC20 / 4

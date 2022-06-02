@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "./Crowdsale.sol";
-import "./WhitelistContract.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/utils/math/SafeMath.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import "openzeppelin-contracts/contracts/access/Ownable.sol";
 
 /**
  * @title AllowanceCrowdsale
@@ -19,8 +19,6 @@ contract TimedAllowanceCrowdsale is Crowdsale, Ownable {
     address private _tokenWallet;
     uint256 private _openingTime;
     uint256 private _closingTime;
-
-    WhitelistContract private whitelist;
 
     mapping(address => uint256) private _contributions;
     mapping(address => uint256) private _caps;
@@ -63,8 +61,7 @@ contract TimedAllowanceCrowdsale is Crowdsale, Ownable {
         address usdt,
         address tw,
         uint256 openTime,
-        uint256 closeTime,
-        WhitelistContract _kyc
+        uint256 closeTime
     ) Crowdsale(r, w, t, usdc, usdt) {
         require(tw != address(0), "Tken wallet is the zero address");
         // solhint-disable-next-line not-rely-on-time
@@ -78,7 +75,6 @@ contract TimedAllowanceCrowdsale is Crowdsale, Ownable {
         _openingTime = openTime;
         _closingTime = closeTime;
         _tokenWallet = tw;
-        whitelist = _kyc;
     }
 
     /**
@@ -155,8 +151,6 @@ contract TimedAllowanceCrowdsale is Crowdsale, Ownable {
         IERC20 stablecoin
     ) internal view override onlyWhileOpen {
         super._preValidatePurchase(beneficiary, usdAmount, stablecoin);
-        // TODO: Remove the whitelist scenario - the cap with automatically create a whitelist
-        // require(whitelist.whitelistCompleted(beneficiary), "KYC not completed yet, aborting");
         require(
             _contributions[beneficiary].add(usdAmount) <= _caps[beneficiary],
             "beneficiary's cap exceeded"

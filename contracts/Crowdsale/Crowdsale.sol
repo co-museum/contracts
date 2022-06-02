@@ -135,7 +135,7 @@ contract Crowdsale is Context, ReentrancyGuard {
      * another `nonReentrant` function.
      * @param beneficiary Recipient of the token purchase
      */
-    function buyTokens(address beneficiary, uint256 usdAmount, IERC20 stablecoin) public virtual nonReentrant payable {
+    function buyTokens(address beneficiary, uint256 usdAmount, IERC20 stablecoin) public nonReentrant payable {
         _preValidatePurchase(beneficiary, usdAmount, stablecoin);
     
         // calculate token amount to be created
