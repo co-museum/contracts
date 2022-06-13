@@ -29,10 +29,28 @@ async function main() {
   await vaultFactory.deployed();
   console.log("VaultFactory deployed to:", vaultFactory.address);
 
-  const DummyNFT = await ethers.getContractFactory("ERC721PresetMinterPauserAutoId");
-  const dummyNFT = await DummyNFT.deploy("Dummy", "DMY", "co-museum.com/dummy-nft");
+  const DummyNFT = await ethers.getContractFactory("ERC721Mock");
+  const dummyNFT = await DummyNFT.deploy("Dummy", "DMY");
   await dummyNFT.deployed();
   console.log("DummyNFT deployed to:", dummyNFT.address);
+
+  const MockUSDC = await ethers.getContractFactory("ERC20Mock");
+  const mockUSDC = await MockUSDC.deploy(
+    "Usdc",
+    "USDC",
+    signer.address,
+    ethers.utils.parseEther("1000000")
+  );
+  await mockUSDC.deployed();
+
+  const MockUSDT = await ethers.getContractFactory("ERC20Mock");
+  const mockUSDT = await MockUSDT.deploy(
+    "Usdt",
+    "USDT",
+    signer.address,
+    ethers.utils.parseEther("1000000")
+  );
+  await mockUSDT.deployed();
 
   dummyNFT.on("Transfer", async (from: string, to: string, _tokenId: BigNumberish, event: Event) => {
     console.log("Token ID:", _tokenId)
@@ -62,11 +80,27 @@ async function main() {
       event: Event
     ) => {
       console.log("Fractionalised token address:", vault)
+
+      const TimedAllowanceCrowdsale = await ethers.getContractFactory("TimedAllowanceCrowdsale")
+      const timedAllowanceCrowdsale = await TimedAllowanceCrowdsale.deploy(
+        1, signer.address, vault,
+        mockUSDC.address, mockUSDT.address,
+        signer.address, Date.now(), Date.now() + 20
+      )
+      await timedAllowanceCrowdsale.deployed()
+      console.log("Crowdsale address:", timedAllowanceCrowdsale.address)
+
+
+      const MembershipERC721 = await ethers.getContractFactory("MembershipERC721")
+      const membershipERC721 = await MembershipERC721.deploy("Member", "MEM", vault, 2, 4, 6)
+      await membershipERC721.deployed()
+      console.log("Membership ERC721 address:", membershipERC721.address)
+
       vaultFactory.removeAllListeners()
     }
   )
 
-  await dummyNFT.mint(signer.address)
+  await dummyNFT.mint(signer.address, 0)
 }
 
 // We recommend this pattern to be able to use async/await everywhere
