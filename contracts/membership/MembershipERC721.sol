@@ -9,8 +9,9 @@ interface IERC20Decimal is IERC20 {
     function decimals() external view returns (uint8);
 }
 
-contract MembershipERC721 is ERC721Burnable {
+contract MembershipERC721 is ERC721Burnable, Ownable {
     IERC20Decimal public erc20;
+    string private _membershipBaseURI;
 
     struct Tier {
         uint16 currId;
@@ -49,12 +50,10 @@ contract MembershipERC721 is ERC721Burnable {
         string memory name_,
         string memory symbol_,
         address erc20_,
-        string memory baseURI_,
         uint16 genesisEnd,
         uint16 foundationEnd,
         uint16 friendEnd
     ) ERC721(name_, symbol_) {
-        // _setBaseURI(baseURI_);
         erc20 = IERC20Decimal(erc20_);
 
         genesisTier = Tier({
@@ -100,6 +99,14 @@ contract MembershipERC721 is ERC721Burnable {
 
     function redeemFriend() external {
         _redeem(friendTier);
+    }
+
+    function _baseURI() internal view override returns (string memory) {
+        return _membershipBaseURI;
+    }
+
+    function setBaseURI(string calldata membershipBaseURI_) external onlyOwner {
+        _membershipBaseURI = membershipBaseURI_;
     }
 
     function _redeem(Tier storage tier) private {
