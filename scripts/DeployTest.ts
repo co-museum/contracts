@@ -3,6 +3,7 @@
 //
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
+import { sign } from "crypto";
 import { BigNumberish, utils } from "ethers";
 import { ethers } from "hardhat";
 
@@ -84,7 +85,6 @@ async function main() {
   )
 
   await dummyNFT.mint(signer.address, 0)
-
   await dummyNFT.approve(vaultFactory.address, 0)
   await vaultFactory.mint(
     "Dummy Frac", // name
