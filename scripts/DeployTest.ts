@@ -52,23 +52,6 @@ async function main() {
   );
   await mockUSDT.deployed();
 
-  dummyNFT.on("Transfer", async (from: string, to: string, _tokenId: BigNumberish, event: Event) => {
-    console.log("Token ID:", _tokenId)
-    const tokenId = _tokenId
-    await dummyNFT.approve(vaultFactory.address, tokenId)
-
-    await vaultFactory.mint(
-      "Dummy Frac", // name
-      "DMYF", // symbol
-      dummyNFT.address, // token
-      tokenId,
-      utils.parseEther("10000"), // supply
-      10, // listPrice
-      0, // fee
-    )
-
-    dummyNFT.removeAllListeners()
-  })
 
   vaultFactory.on("Mint",
     async (
@@ -101,6 +84,17 @@ async function main() {
   )
 
   await dummyNFT.mint(signer.address, 0)
+
+  await dummyNFT.approve(vaultFactory.address, 0)
+  await vaultFactory.mint(
+    "Dummy Frac", // name
+    "DMYF", // symbol
+    dummyNFT.address, // token
+    0, // tokenID
+    utils.parseEther("10000"), // supply
+    10, // listPrice
+    0, // fee
+  )
 }
 
 // We recommend this pattern to be able to use async/await everywhere
