@@ -126,6 +126,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         // initialize inherited contracts
         __ERC20_init(_name, _symbol);
         __ERC721Holder_init();
+        __PartiallyPausableUpgradeable_init(Ownable(settings).owner());
 
         // set storage variables
         token = _token;

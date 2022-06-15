@@ -20,10 +20,9 @@ describe("MembershipERC721", () => {
     await mockERC20.deployed()
 
     const MembershipERC721 = await ethers.getContractFactory("MembershipERC721");
-    membershipERC721 = await MembershipERC721.deploy(
-      "Membership", "MBR", mockERC20.address, 2, 4, 6
-    );
+    membershipERC721 = await MembershipERC721.deploy();
     await membershipERC721.deployed();
+    await membershipERC721.initialize( "Membership", "MBR", mockERC20.address, 2, 4, 6);
 
     mockERC20.approve(
       membershipERC721.address,

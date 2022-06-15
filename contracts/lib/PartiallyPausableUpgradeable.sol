@@ -9,7 +9,8 @@ contract PartiallyPausableUpgradeable is PausableUpgradeable, AccessControlUpgra
     bytes32 public constant SENDER_ROLE = keccak256("SENDER_ROLE");
     address public ownerAddress;
 
-    function initialize(address _ownerAddress) external initializer {
+
+    function __PartiallyPausableUpgradeable_init(address _ownerAddress) internal onlyInitializing {
         __Pausable_init();
         __AccessControl_init();
         _setRoleAdmin(SENDER_ROLE, SUPPORT_ROLE);
