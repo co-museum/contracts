@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../lib/PartiallyPausableUpgradeable.sol";
@@ -144,6 +145,7 @@ contract MembershipERC721 is ERC721BurnableUpgradeable, PartiallyPausableUpgrade
     }
 
     function supportsInterface(bytes4 interfaceId) public view override(AccessControlUpgradeable, ERC721Upgradeable) returns (bool)  {
-        return super.supportsInterface(interfaceId);
+        return AccessControlUpgradeable.supportsInterface(interfaceId) ||
+        ERC721Upgradeable.supportsInterface(interfaceId);
     }
 }
