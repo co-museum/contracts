@@ -11,7 +11,7 @@ interface IERC20Decimal is IERC20 {
     function decimals() external view returns (uint8);
 }
 
-contract MembershipERC721 is ERC721BurnableUpgradeable, PartiallyPausableUpgradeable, OwnableUpgradeable {
+contract ERC721MembershipUpgradeable is ERC721BurnableUpgradeable, PartiallyPausableUpgradeable, OwnableUpgradeable {
     IERC20Decimal public erc20;
     string private _membershipBaseURI;
 

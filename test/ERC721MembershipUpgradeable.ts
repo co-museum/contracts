@@ -1,12 +1,11 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { ERC20Mock } from "../typechain";
-import { MembershipERC721 } from "../typechain/MembershipERC721";
+import { ERC721MembershipUpgradeable, ERC20Mock } from "../typechain";
 
-describe("MembershipERC721", () => {
+describe("ERC721MembershipUpgradeable", () => {
   let mockERC20: ERC20Mock;
-  let membershipERC721: MembershipERC721;
+  let membershipERC721: ERC721MembershipUpgradeable;
   let signer: SignerWithAddress;
   let user: SignerWithAddress;
 
@@ -19,10 +18,10 @@ describe("MembershipERC721", () => {
     )
     await mockERC20.deployed()
 
-    const MembershipERC721 = await ethers.getContractFactory("MembershipERC721");
+    const MembershipERC721 = await ethers.getContractFactory("ERC721MembershipUpgradeable");
     membershipERC721 = await MembershipERC721.deploy();
     await membershipERC721.deployed();
-    await membershipERC721.initialize( "Membership", "MBR", mockERC20.address, 2, 4, 6);
+    await membershipERC721.initialize("Membership", "MBR", mockERC20.address, 2, 4, 6);
 
     mockERC20.approve(
       membershipERC721.address,
