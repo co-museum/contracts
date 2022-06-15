@@ -3,18 +3,12 @@ pragma solidity ^0.8.0;
 
 import "./Settings.sol";
 import "./Interfaces/IWETH.sol";
+import "../lib/PartiallyPausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
-contract TokenVault is
-    ERC20Upgradeable,
-    ERC721HolderUpgradeable,
-    AccessControlUpgradeable,
-    PausableUpgradeable
-{
+contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausableUpgradeable {
     using Address for address;
 
     /// -----------------------------------
@@ -119,9 +113,6 @@ contract TokenVault is
         settings = _settings;
     }
 
-    bytes32 public constant SUPPORT_ROLE = keccak256("SUPPORT_ROLE");
-    bytes32 public constant SENDER_ROLE = keccak256("SENDER_ROLE");
-
     function initialize(
         address _curator,
         address _token,
@@ -146,27 +137,7 @@ contract TokenVault is
         auctionState = State.inactive;
         userPrices[_curator] = _listPrice;
 
-        // set access
-        _setRoleAdmin(SENDER_ROLE, SUPPORT_ROLE);
-        _setupRole(SUPPORT_ROLE, Ownable(settings).owner());
-
         _mint(_curator, _supply);
-    }
-
-    function addSender(address sender) external {
-        _setupRole(SENDER_ROLE, sender);
-    }
-
-    function renounceSupport() external {
-        renounceRole(SUPPORT_ROLE, msg.sender);
-    }
-
-    function pause() external onlyRole(SUPPORT_ROLE) {
-        _pause();
-    }
-
-    function unpause() external onlyRole(SUPPORT_ROLE) {
-        _unpause();
     }
 
     /// --------------------------------
@@ -361,12 +332,7 @@ contract TokenVault is
         address _from,
         address _to,
         uint256 _amount
-    ) internal virtual override {
-        require(
-            !paused() || hasRole(SENDER_ROLE, msg.sender),
-            "No permission to send"
-        );
-
+    ) internal virtual override onlySenderWhenPaused {
         if (auctionState == State.inactive) {
             uint256 fromPrice = userPrices[_from];
             uint256 toPrice = userPrices[_to];
