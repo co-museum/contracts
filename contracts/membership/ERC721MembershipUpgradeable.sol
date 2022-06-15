@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../lib/PartiallyPausableUpgradeable.sol";
 
 interface IERC20Decimal is IERC20 {
     function decimals() external view returns (uint8);
 }
 
-contract MembershipERC721 is ERC721Burnable, Ownable {
+contract ERC721MembershipUpgradeable is ERC721BurnableUpgradeable, PartiallyPausableUpgradeable, OwnableUpgradeable {
     IERC20Decimal public erc20;
     string private _membershipBaseURI;
 
@@ -46,15 +48,20 @@ contract MembershipERC721 is ERC721Burnable, Ownable {
         revert("id out of range");
     }
 
-    constructor(
+    function initialize(
         string memory name_,
         string memory symbol_,
         address erc20_,
         uint16 genesisEnd,
         uint16 foundationEnd,
         uint16 friendEnd
-    ) ERC721(name_, symbol_) {
-        erc20 = IERC20Decimal(erc20_);
+    ) external initializer {
+        __ERC721_init(name_, symbol_);
+        __Ownable_init_unchained();
+        __PartiallyPausableUpgradeable_init(owner());
+
+
+       erc20 = IERC20Decimal(erc20_);
 
         genesisTier = Tier({
             currId: 0,
@@ -127,5 +134,18 @@ contract MembershipERC721 is ERC721Burnable, Ownable {
             "insufficient balance"
         );
         erc20.transferFrom(msg.sender, address(this), tier.price);
+    }
+
+    function _beforeTokenTransfer(
+        address _from,
+        address _to,
+        uint256 _amount
+    ) internal virtual override onlySenderWhenPaused {
+        super._beforeTokenTransfer(_from, _to, _amount);
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view override(AccessControlUpgradeable, ERC721Upgradeable) returns (bool)  {
+        return AccessControlUpgradeable.supportsInterface(interfaceId) ||
+        ERC721Upgradeable.supportsInterface(interfaceId);
     }
 }

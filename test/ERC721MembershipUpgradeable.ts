@@ -1,12 +1,11 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { ERC20Mock } from "../typechain";
-import { MembershipERC721 } from "../typechain/MembershipERC721";
+import { ERC721MembershipUpgradeable, ERC20Mock } from "../typechain";
 
-describe("MembershipERC721", () => {
+describe("ERC721MembershipUpgradeable", () => {
   let mockERC20: ERC20Mock;
-  let membershipERC721: MembershipERC721;
+  let membershipERC721: ERC721MembershipUpgradeable;
   let signer: SignerWithAddress;
   let user: SignerWithAddress;
 
@@ -19,11 +18,10 @@ describe("MembershipERC721", () => {
     )
     await mockERC20.deployed()
 
-    const MembershipERC721 = await ethers.getContractFactory("MembershipERC721");
-    membershipERC721 = await MembershipERC721.deploy(
-      "Membership", "MBR", mockERC20.address, 2, 4, 6
-    );
+    const MembershipERC721 = await ethers.getContractFactory("ERC721MembershipUpgradeable");
+    membershipERC721 = await MembershipERC721.deploy();
     await membershipERC721.deployed();
+    await membershipERC721.initialize("Membership", "MBR", mockERC20.address, 2, 4, 6);
 
     mockERC20.approve(
       membershipERC721.address,
@@ -191,4 +189,93 @@ describe("MembershipERC721", () => {
       ).withArgs(signer.address, start)
     })
   })
+
+  describe("pausability", () => {
+    let signer: SignerWithAddress;
+    let user: SignerWithAddress;
+    let membershipERC721: ERC721MembershipUpgradeable
+    let mockERC20: ERC20Mock
+    let supportRole: string
+    let senderRole: string
+
+    beforeEach(async () => {
+      [signer, user] = await ethers.getSigners()
+
+      const MockERC20 = await ethers.getContractFactory("ERC20Mock");
+      mockERC20 = await MockERC20.deploy("Dummy", "DMY", signer.address, ethers.utils.parseEther("4000000"));
+      await mockERC20.deployed();
+
+      const MembershipERC721 = await ethers.getContractFactory("ERC721MembershipUpgradeable");
+      membershipERC721 = await MembershipERC721.deploy();
+      await membershipERC721.deployed()
+      await membershipERC721.initialize("Member", "MBR", mockERC20.address, 2, 4, 6)
+
+      supportRole = await membershipERC721.SUPPORT_ROLE()
+      senderRole = await membershipERC721.SENDER_ROLE()
+    })
+
+    describe("pausing access control", () => {
+      it("signer is support", async () => {
+        expect(await membershipERC721.hasRole(supportRole, signer.address)).to.be.true
+      })
+
+      it("user is not support", async () => {
+        expect(await membershipERC721.hasRole(supportRole, user.address)).to.be.false
+      })
+
+      it("support can pause", async () => {
+        await membershipERC721.pause()
+        expect(await membershipERC721.paused()).to.be.true
+      })
+
+      it("support can unpause", async () => {
+        await membershipERC721.pause()
+        await membershipERC721.unpause()
+        expect(await membershipERC721.paused()).to.be.false
+      })
+
+      it("user cannot pause", async () => {
+        await expect(membershipERC721.connect(user).pause()).to.be.reverted
+      })
+
+      it("user cannot unpause", async () => {
+        await membershipERC721.pause()
+        await expect(membershipERC721.connect(user).unpause()).to.be.reverted
+      })
+    })
+
+    describe("managing access control", () => {
+      it("support can add sender", async () => {
+        await membershipERC721.addSender(membershipERC721.address)
+        expect(await membershipERC721.hasRole(senderRole, membershipERC721.address)).to.be.true
+      })
+
+      it("support renounces support", async () => {
+        await membershipERC721.renounceSupport()
+        expect(await membershipERC721.hasRole(supportRole, signer.address)).to.be.false
+      })
+    })
+
+    describe("pausing prevents transfers", () => {
+      // TODO: Fix after crowdsale is implemented (and redeemFor)
+      // it("blocks non-senders from sending when paused", async () => {
+      //   await membershipERC721.pause()
+      //   await mockERC20.approve(membershipERC721.address, ethers.utils.parseEther("400"))
+      //   await membershipERC721.redeemFriend()
+      //   await expect(membershipERC721.transferFrom(signer.address, user.address, 0)).to.be.reverted
+      // })
+
+      it("allows senders to send", async () => {
+        await membershipERC721.pause()
+        await membershipERC721.addSender(signer.address)
+        await mockERC20.approve(membershipERC721.address, ethers.utils.parseEther("400"))
+        await membershipERC721.redeemFriend()
+        const id = (await membershipERC721.friendTier()).start
+        await expect(membershipERC721.transferFrom(
+          signer.address, user.address, id)
+        ).to.not.be.reverted
+        expect(await membershipERC721.ownerOf(id)).to.be.equal(user.address)
+      })
+    })
+  });
 });
