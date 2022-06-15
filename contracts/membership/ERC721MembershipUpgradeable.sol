@@ -11,7 +11,11 @@ interface IERC20Decimal is IERC20 {
     function decimals() external view returns (uint8);
 }
 
-contract ERC721MembershipUpgradeable is ERC721BurnableUpgradeable, PartiallyPausableUpgradeable, OwnableUpgradeable {
+contract ERC721MembershipUpgradeable is
+    ERC721BurnableUpgradeable,
+    PartiallyPausableUpgradeable,
+    OwnableUpgradeable
+{
     IERC20Decimal public erc20;
     string private _membershipBaseURI;
 
@@ -60,8 +64,7 @@ contract ERC721MembershipUpgradeable is ERC721BurnableUpgradeable, PartiallyPaus
         __Ownable_init_unchained();
         __PartiallyPausableUpgradeable_init(owner());
 
-
-       erc20 = IERC20Decimal(erc20_);
+        erc20 = IERC20Decimal(erc20_);
 
         genesisTier = Tier({
             currId: 0,
@@ -88,6 +91,7 @@ contract ERC721MembershipUpgradeable is ERC721BurnableUpgradeable, PartiallyPaus
         });
     }
 
+    // TODO: Implement releaseFor
     function release(uint16 id) external {
         Tier storage tier = getTier(id);
         erc20.transfer(msg.sender, tier.price);
@@ -96,16 +100,16 @@ contract ERC721MembershipUpgradeable is ERC721BurnableUpgradeable, PartiallyPaus
         burn(id);
     }
 
-    function redeemGenesis() external {
-        _redeem(genesisTier);
+    function redeemGenesis(address erc20From, address nftTo) external {
+        _redeem(genesisTier, erc20From, nftTo);
     }
 
-    function redeemFoundation() external {
-        _redeem(foundationTier);
+    function redeemFoundation(address erc20From, address nftTo) external {
+        _redeem(foundationTier, erc20From, nftTo);
     }
 
-    function redeemFriend() external {
-        _redeem(friendTier);
+    function redeemFriend(address erc20From, address nftTo) external {
+        _redeem(friendTier, erc20From, nftTo);
     }
 
     function _baseURI() internal view override returns (string memory) {
@@ -116,7 +120,11 @@ contract ERC721MembershipUpgradeable is ERC721BurnableUpgradeable, PartiallyPaus
         _membershipBaseURI = membershipBaseURI_;
     }
 
-    function _redeem(Tier storage tier) private {
+    function _redeem(
+        Tier storage tier,
+        address erc20From,
+        address nftTo
+    ) private {
         uint16 id;
         if (tier.releasedIds.length > 0) {
             id = tier.releasedIds[tier.releasedIds.length - 1];
@@ -126,14 +134,14 @@ contract ERC721MembershipUpgradeable is ERC721BurnableUpgradeable, PartiallyPaus
             id = tier.currId;
             tier.currId++;
         }
-        emit Redeem(msg.sender, id);
-        _safeMint(msg.sender, id);
+        emit Redeem(nftTo, id);
+        _safeMint(nftTo, id);
 
         require(
-            erc20.balanceOf(msg.sender) >= tier.price,
+            erc20.balanceOf(erc20From) >= tier.price,
             "insufficient balance"
         );
-        erc20.transferFrom(msg.sender, address(this), tier.price);
+        erc20.transferFrom(erc20From, address(this), tier.price);
     }
 
     function _beforeTokenTransfer(
@@ -144,8 +152,14 @@ contract ERC721MembershipUpgradeable is ERC721BurnableUpgradeable, PartiallyPaus
         super._beforeTokenTransfer(_from, _to, _amount);
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(AccessControlUpgradeable, ERC721Upgradeable) returns (bool)  {
-        return AccessControlUpgradeable.supportsInterface(interfaceId) ||
-        ERC721Upgradeable.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(AccessControlUpgradeable, ERC721Upgradeable)
+        returns (bool)
+    {
+        return
+            AccessControlUpgradeable.supportsInterface(interfaceId) ||
+            ERC721Upgradeable.supportsInterface(interfaceId);
     }
 }

@@ -27,54 +27,36 @@ describe("ERC721MembershipUpgradeable", () => {
       membershipERC721.address,
       ethers.constants.MaxUint256,
     )
-
-    mockERC20.connect(user).approve(
-      membershipERC721.address,
-      ethers.constants.MaxUint256,
-    )
-
   })
 
   describe("redeem", () => {
     afterEach(async () => {
-      expect(await mockERC20.balanceOf(user.address)).to.be.equal(0, "not locking correct amount of ERC20")
+      // expect(await mockERC20.balanceOf(user.address)).to.be.equal(0, "not locking correct amount of ERC20")
       expect(await membershipERC721.balanceOf(user.address)).to.be.equal(1, "not transferring membership NFT")
     })
 
     it("redeems genesis", async () => {
-      const amt = ethers.utils.parseUnits("40000", await mockERC20.decimals())
-      mockERC20.transfer(user.address, amt)
-      await membershipERC721.connect(user).redeemGenesis()
+      await membershipERC721.redeemGenesis(signer.address, user.address)
     });
 
     it("redeems foundation", async () => {
-      const amt = ethers.utils.parseUnits("4000", await mockERC20.decimals())
-      mockERC20.transfer(user.address, amt)
-      await membershipERC721.connect(user).redeemFoundation()
+      await membershipERC721.redeemFoundation(signer.address, user.address)
     });
 
     it("redeems friend", async () => {
-      const amt = ethers.utils.parseUnits("400", await mockERC20.decimals())
-      mockERC20.transfer(user.address, amt)
-      await membershipERC721.connect(user).redeemFriend()
+      await membershipERC721.redeemFriend(signer.address, user.address)
     });
   })
 
   describe("redeem insufficient ballance", () => {
     it("rejects insufficient genesis balance", async () => {
-      const amt = ethers.utils.parseUnits("39999", await mockERC20.decimals())
-      mockERC20.transfer(user.address, amt)
-      await expect(membershipERC721.connect(user).redeemGenesis()).to.be.reverted;
+      await expect(membershipERC721.redeemGenesis(user.address, user.address)).to.be.reverted;
     })
     it("rejects insufficient foundation balance", async () => {
-      const amt = ethers.utils.parseUnits("3999", await mockERC20.decimals())
-      mockERC20.transfer(user.address, amt)
-      await expect(membershipERC721.connect(user).redeemFoundation()).to.be.reverted;
+      await expect(membershipERC721.redeemFoundation(user.address, user.address)).to.be.reverted;
     })
     it("rejects insufficient foundation balance", async () => {
-      const amt = ethers.utils.parseUnits("399", await mockERC20.decimals())
-      mockERC20.transfer(user.address, amt)
-      await expect(membershipERC721.connect(user).redeemFriend()).to.be.reverted;
+      await expect(membershipERC721.redeemFriend(user.address, user.address)).to.be.reverted;
     })
   })
 
@@ -90,11 +72,16 @@ describe("ERC721MembershipUpgradeable", () => {
     })
 
     beforeEach(async () => {
+      mockERC20.connect(user).approve(
+        membershipERC721.address,
+        ethers.constants.MaxUint256,
+      )
+
       const amt = ethers.utils.parseUnits("44400", await mockERC20.decimals())
       mockERC20.transfer(user.address, amt)
-      await membershipERC721.connect(user).redeemGenesis()
-      await membershipERC721.connect(user).redeemFoundation()
-      await membershipERC721.connect(user).redeemFriend()
+      await membershipERC721.connect(user).redeemGenesis(user.address, user.address)
+      await membershipERC721.connect(user).redeemFoundation(user.address, user.address)
+      await membershipERC721.connect(user).redeemFriend(user.address, user.address)
 
       membershipERC721.connect(user).approve(membershipERC721.address, genesisId)
       membershipERC721.connect(user).approve(membershipERC721.address, foundationId)
@@ -125,66 +112,66 @@ describe("ERC721MembershipUpgradeable", () => {
       const start = (await membershipERC721.genesisTier()).start
       const end = (await membershipERC721.genesisTier()).end
       for (let i = start; i < end; i++) {
-        await membershipERC721.redeemGenesis()
+        await membershipERC721.redeemGenesis(signer.address, signer.address)
       }
-      expect(membershipERC721.redeemGenesis()).to.be.reverted
+      expect(membershipERC721.redeemGenesis(signer.address, signer.address)).to.be.reverted
     })
 
     it("runs out of foundation", async () => {
       const start = (await membershipERC721.foundationTier()).start
       const end = (await membershipERC721.foundationTier()).end
       for (let i = start; i < end; i++) {
-        await membershipERC721.redeemFoundation()
+        await membershipERC721.redeemFoundation(signer.address, signer.address)
       }
-      expect(membershipERC721.redeemFoundation()).to.be.reverted
+      expect(membershipERC721.redeemFoundation(signer.address, signer.address)).to.be.reverted
     })
 
     it("runs out of friend", async () => {
       const start = (await membershipERC721.friendTier()).start
       const end = (await membershipERC721.friendTier()).end
       for (let i = start; i < end; i++) {
-        await membershipERC721.redeemFriend()
+        await membershipERC721.redeemFriend(signer.address, signer.address)
       }
-      expect(membershipERC721.redeemFriend()).to.be.reverted
+      expect(membershipERC721.redeemFriend(signer.address, signer.address)).to.be.reverted
     })
   })
 
   describe("redeem released", () => {
     it("redeems released genesis", async () => {
       const start = (await membershipERC721.genesisTier()).start
-      await expect(membershipERC721.redeemGenesis()).to.emit(
+      await expect(membershipERC721.redeemGenesis(signer.address, signer.address)).to.emit(
         membershipERC721, "Redeem"
       ).withArgs(signer.address, start)
       await expect(membershipERC721.release(start)).to.emit(
         membershipERC721, "Release"
       ).withArgs(signer.address, start)
-      await expect(membershipERC721.redeemGenesis()).to.emit(
+      await expect(membershipERC721.redeemGenesis(signer.address, signer.address)).to.emit(
         membershipERC721, "Redeem"
       ).withArgs(signer.address, start)
     })
 
     it("redeems released foundation", async () => {
       const start = (await membershipERC721.foundationTier()).start
-      await expect(membershipERC721.redeemFoundation()).to.emit(
+      await expect(membershipERC721.redeemFoundation(signer.address, signer.address)).to.emit(
         membershipERC721, "Redeem"
       ).withArgs(signer.address, start)
       await expect(membershipERC721.release(start)).to.emit(
         membershipERC721, "Release"
       ).withArgs(signer.address, start)
-      await expect(membershipERC721.redeemFoundation()).to.emit(
+      await expect(membershipERC721.redeemFoundation(signer.address, signer.address)).to.emit(
         membershipERC721, "Redeem"
       ).withArgs(signer.address, start)
     })
 
     it("redeems released friend", async () => {
       const start = (await membershipERC721.friendTier()).start
-      await expect(membershipERC721.redeemFriend()).to.emit(
+      await expect(membershipERC721.redeemFriend(signer.address, signer.address)).to.emit(
         membershipERC721, "Redeem"
       ).withArgs(signer.address, start)
       await expect(membershipERC721.release(start)).to.emit(
         membershipERC721, "Release"
       ).withArgs(signer.address, start)
-      await expect(membershipERC721.redeemFriend()).to.emit(
+      await expect(membershipERC721.redeemFriend(signer.address, signer.address)).to.emit(
         membershipERC721, "Redeem"
       ).withArgs(signer.address, start)
     })
@@ -257,7 +244,6 @@ describe("ERC721MembershipUpgradeable", () => {
     })
 
     describe("pausing prevents transfers", () => {
-      // TODO: Fix after crowdsale is implemented (and redeemFor)
       // it("blocks non-senders from sending when paused", async () => {
       //   await membershipERC721.pause()
       //   await mockERC20.approve(membershipERC721.address, ethers.utils.parseEther("400"))
@@ -269,7 +255,7 @@ describe("ERC721MembershipUpgradeable", () => {
         await membershipERC721.pause()
         await membershipERC721.addSender(signer.address)
         await mockERC20.approve(membershipERC721.address, ethers.utils.parseEther("400"))
-        await membershipERC721.redeemFriend()
+        await membershipERC721.redeemFriend(signer.address, signer.address)
         const id = (await membershipERC721.friendTier()).start
         await expect(membershipERC721.transferFrom(
           signer.address, user.address, id)
