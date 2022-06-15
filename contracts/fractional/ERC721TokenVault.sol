@@ -4,14 +4,16 @@ pragma solidity ^0.8.0;
 import "./Settings.sol";
 import "./Interfaces/IWETH.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 contract TokenVault is
-    ERC20PausableUpgradeable,
+    ERC20Upgradeable,
     ERC721HolderUpgradeable,
-    AccessControlUpgradeable
+    AccessControlUpgradeable,
+    PausableUpgradeable
 {
     using Address for address;
 
@@ -133,7 +135,6 @@ contract TokenVault is
         // initialize inherited contracts
         __ERC20_init(_name, _symbol);
         __ERC721Holder_init();
-        __ERC20Pausable_init();
 
         // set storage variables
         token = _token;
