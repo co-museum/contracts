@@ -3,10 +3,10 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import {
   ERC20Mock,
-  TimedAllowanceCrowdsale,
+  AllowanceCrowdsale,
 } from "../typechain";
 
-describe("TimedAllowanceCrowdsale", () => {
+describe("AllowanceCrowdsale", () => {
   let mockERC20: ERC20Mock;
   let mockUSDC: ERC20Mock;
   let mockUSDT: ERC20Mock;
@@ -14,7 +14,7 @@ describe("TimedAllowanceCrowdsale", () => {
   let userOne: SignerWithAddress;
   let userTwo: SignerWithAddress;
   let wallet: SignerWithAddress;
-  let timedAllowanceCrowdsale: TimedAllowanceCrowdsale;
+  let allowanceCrowdsale: AllowanceCrowdsale;
   const totalSupplyOfERC20 = 4000000000000;
   const totalSupplyOfMockUSDC = 10000000000000;
   const totalSupplyOfMockUSDT = 10000000000000;
@@ -102,54 +102,46 @@ describe("TimedAllowanceCrowdsale", () => {
       "userTwo has 5000000000000 units of USDT"
     );
 
-    const blockNumBefore = await ethers.provider.getBlockNumber();
-    const blockBefore = await ethers.provider.getBlock(blockNumBefore);
-    const openingTime = (await blockBefore.timestamp) + 4 * 3600 * 1000;
-    const saleDuration = 4 * 3600 * 1000;
-    const closingTime = openingTime + saleDuration;
-
-    const TimedAllowanceCrowdsale = await ethers.getContractFactory(
-      "TimedAllowanceCrowdsale"
+    const AllowanceCrowdsale = await ethers.getContractFactory(
+      "AllowanceCrowdsale"
     );
-    timedAllowanceCrowdsale = await TimedAllowanceCrowdsale.deploy(
+    allowanceCrowdsale = await AllowanceCrowdsale.deploy(
       rate,
       wallet.address,
       mockERC20.address,
       mockUSDC.address,
       mockUSDT.address,
       wallet.address,
-      openingTime,
-      closingTime,
     );
-    await timedAllowanceCrowdsale.deployed();
+    await allowanceCrowdsale.deployed();
 
     await mockUSDC
       .connect(userOne)
-      .approve(timedAllowanceCrowdsale.address, totalSupplyOfMockUSDC / 2);
+      .approve(allowanceCrowdsale.address, totalSupplyOfMockUSDC / 2);
     await mockUSDC
       .connect(userTwo)
-      .approve(timedAllowanceCrowdsale.address, totalSupplyOfMockUSDC / 2);
+      .approve(allowanceCrowdsale.address, totalSupplyOfMockUSDC / 2);
     await mockUSDT
       .connect(userOne)
-      .approve(timedAllowanceCrowdsale.address, totalSupplyOfMockUSDT / 2);
+      .approve(allowanceCrowdsale.address, totalSupplyOfMockUSDT / 2);
     await mockUSDT
       .connect(userTwo)
-      .approve(timedAllowanceCrowdsale.address, totalSupplyOfMockUSDT / 2);
+      .approve(allowanceCrowdsale.address, totalSupplyOfMockUSDT / 2);
     await mockERC20
       .connect(wallet)
-      .approve(timedAllowanceCrowdsale.address, totalSupplyOfERC20);
+      .approve(allowanceCrowdsale.address, totalSupplyOfERC20);
   });
 
   describe("Crowdsale with Whitelist", () => {
     describe("Crowdsale where buyers are whitelisted", () => {
       describe("when one user buys BKLNs that is less than the total supply with USDC", () => {
         it("then the BKLN tokens should be reflected in the users wallet and stable coins removed from their wallet.", async () => {
-          await timedAllowanceCrowdsale.setCap(
+          await allowanceCrowdsale.setCap(
             userOne.address,
             totalSupplyOfERC20 / 4
           );
 
-          await timedAllowanceCrowdsale
+          await allowanceCrowdsale
             .connect(userOne)
             .buyTokens(
               userOne.address,
@@ -164,7 +156,7 @@ describe("TimedAllowanceCrowdsale", () => {
             totalSupplyOfMockUSDC / 2 - totalSupplyOfERC20 / 4,
             "userOne has ${totalSupplyOfMockUSDC / 2 - totalSupplyOfERC20 / 4}$ units of USDC left"
           );
-          expect(await timedAllowanceCrowdsale.remainingTokens()).to.be.equal(
+          expect(await allowanceCrowdsale.remainingTokens()).to.be.equal(
             totalSupplyOfERC20 - totalSupplyOfERC20 / 4,
             "there are ${totalSupplyOfERC20 - totalSupplyOfERC20 / 4}$ remaining tokens"
           );
@@ -176,23 +168,23 @@ describe("TimedAllowanceCrowdsale", () => {
 
         describe("when multiple users buy BKLNs that is less than the total supply using USDT and USDC", () => {
           it("when both users buy BKLNs", async () => {
-            await timedAllowanceCrowdsale.setCap(
+            await allowanceCrowdsale.setCap(
               userOne.address,
               totalSupplyOfERC20 / 4
             );
-            await timedAllowanceCrowdsale.setCap(
+            await allowanceCrowdsale.setCap(
               userTwo.address,
               totalSupplyOfERC20 / 4
             );
 
-            await timedAllowanceCrowdsale
+            await allowanceCrowdsale
               .connect(userOne)
               .buyTokens(
                 userOne.address,
                 totalSupplyOfERC20 / 4,
                 mockUSDC.address
               );
-            await timedAllowanceCrowdsale
+            await allowanceCrowdsale
               .connect(userTwo)
               .buyTokens(
                 userTwo.address,
@@ -218,7 +210,7 @@ describe("TimedAllowanceCrowdsale", () => {
               "userTwo has ${totalSupplyOfMockUSDT / 2 - totalSupplyOfERC20 / 4}$ units of USDC left"
             );
 
-            expect(await timedAllowanceCrowdsale.remainingTokens()).to.be.equal(
+            expect(await allowanceCrowdsale.remainingTokens()).to.be.equal(
               totalSupplyOfERC20 - totalSupplyOfERC20 / 2,
               "there are ${totalSupplyOfERC20 - totalSupplyOfERC20 / 2}$ remaining tokens"
             );
@@ -228,7 +220,7 @@ describe("TimedAllowanceCrowdsale", () => {
 
       describe("when multiple users try to buy BKLNs that is more than the total supply using USDT and USD", () => {
         it("only purchases BLKNs that are within the purchasing limits", async () => {
-          await timedAllowanceCrowdsale.setCap(
+          await allowanceCrowdsale.setCap(
             userOne.address,
             totalSupplyOfERC20 / 4
           );
@@ -236,7 +228,7 @@ describe("TimedAllowanceCrowdsale", () => {
             userOne.address
           );
           await expect(
-            timedAllowanceCrowdsale
+            allowanceCrowdsale
               .connect(userOne)
               .buyTokens(
                 userOne.address,
