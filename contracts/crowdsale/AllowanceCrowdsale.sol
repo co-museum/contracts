@@ -1,12 +1,12 @@
 //SPDX-License-Identifier: Unlicensed
 pragma solidity ^0.8.0;
 
-import "./Crowdsale.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "../membership/ERC721MembershipUpgradeable.sol";
 
 /**
@@ -15,56 +15,28 @@ import "../membership/ERC721MembershipUpgradeable.sol";
  */
 contract AllowanceCrowdsale is Ownable {
     using SafeERC20 for IERC20;
+    mapping(address => bool) private _claimed;
 
+    // ======== STRUCTS ========
     struct Whitelist {
         ERC721MembershipUpgradeable.TierCode tierCode;
         uint256 allocation; // in tokenAddress token
         bytes32 merkleRoot;
     }
 
+    // ======== STATE VARIABLES ========
     address private _tokenWallet;
     bool public isActive;
     Whitelist[] private whitelists;
-    mapping(address => bool) private _claimed;
-
-    /**
-     * @dev Reverts if not in crowdsale time range.
-     */
-    modifier onlyWhileOpen() {
-        require(isActive, "Crowdsale: not open");
-        _;
-    }
-
-    // NOTE: all stablecoins assumed to have same number of decimals as token
-    uint256 public stablecoinRate;
+    uint256 public stablecoinRate; // NOTE: all stablecoins assumed to have same number of decimals as token
     uint256 public ethRate;
-
-    function setRates(uint256 _stablecoinRate, uint256 _ethRate) external {
-        stablecoinRate = _stablecoinRate;
-        ethRate = _ethRate;
-    }
-
     address payable public treasuryWallet;
     address public tokenHoldingWallet;
     address[] public acceptedStablecoins;
     IERC20 public tokenContract;
     ERC721MembershipUpgradeable public membershipContract;
 
-    function getStablecoin(address stablecoinAddress)
-        internal
-        view
-        returns (IERC20)
-    {
-        bool hasTokenAddress = false;
-        for (uint256 i = 0; i < acceptedStablecoins.length; i++) {
-            if (stablecoinAddress == acceptedStablecoins[i]) {
-                hasTokenAddress = true;
-            }
-        }
-        require(hasTokenAddress, "Stablecoin not supported");
-        return IERC20(stablecoinAddress);
-    }
-
+      // ======== CONSTRUCTOR ========
     /**
      * @dev Constructor, takes token wallet address.
      * @param _tokenAddress Address of the token being sold
@@ -89,6 +61,19 @@ contract AllowanceCrowdsale is Ownable {
         tokenHoldingWallet = _tokenHoldingWallet;
         membershipContract = ERC721MembershipUpgradeable(_membershipContract);
         acceptedStablecoins = _acceptedStablecoins;
+    }
+
+    /**
+     * @dev Reverts if not in crowdsale time range.
+     */
+    modifier onlyWhileOpen() {
+        require(isActive, "Crowdsale: not open");
+        _;
+    }
+
+    function setRates(uint256 _stablecoinRate, uint256 _ethRate) external {
+        stablecoinRate = _stablecoinRate;
+        ethRate = _ethRate;
     }
 
     function startSale(
@@ -123,33 +108,91 @@ contract AllowanceCrowdsale is Ownable {
         }
     }
 
-    function _forwardFunds() internal {
-        treasuryWallet.transfer(msg.value);
-    }
-
     function buyTokens(
         uint256 quantity,
         address _stablecoinAddress,
         bool payWithEth,
-        uint8 whitelistIndex
+        uint8 whitelistIndex,
+        bytes32[] calldata proof
     ) external payable {
         Whitelist storage whitelist = whitelists[whitelistIndex];
         uint256 allocation = whitelist.allocation;
         (, , , uint256 price) = membershipContract.tiers(whitelist.tierCode);
-        _vaildatePurchase(allocation, quantity, price);
+        _vaildatePurchase(
+            allocation,
+            quantity,
+            price,
+            proof,
+            whitelist.merkleRoot
+        );
         _receivePayment(payWithEth, quantity, _stablecoinAddress);
         tokenContract.safeTransfer(msg.sender, quantity);
     }
 
+     function buyNFTs(
+        uint256 numNFTs,
+        address _stablecoinAddress,
+        bool payWithEth,
+        uint8 whitelistIndex,
+        bytes32[] calldata proof
+    ) external payable {
+        Whitelist storage whitelist = whitelists[whitelistIndex];
+        uint256 allocation = whitelist.allocation;
+        (, , , uint256 price) = membershipContract.tiers(whitelist.tierCode);
+        uint256 quantity = numNFTs * price;
+        _vaildatePurchase(
+            allocation,
+            quantity,
+            price,
+            proof,
+            whitelist.merkleRoot
+        );
+        _receivePayment(payWithEth, quantity, _stablecoinAddress);
+        membershipContract.redeem(
+            whitelist.tierCode,
+            tokenHoldingWallet,
+            msg.sender
+        );
+    }    
+
     function _vaildatePurchase(
         uint256 allocation,
         uint256 quantity,
-        uint256 price
-    ) internal pure {
+        uint256 price,
+        bytes32[] calldata proof,
+        bytes32 batchRoot
+    ) internal view {
         require(
             allocation % quantity == 0 && quantity % price == 0,
             "Must purchase tokens in discrete quantities based on allocation"
         );
+        require(
+            MerkleProof.verify(
+                proof,
+                batchRoot,
+                keccak256(abi.encodePacked(msg.sender))
+            ),
+            "Invalid proof"
+        );
+    }
+
+    function getStablecoin(address stablecoinAddress)
+        internal
+        view
+        returns (IERC20)
+    {
+        bool hasTokenAddress = false;
+        for (uint256 i = 0; i < acceptedStablecoins.length; i++) {
+            if (stablecoinAddress == acceptedStablecoins[i]) {
+                hasTokenAddress = true;
+            }
+        }
+        require(hasTokenAddress, "Stablecoin not supported");
+        return IERC20(stablecoinAddress);
+    }
+
+    function _forwardFunds() internal {
+        treasuryWallet.transfer(msg.value);
     }
 
     function _receivePayment(
@@ -170,24 +213,5 @@ contract AllowanceCrowdsale is Ownable {
             );
             _forwardFunds();
         }
-    }
-
-    function buyNFTs(
-        uint256 numNFTs,
-        address _stablecoinAddress,
-        bool payWithEth,
-        uint8 whitelistIndex
-    ) external payable {
-        Whitelist storage whitelist = whitelists[whitelistIndex];
-        uint256 allocation = whitelist.allocation;
-        (, , , uint256 price) = membershipContract.tiers(whitelist.tierCode);
-        uint256 quantity = numNFTs * price;
-        _vaildatePurchase(allocation, quantity, price);
-        _receivePayment(payWithEth, quantity, _stablecoinAddress);
-        membershipContract.redeem(
-            whitelist.tierCode,
-            tokenHoldingWallet,
-            msg.sender
-        );
     }
 }
