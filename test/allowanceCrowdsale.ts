@@ -1,35 +1,42 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { BigNumberish, utils, constants, BigNumber } from "ethers";
+import { MerkleTree } from "merkletreejs";
 import {
   ERC20Mock,
   AllowanceCrowdsale,
+  ERC721MembershipUpgradeable,
 } from "../typechain";
+import { MembershipERC721 } from "../typechain/MembershipERC721";
 
 describe("AllowanceCrowdsale", () => {
   let mockERC20: ERC20Mock;
   let mockUSDC: ERC20Mock;
   let mockUSDT: ERC20Mock;
+  let acceptedStablecoins: string[];
   let signer: SignerWithAddress;
-  let userOne: SignerWithAddress;
-  let userTwo: SignerWithAddress;
-  let wallet: SignerWithAddress;
+  let user1: SignerWithAddress;
+  let user2: SignerWithAddress;
+  let user3: SignerWithAddress;
+  let tokeHoldingWallet: SignerWithAddress;
+  let treasuryWallet: SignerWithAddress;
   let allowanceCrowdsale: AllowanceCrowdsale;
-  const totalSupplyOfERC20 = 4000000000000;
-  const totalSupplyOfMockUSDC = 10000000000000;
-  const totalSupplyOfMockUSDT = 10000000000000;
+  let membershipContract: ERC721MembershipUpgradeable;
+  const decimals = 6;
+  const ethUSDPrice = 1000;
+  const totalSupplyOfERC20 = utils.parseUnits("4000000", decimals);
+  const totalSupplyOfMockUSDC = utils.parseUnits("9000000", decimals);
+  const totalSupplyOfMockUSDT = utils.parseUnits("9000000", decimals);
+
+  function calculateEthRate(ethPrice: BigNumberish): BigNumber {
+    // assuming BKLN has 6 decimals and is worht 1 USD
+    return ethers.BigNumber.from(10).pow(12).div(ethUSDPrice)
+  }
 
   beforeEach(async () => {
-    /**
-     * @dev Initializing signers for our tests.
-     * @param signer The default signer for our contracts
-     * @param userOne Address of first paricipating user in Crowdsale
-     * @param userTwo Address of second paricipating user in Crowdsale
-     * @param wallet Address where collected USDC will be forwarded to and address that holds $BKLN tokens
-     * @param rate Number of token units a buyer gets per USDC
-     */
 
-    [signer, userOne, userTwo, wallet] = await ethers.getSigners();
+    [signer, user1, user2, user3, tokeHoldingWallet, treasuryWallet] = await ethers.getSigners();
     const rate = 1;
 
     /**
@@ -40,11 +47,11 @@ describe("AllowanceCrowdsale", () => {
     mockERC20 = await MockERC20.deploy(
       "Mock",
       "MCK",
-      wallet.address,
-      totalSupplyOfERC20.toString()
+      tokeHoldingWallet.address,
+      totalSupplyOfERC20.toString(),
+      6
     );
     await mockERC20.deployed();
-    mockERC20.approve(wallet.address, ethers.constants.MaxUint256);
 
     /**
      * @param mockUSDC Mock ERC20 token representing USDC
@@ -55,24 +62,13 @@ describe("AllowanceCrowdsale", () => {
       "Usdc",
       "USDC",
       signer.address,
-      totalSupplyOfMockUSDC.toString()
+      totalSupplyOfMockUSDC.toString(),
+      6
     );
     await mockUSDC.deployed();
-    mockUSDC.approve(userOne.address, totalSupplyOfMockUSDC);
-    await mockUSDC
-      .connect(userOne)
-      .transferFrom(signer.address, userTwo.address, totalSupplyOfMockUSDC / 2);
-    await mockUSDC
-      .connect(userOne)
-      .transferFrom(signer.address, userOne.address, totalSupplyOfMockUSDC / 2);
-    expect(await mockUSDC.balanceOf(userOne.address)).to.be.equal(
-      totalSupplyOfMockUSDC / 2,
-      "userOne has 5000000000000 units of USDC"
-    );
-    expect(await mockUSDC.balanceOf(userTwo.address)).to.be.equal(
-      totalSupplyOfMockUSDC / 2,
-      "userTwo has 5000000000000 units of USDC"
-    );
+    await mockUSDC.transfer(user1.address, totalSupplyOfMockUSDC.div(3))
+    await mockUSDC.transfer(user2.address, totalSupplyOfMockUSDC.div(3))
+    await mockUSDC.transfer(user3.address, totalSupplyOfMockUSDC.div(3))
 
     /**
      * @param mockUSDT Mock ERC20 token representing USDT
@@ -83,170 +79,74 @@ describe("AllowanceCrowdsale", () => {
       "Usdc",
       "USDC",
       signer.address,
-      totalSupplyOfMockUSDC.toString()
+      totalSupplyOfMockUSDC.toString(),
+      6
     );
     await mockUSDT.deployed();
-    mockUSDT.approve(userOne.address, totalSupplyOfMockUSDT);
-    await mockUSDT
-      .connect(userOne)
-      .transferFrom(signer.address, userTwo.address, totalSupplyOfMockUSDT / 2);
-    await mockUSDT
-      .connect(userOne)
-      .transferFrom(signer.address, userOne.address, totalSupplyOfMockUSDT / 2);
-    expect(await mockUSDT.balanceOf(userOne.address)).to.be.equal(
-      totalSupplyOfMockUSDT / 2,
-      "userOne has 5000000000000 units of USDT"
-    );
-    expect(await mockUSDT.balanceOf(userTwo.address)).to.be.equal(
-      totalSupplyOfMockUSDT / 2,
-      "userTwo has 5000000000000 units of USDT"
-    );
+    mockUSDT.approve(user1.address, totalSupplyOfMockUSDT);
+    await mockUSDT.transfer(user1.address, totalSupplyOfMockUSDT.div(3))
+    await mockUSDT.transfer(user2.address, totalSupplyOfMockUSDT.div(3))
+    await mockUSDT.transfer(user3.address, totalSupplyOfMockUSDT.div(3))
 
-    const AllowanceCrowdsale = await ethers.getContractFactory(
-      "AllowanceCrowdsale"
-    );
+    acceptedStablecoins = [mockUSDC.address, mockUSDT.address]
+
+    const MembershipContract = await ethers.getContractFactory("ERC721MembershipUpgradeable")
+    membershipContract = await MembershipContract.deploy()
+    await membershipContract.deployed()
+    await membershipContract.initialize("Membership", "MBR", mockERC20.address, 2, 4, 6)
+
+    const AllowanceCrowdsale = await ethers.getContractFactory("AllowanceCrowdsale");
     allowanceCrowdsale = await AllowanceCrowdsale.deploy(
-      rate,
-      wallet.address,
       mockERC20.address,
-      mockUSDC.address,
-      mockUSDT.address,
-      wallet.address,
+      treasuryWallet.address,
+      tokeHoldingWallet.address,
+      membershipContract.address,
+      acceptedStablecoins,
     );
     await allowanceCrowdsale.deployed();
+    mockERC20.connect(tokeHoldingWallet).approve(allowanceCrowdsale.address, ethers.constants.MaxUint256);
 
-    await mockUSDC
-      .connect(userOne)
-      .approve(allowanceCrowdsale.address, totalSupplyOfMockUSDC / 2);
-    await mockUSDC
-      .connect(userTwo)
-      .approve(allowanceCrowdsale.address, totalSupplyOfMockUSDC / 2);
-    await mockUSDT
-      .connect(userOne)
-      .approve(allowanceCrowdsale.address, totalSupplyOfMockUSDT / 2);
-    await mockUSDT
-      .connect(userTwo)
-      .approve(allowanceCrowdsale.address, totalSupplyOfMockUSDT / 2);
-    await mockERC20
-      .connect(wallet)
-      .approve(allowanceCrowdsale.address, totalSupplyOfERC20);
   });
 
-  describe("Crowdsale with Whitelist", () => {
-    describe("Crowdsale where buyers are whitelisted", () => {
-      describe("when one user buys BKLNs that is less than the total supply with USDC", () => {
-        it("then the BKLN tokens should be reflected in the users wallet and stable coins removed from their wallet.", async () => {
-          await allowanceCrowdsale.setCap(
-            userOne.address,
-            totalSupplyOfERC20 / 4
-          );
+  describe("whitelisted", () => {
+    let treeSingle: MerkleTree
+    let treeDouble: MerkleTree
 
-          await allowanceCrowdsale
-            .connect(userOne)
-            .buyTokens(
-              userOne.address,
-              totalSupplyOfERC20 / 4,
-              mockUSDC.address
-            );
-          expect(await mockERC20.balanceOf(userOne.address)).to.be.equal(
-            totalSupplyOfERC20 / 4,
-            "userOne has ${totalSupplyOfERC20 / 4}$ units of BKLNs"
-          );
-          expect(await mockUSDC.balanceOf(userOne.address)).to.be.equal(
-            totalSupplyOfMockUSDC / 2 - totalSupplyOfERC20 / 4,
-            "userOne has ${totalSupplyOfMockUSDC / 2 - totalSupplyOfERC20 / 4}$ units of USDC left"
-          );
-          expect(await allowanceCrowdsale.remainingTokens()).to.be.equal(
-            totalSupplyOfERC20 - totalSupplyOfERC20 / 4,
-            "there are ${totalSupplyOfERC20 - totalSupplyOfERC20 / 4}$ remaining tokens"
-          );
-          expect(await mockUSDC.balanceOf(wallet.address)).to.be.equal(
-            totalSupplyOfERC20 / 4,
-            "wallet has $totalSupplyOfERC20 / 4$ units of USDC left"
-          );
-        });
+    beforeEach(async () => {
+      // one NFT allocated
+      const leavesSingle = [user1.address].map(address => utils.keccak256(address))
+      treeSingle = new MerkleTree(leavesSingle, utils.keccak256, { sort: true })
+      const rootSingle = treeSingle.getHexRoot()
 
-        describe("when multiple users buy BKLNs that is less than the total supply using USDT and USDC", () => {
-          it("when both users buy BKLNs", async () => {
-            await allowanceCrowdsale.setCap(
-              userOne.address,
-              totalSupplyOfERC20 / 4
-            );
-            await allowanceCrowdsale.setCap(
-              userTwo.address,
-              totalSupplyOfERC20 / 4
-            );
+      // two NFTs allocated
+      const leavesDouble = [user2.address].map(address => utils.keccak256(address))
+      treeDouble = new MerkleTree(leavesDouble, utils.keccak256, { sort: true })
+      const rootDouble = treeDouble.getHexRoot()
+      await allowanceCrowdsale.setRates(1, calculateEthRate(ethUSDPrice))
+      await allowanceCrowdsale.startSale(
+        [2, 2], // friend, friend
+        [utils.parseUnits("400", decimals), utils.parseUnits("800", decimals)], // BKLN tokens
+        [rootSingle, rootDouble] // merkle roots
+      )
+    })
 
-            await allowanceCrowdsale
-              .connect(userOne)
-              .buyTokens(
-                userOne.address,
-                totalSupplyOfERC20 / 4,
-                mockUSDC.address
-              );
-            await allowanceCrowdsale
-              .connect(userTwo)
-              .buyTokens(
-                userTwo.address,
-                totalSupplyOfERC20 / 4,
-                mockUSDT.address
-              );
-            expect(await mockERC20.balanceOf(userOne.address)).to.be.equal(
-              totalSupplyOfERC20 / 4,
-              "userOne has 1000000000000 units of BKLNs"
-            );
+    describe("BKLN supply", () => {
+      it("sells BKLN tokens when there is sufficient supply", async () => {
+        await allowanceCrowdsale.connect(user1).buyTokens(
+          utils.parseUnits("400", decimals), 0, treeSingle.getHexProof(user1.address), true, constants.AddressZero,
+          { value: calculateEthRate(ethUSDPrice).mul(utils.parseUnits("400", decimals)) }
+        )
+      })
+      it("fails to sell BKLN tokens when there is insufficient supply", async () => {
+        expect(true).to.be.true
+      })
+    })
+    describe("accepting payment with different currencies", () => { })
+  })
 
-            expect(await mockERC20.balanceOf(userTwo.address)).to.be.equal(
-              totalSupplyOfERC20 / 4,
-              "userTwo has ${totalSupplyOfERC20 / 4}$ units of BKLNs"
-            );
-
-            expect(await mockUSDC.balanceOf(userOne.address)).to.be.equal(
-              totalSupplyOfMockUSDC / 2 - totalSupplyOfERC20 / 4,
-              "userOne has ${totalSupplyOfMockUSDC / 2 - totalSupplyOfERC20 / 4}$ units of USDC left"
-            );
-            expect(await mockUSDT.balanceOf(userTwo.address)).to.be.equal(
-              totalSupplyOfMockUSDT / 2 - totalSupplyOfERC20 / 4,
-              "userTwo has ${totalSupplyOfMockUSDT / 2 - totalSupplyOfERC20 / 4}$ units of USDC left"
-            );
-
-            expect(await allowanceCrowdsale.remainingTokens()).to.be.equal(
-              totalSupplyOfERC20 - totalSupplyOfERC20 / 2,
-              "there are ${totalSupplyOfERC20 - totalSupplyOfERC20 / 2}$ remaining tokens"
-            );
-          });
-        });
-      });
-
-      describe("when multiple users try to buy BKLNs that is more than the total supply using USDT and USD", () => {
-        it("only purchases BLKNs that are within the purchasing limits", async () => {
-          await allowanceCrowdsale.setCap(
-            userOne.address,
-            totalSupplyOfERC20 / 4
-          );
-          const usdcBalanceOfUserOne = await mockUSDC.balanceOf(
-            userOne.address
-          );
-          await expect(
-            allowanceCrowdsale
-              .connect(userOne)
-              .buyTokens(
-                userOne.address,
-                totalSupplyOfERC20 * 2,
-                mockUSDC.address
-              )
-          ).to.be.revertedWith("beneficiary's cap exceeded");
-
-          expect(await mockERC20.balanceOf(userOne.address)).to.be.equal(
-            0,
-            "userOne has 0 units of BKLNs"
-          );
-          expect(await mockUSDC.balanceOf(userOne.address)).to.be.equal(
-            usdcBalanceOfUserOne,
-            "userOne has ${usdcBalanceOfUserOne}$ units of USDC left"
-          );
-        });
-      });
-    });
-  });
+  describe("not whitelisted", () => {
+    describe("BKLN supply", () => {
+    })
+    describe("payment with different currencies", () => { })
+  })
 });

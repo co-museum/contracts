@@ -8,9 +8,14 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
-contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausableUpgradeable {
+contract TokenVault is
+    ERC20Upgradeable,
+    ERC721HolderUpgradeable,
+    PartiallyPausableUpgradeable
+{
     using Address for address;
 
+    uint8 constant _decimals = 6;
     /// -----------------------------------
     /// -------- BASIC INFORMATION --------
     /// -----------------------------------
@@ -144,6 +149,10 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     /// --------------------------------
     /// -------- VIEW FUNCTIONS --------
     /// --------------------------------
+
+    function decimals() public pure override returns (uint8) {
+        return _decimals;
+    }
 
     function reservePrice() public view returns (uint256) {
         return votingTokens == 0 ? 0 : reserveTotal / votingTokens;

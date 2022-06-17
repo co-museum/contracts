@@ -4,19 +4,15 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import "../lib/PartiallyPausableUpgradeable.sol";
-
-interface IERC20Decimal is IERC20 {
-    function decimals() external view returns (uint8);
-}
 
 contract ERC721MembershipUpgradeable is
     ERC721BurnableUpgradeable,
     PartiallyPausableUpgradeable,
     OwnableUpgradeable
 {
-    IERC20Decimal public erc20;
+    IERC20Metadata public erc20;
     string private _membershipBaseURI;
 
     struct Tier {
@@ -66,7 +62,7 @@ contract ERC721MembershipUpgradeable is
         __Ownable_init_unchained();
         __PartiallyPausableUpgradeable_init(owner());
 
-        erc20 = IERC20Decimal(erc20_);
+        erc20 = IERC20Metadata(erc20_);
 
         genesisTier = Tier({
             currId: 0,

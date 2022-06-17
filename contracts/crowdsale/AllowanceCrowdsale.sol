@@ -36,7 +36,7 @@ contract AllowanceCrowdsale is Ownable {
     IERC20 public tokenContract;
     ERC721MembershipUpgradeable public membershipContract;
 
-      // ======== CONSTRUCTOR ========
+    // ======== CONSTRUCTOR ========
     /**
      * @dev Constructor, takes token wallet address.
      * @param _tokenAddress Address of the token being sold
@@ -56,6 +56,7 @@ contract AllowanceCrowdsale is Ownable {
             _tokenHoldingWallet != address(0),
             "Token wallet is the zero address"
         );
+        isActive = false;
         tokenContract = IERC20(_tokenAddress);
         treasuryWallet = _treasuryWallet;
         tokenHoldingWallet = _tokenHoldingWallet;
@@ -78,7 +79,7 @@ contract AllowanceCrowdsale is Ownable {
 
     function startSale(
         ERC721MembershipUpgradeable.TierCode[] calldata tierCodes,
-        uint8[] calldata allocations,
+        uint256[] calldata allocations,
         bytes32[] calldata merkleRoots
     ) external onlyOwner {
         require(
@@ -92,16 +93,21 @@ contract AllowanceCrowdsale is Ownable {
             "Whitelists arrays.length should be > 0"
         );
 
-        for (uint8 i = 0; i < tierCodes.length; i++) {
-            whitelists[i] = Whitelist({
-                tierCode: tierCodes[i],
-                allocation: allocations[i],
-                merkleRoot: merkleRoots[i]
-            });
+        isActive = true;
+
+        for (uint256 i = 0; i < tierCodes.length; i++) {
+            whitelists.push(
+                Whitelist({
+                    tierCode: tierCodes[i],
+                    allocation: allocations[i],
+                    merkleRoot: merkleRoots[i]
+                })
+            );
         }
     }
 
     function stopSale() external onlyOwner {
+        isActive = false;
         // TODO: test when whitelist is uninitialised
         for (uint8 i = 0; i < whitelists.length; i++) {
             delete whitelists[i];
@@ -110,15 +116,15 @@ contract AllowanceCrowdsale is Ownable {
 
     function buyTokens(
         uint256 quantity,
-        address _stablecoinAddress,
-        bool payWithEth,
         uint8 whitelistIndex,
-        bytes32[] calldata proof
+        bytes32[] calldata proof,
+        bool payWithEth,
+        address _stablecoinAddress
     ) external payable {
         Whitelist storage whitelist = whitelists[whitelistIndex];
         uint256 allocation = whitelist.allocation;
         (, , , uint256 price) = membershipContract.tiers(whitelist.tierCode);
-        _vaildatePurchase(
+        _validatePurchase(
             allocation,
             quantity,
             price,
@@ -126,21 +132,25 @@ contract AllowanceCrowdsale is Ownable {
             whitelist.merkleRoot
         );
         _receivePayment(payWithEth, quantity, _stablecoinAddress);
-        tokenContract.safeTransfer(msg.sender, quantity);
+        tokenContract.safeTransferFrom(
+            tokenHoldingWallet,
+            msg.sender,
+            quantity
+        );
     }
 
-     function buyNFTs(
+    function buyNFTs(
         uint256 numNFTs,
-        address _stablecoinAddress,
-        bool payWithEth,
         uint8 whitelistIndex,
-        bytes32[] calldata proof
+        bytes32[] calldata proof,
+        bool payWithEth,
+        address _stablecoinAddress
     ) external payable {
         Whitelist storage whitelist = whitelists[whitelistIndex];
         uint256 allocation = whitelist.allocation;
         (, , , uint256 price) = membershipContract.tiers(whitelist.tierCode);
         uint256 quantity = numNFTs * price;
-        _vaildatePurchase(
+        _validatePurchase(
             allocation,
             quantity,
             price,
@@ -153,9 +163,9 @@ contract AllowanceCrowdsale is Ownable {
             tokenHoldingWallet,
             msg.sender
         );
-    }    
+    }
 
-    function _vaildatePurchase(
+    function _validatePurchase(
         uint256 allocation,
         uint256 quantity,
         uint256 price,

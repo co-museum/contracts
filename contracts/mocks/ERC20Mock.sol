@@ -6,13 +6,21 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 // mock class using ERC20
 contract ERC20Mock is ERC20 {
+    uint8 private _decimals;
+
     constructor(
         string memory name,
         string memory symbol,
         address initialAccount,
-        uint256 initialBalance
+        uint256 initialBalance,
+        uint8 decimals_
     ) payable ERC20(name, symbol) {
+        _decimals = decimals_;
         _mint(initialAccount, initialBalance);
+    }
+
+    function decimals() public view override returns (uint8) {
+        return _decimals;
     }
 
     function mint(address account, uint256 amount) public {
