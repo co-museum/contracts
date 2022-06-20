@@ -8,7 +8,6 @@ import {
   AllowanceCrowdsale,
   ERC721MembershipUpgradeable,
 } from "../typechain";
-import { MembershipERC721 } from "../typechain/MembershipERC721";
 
 describe("AllowanceCrowdsale", () => {
   let mockERC20: ERC20Mock;

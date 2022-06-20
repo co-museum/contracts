@@ -158,10 +158,10 @@ contract ERC721MembershipUpgradeable is
         _safeMint(nftTo, id);
 
         require(
-            erc20.balanceOf(erc20From) >= genesisTier.price,
+            erc20.balanceOf(erc20From) >= tier.price,
             "insufficient balance"
         );
-        erc20.transferFrom(erc20From, address(this), genesisTier.price);
+        erc20.transferFrom(erc20From, address(this), tier.price);
     }
 
     function _beforeTokenTransfer(
