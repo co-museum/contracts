@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721Burnab
 import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import "../lib/PartiallyPausableUpgradeable.sol";
 import "hardhat/console.sol";
+import "../fractional/ERC721TokenVault.sol";
 
 contract ERC721MembershipUpgradeable is
     ERC721BurnableUpgradeable,
@@ -15,6 +16,7 @@ contract ERC721MembershipUpgradeable is
 {
     IERC20Metadata public erc20;
     string private _membershipBaseURI;
+    TokenVault private vault;
 
     struct Tier {
         uint16 currId;
@@ -82,15 +84,17 @@ contract ERC721MembershipUpgradeable is
         string memory name_,
         string memory symbol_,
         address erc20_,
+        address vault_,
         uint16 genesisEnd,
         uint16 foundationEnd,
         uint16 friendEnd
     ) external initializer {
         __ERC721_init(name_, symbol_);
-        __Ownable_init_unchained();
+        __Ownable_init();
         __PartiallyPausableUpgradeable_init(owner());
 
         erc20 = IERC20Metadata(erc20_);
+        vault = TokenVault(vault_);
 
         genesisTier = Tier({
             currId: 0,
