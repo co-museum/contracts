@@ -39,7 +39,30 @@ contract ERC721MembershipUpgradeable is
     Tier public friendTier;
     Tier public foundationTier;
     Tier public genesisTier;
-    mapping(TierCode => Tier) public tiers;
+
+    function getTierPrice(TierCode tierCode) public view returns (uint256) {
+        Tier storage tier = _getTierByCode(tierCode);
+        return tier.price;
+    }
+
+    // NOTE: for some reason mappings don't work for this use case
+    function _getTierByCode(TierCode tierCode)
+        internal
+        view
+        returns (Tier storage)
+    {
+        if (tierCode == TierCode.GENESIS) {
+            return genesisTier;
+        }
+        if (tierCode == TierCode.FOUNDATION) {
+            return foundationTier;
+        }
+        if (tierCode == TierCode.FRIEND) {
+            return friendTier;
+        }
+
+        revert("tier code out of range");
+    }
 
     function _getTier(uint16 id) internal view returns (Tier storage) {
         if (id < genesisTier.end) {
@@ -92,23 +115,17 @@ contract ERC721MembershipUpgradeable is
             price: 400 * 10**erc20.decimals(),
             releasedIds: genesisIdStack
         });
-
-        tiers[TierCode.GENESIS] = genesisTier;
-        tiers[TierCode.FOUNDATION] = foundationTier;
-        tiers[TierCode.FRIEND] = friendTier;
     }
 
     // TODO: Implement releaseFor
     function release(uint16 id) external {
-        console.log("Before Relase");
+        require(
+            msg.sender == ownerOf(id),
+            "can only release your own membership"
+        );
         Tier storage tier = _getTier(id);
-        console.log(tier.price);
-        // tier.price = 5;
         erc20.transfer(msg.sender, tier.price);
         tier.releasedIds.push(id);
-        console.log("After Release");
-        console.log(tier.price);
-
         emit Release(msg.sender, id);
         burn(id);
     }
@@ -127,33 +144,24 @@ contract ERC721MembershipUpgradeable is
         address nftTo
     ) public {
         uint16 id;
-        console.log("Before Redeem");
-        console.log(tiers[tierCode].price);
+        Tier storage tier = _getTierByCode(tierCode);
 
-        if (tiers[tierCode].releasedIds.length > 0) {
-            id = tiers[tierCode].releasedIds[
-                tiers[tierCode].releasedIds.length - 1
-            ];
-            tiers[tierCode].releasedIds.pop();
+        if (tier.releasedIds.length > 0) {
+            id = tier.releasedIds[tier.releasedIds.length - 1];
+            tier.releasedIds.pop();
         } else {
-            require(
-                tiers[tierCode].currId < tiers[tierCode].end,
-                "cannot mint more tokens at tier"
-            );
-            id = tiers[tierCode].currId;
-            tiers[tierCode].currId++;
+            require(tier.currId < tier.end, "cannot mint more tokens at tier");
+            id = tier.currId;
+            tier.currId++;
         }
         emit Redeem(nftTo, id);
         _safeMint(nftTo, id);
 
         require(
-            erc20.balanceOf(erc20From) >= tiers[tierCode].price,
+            erc20.balanceOf(erc20From) >= genesisTier.price,
             "insufficient balance"
         );
-        erc20.transferFrom(erc20From, address(this), tiers[tierCode].price);
-
-        console.log("After Redeem");
-        console.log(tiers[tierCode].price);
+        erc20.transferFrom(erc20From, address(this), genesisTier.price);
     }
 
     function _beforeTokenTransfer(

@@ -123,7 +123,7 @@ contract AllowanceCrowdsale is Ownable {
     ) external payable {
         Whitelist storage whitelist = whitelists[whitelistIndex];
         uint256 allocation = whitelist.allocation;
-        (, , , uint256 price) = membershipContract.tiers(whitelist.tierCode);
+        uint256 price = membershipContract.getTierPrice(whitelist.tierCode);
         _validatePurchase(
             allocation,
             quantity,
@@ -148,7 +148,7 @@ contract AllowanceCrowdsale is Ownable {
     ) external payable {
         Whitelist storage whitelist = whitelists[whitelistIndex];
         uint256 allocation = whitelist.allocation;
-        (, , , uint256 price) = membershipContract.tiers(whitelist.tierCode);
+        uint256 price = membershipContract.getTierPrice(whitelist.tierCode);
         uint256 quantity = numNFTs * price;
         _validatePurchase(
             allocation,

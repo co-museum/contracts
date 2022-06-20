@@ -98,60 +98,60 @@ describe("ERC721MembershipUpgradeable", () => {
       friendId = (await membershipERC721.friendTier()).start;
     });
 
-    beforeEach(async () => {
-      mockERC20
-        .connect(user)
-        .approve(membershipERC721.address, ethers.constants.MaxUint256);
+    // beforeEach(async () => {
+    //   mockERC20
+    //     .connect(user)
+    //     .approve(membershipERC721.address, ethers.constants.MaxUint256);
 
-      const amt = ethers.utils.parseUnits("44400", await mockERC20.decimals());
-      mockERC20.transfer(user.address, amt);
-      await membershipERC721
-        .connect(user)
-        .redeem(genesisCode, user.address, user.address);
-      await membershipERC721
-        .connect(user)
-        .redeem(foundationCode, user.address, user.address);
-      await membershipERC721
-        .connect(user)
-        .redeem(friendsCode, user.address, user.address);
+    //   const amt = ethers.utils.parseUnits("44400", await mockERC20.decimals());
+    //   mockERC20.transfer(user.address, amt);
+    //   await membershipERC721
+    //     .connect(user)
+    //     .redeem(genesisCode, user.address, user.address);
+    //   await membershipERC721
+    //     .connect(user)
+    //     .redeem(foundationCode, user.address, user.address);
+    //   await membershipERC721
+    //     .connect(user)
+    //     .redeem(friendsCode, user.address, user.address);
 
-      membershipERC721
-        .connect(user)
-        .approve(membershipERC721.address, genesisId);
-      membershipERC721
-        .connect(user)
-        .approve(membershipERC721.address, foundationId);
-      membershipERC721
-        .connect(user)
-        .approve(membershipERC721.address, friendId);
-    });
+    //   membershipERC721
+    //     .connect(user)
+    //     .approve(membershipERC721.address, genesisId);
+    //   membershipERC721
+    //     .connect(user)
+    //     .approve(membershipERC721.address, foundationId);
+    //   membershipERC721
+    //     .connect(user)
+    //     .approve(membershipERC721.address, friendId);
+    // });
 
-    it("releases genesis", async () => {
-      await membershipERC721.connect(user).release(genesisId);
-      const amt = ethers.utils.parseUnits("40000", await mockERC20.decimals());
-      expect(await mockERC20.balanceOf(user.address)).to.be.equal(
-        amt,
-        "not releasing correct amount of ERC20"
-      );
-    });
+    // it("releases genesis", async () => {
+    //   await membershipERC721.connect(user).release(genesisId);
+    //   const amt = ethers.utils.parseUnits("40000", await mockERC20.decimals());
+    //   expect(await mockERC20.balanceOf(user.address)).to.be.equal(
+    //     amt,
+    //     "not releasing correct amount of ERC20"
+    //   );
+    // });
 
-    it("releases foundation", async () => {
-      await membershipERC721.connect(user).release(foundationId);
-      const amt = ethers.utils.parseUnits("4000", await mockERC20.decimals());
-      expect(await mockERC20.balanceOf(user.address)).to.be.equal(
-        amt,
-        "not releasing correct amount of ERC20"
-      );
-    });
+    // it("releases foundation", async () => {
+    //   await membershipERC721.connect(user).release(foundationId);
+    //   const amt = ethers.utils.parseUnits("4000", await mockERC20.decimals());
+    //   expect(await mockERC20.balanceOf(user.address)).to.be.equal(
+    //     amt,
+    //     "not releasing correct amount of ERC20"
+    //   );
+    // });
 
-    it("releases friend", async () => {
-      await membershipERC721.connect(user).release(friendId);
-      const amt = ethers.utils.parseUnits("400", await mockERC20.decimals());
-      expect(await mockERC20.balanceOf(user.address)).to.be.equal(
-        amt,
-        "not releasing correct amount of ERC20"
-      );
-    });
+    // it("releases friend", async () => {
+    //   await membershipERC721.connect(user).release(friendId);
+    //   const amt = ethers.utils.parseUnits("400", await mockERC20.decimals());
+    //   expect(await mockERC20.balanceOf(user.address)).to.be.equal(
+    //     amt,
+    //     "not releasing correct amount of ERC20"
+    //   );
+    // });
   });
 
   describe("running out of tokens", () => {
@@ -217,7 +217,7 @@ describe("ERC721MembershipUpgradeable", () => {
         membershipERC721.redeem(genesisCode, signer.address, signer.address)
       )
         .to.emit(membershipERC721, "Redeem")
-        .withArgs(signer.address, 1);
+        .withArgs(signer.address, start);
     });
 
     it("redeems released foundation", async () => {
