@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import "../lib/PartiallyPausableUpgradeable.sol";
 import "hardhat/console.sol";
 import "../fractional/ERC721TokenVault.sol";
+import "../fractional/InitializedProxy.sol";
+import "./VoteDelegator.sol";
 
 contract ERC721MembershipUpgradeable is
     ERC721BurnableUpgradeable,
@@ -29,9 +31,13 @@ contract ERC721MembershipUpgradeable is
     event Redeem(address indexed owner, uint16 indexed id);
     event Release(address indexed owner, uint16 indexed id);
 
+    address private voteDelegatorLogic;
+
     uint16[] private friendIdStack;
     uint16[] private foundationIdStack;
     uint16[] private genesisIdStack;
+
+    mapping(uint16 => address) voteDelegators;
 
     enum TierCode {
         GENESIS,
@@ -87,7 +93,8 @@ contract ERC721MembershipUpgradeable is
         address vault_,
         uint16 genesisEnd,
         uint16 foundationEnd,
-        uint16 friendEnd
+        uint16 friendEnd,
+        address voteDelegatorLogic_
     ) external initializer {
         __ERC721_init(name_, symbol_);
         __Ownable_init();
@@ -95,6 +102,7 @@ contract ERC721MembershipUpgradeable is
 
         erc20 = IERC20Metadata(erc20_);
         vault = TokenVault(vault_);
+        voteDelegatorLogic = voteDelegatorLogic_;
 
         genesisTier = Tier({
             currId: 0,
@@ -185,5 +193,34 @@ contract ERC721MembershipUpgradeable is
         return
             AccessControlUpgradeable.supportsInterface(interfaceId) ||
             ERC721Upgradeable.supportsInterface(interfaceId);
+    }
+
+    function _getVoteDelegator(uint16 nftID) internal returns (address) {
+        if (voteDelegators[nftID] == address(0)) {
+            bytes memory _initializationCalldata = abi.encodeWithSignature(
+                "initialize(address,address",
+                erc20,
+                vault
+            );
+
+            address voteDelegator = address(
+                new InitializedProxy(
+                    voteDelegatorLogic,
+                    _initializationCalldata
+                )
+            );
+
+            voteDelegators[nftID] = voteDelegator;
+        }
+        return voteDelegators[nftID];
+    }
+
+    function updateUserPrice(uint16 nftID, uint256 newPrice) external {
+        require(
+            ownerOf(nftID) == msg.sender,
+            "can only delegate votes for sender's membership NFTs"
+        );
+        VoteDelegator voteDelegator = VoteDelegator(_getVoteDelegator(nftID));
+        voteDelegator.updateUserPrice(newPrice);
     }
 }
