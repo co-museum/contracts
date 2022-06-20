@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import "../lib/PartiallyPausableUpgradeable.sol";
+import "hardhat/console.sol";
 
 contract ERC721MembershipUpgradeable is
     ERC721BurnableUpgradeable,
@@ -30,7 +31,11 @@ contract ERC721MembershipUpgradeable is
     uint16[] private foundationIdStack;
     uint16[] private genesisIdStack;
 
-    enum TierCode { GENESIS, FOUNDATION, FRIEND }
+    enum TierCode {
+        GENESIS,
+        FOUNDATION,
+        FRIEND
+    }
     Tier public friendTier;
     Tier public foundationTier;
     Tier public genesisTier;
@@ -95,9 +100,15 @@ contract ERC721MembershipUpgradeable is
 
     // TODO: Implement releaseFor
     function release(uint16 id) external {
+        console.log("Before Relase");
         Tier storage tier = _getTier(id);
+        console.log(tier.price);
+        // tier.price = 5;
         erc20.transfer(msg.sender, tier.price);
         tier.releasedIds.push(id);
+        console.log("After Release");
+        console.log(tier.price);
+
         emit Release(msg.sender, id);
         burn(id);
     }
@@ -116,11 +127,19 @@ contract ERC721MembershipUpgradeable is
         address nftTo
     ) public {
         uint16 id;
+        console.log("Before Redeem");
+        console.log(tiers[tierCode].price);
+
         if (tiers[tierCode].releasedIds.length > 0) {
-            id = tiers[tierCode].releasedIds[tiers[tierCode].releasedIds.length - 1];
+            id = tiers[tierCode].releasedIds[
+                tiers[tierCode].releasedIds.length - 1
+            ];
             tiers[tierCode].releasedIds.pop();
         } else {
-            require(tiers[tierCode].currId < tiers[tierCode].end, "cannot mint more tokens at tier");
+            require(
+                tiers[tierCode].currId < tiers[tierCode].end,
+                "cannot mint more tokens at tier"
+            );
             id = tiers[tierCode].currId;
             tiers[tierCode].currId++;
         }
@@ -132,6 +151,9 @@ contract ERC721MembershipUpgradeable is
             "insufficient balance"
         );
         erc20.transferFrom(erc20From, address(this), tiers[tierCode].price);
+
+        console.log("After Redeem");
+        console.log(tiers[tierCode].price);
     }
 
     function _beforeTokenTransfer(
