@@ -51,6 +51,8 @@ describe("ERC721MembershipUpgradeable", () => {
 
     const VoteDelegator = await ethers.getContractFactory("VoteDelegator")
     voteDelegator = await VoteDelegator.deploy()
+    await voteDelegator.deployed()
+    await voteDelegator.initialize(tokenVault.address)
 
     const MembershipERC721 = await ethers.getContractFactory(
       "ERC721MembershipUpgradeable"

@@ -7,10 +7,11 @@ import {
   ERC20Mock,
   AllowanceCrowdsale,
   ERC721MembershipUpgradeable,
+  TokenVault,
 } from "../typechain";
 
 describe("AllowanceCrowdsale", () => {
-  let mockERC20: ERC20Mock;
+  let tokenVault: TokenVault;
   let mockUSDC: ERC20Mock;
   let mockUSDT: ERC20Mock;
   let acceptedStablecoins: string[];
@@ -24,10 +25,11 @@ describe("AllowanceCrowdsale", () => {
   let membershipContract: ERC721MembershipUpgradeable;
   const decimals = 6;
   const ethUSDPrice = 1000;
-  const totalSupplyOfERC20 = utils.parseUnits("4000000", decimals);
   const totalSupplyOfMockUSDC = utils.parseUnits("9000000", decimals);
   const totalSupplyOfMockUSDT = utils.parseUnits("9000000", decimals);
   const rate = 1;
+  const initialPrice = ethers.utils.parseEther("4000")
+  const tokenSupply = ethers.utils.parseUnits("4000000", decimals)
 
   function calculateEthRate(ethPrice: BigNumberish): BigNumber {
     // assuming BKLN has 6 decimals and is worht 1 USD
@@ -42,16 +44,6 @@ describe("AllowanceCrowdsale", () => {
      * @param mockERC20 Mock ERC20 token representing tokens associated with our art work
      * @param totalSupplyOfERC20 total supply of our mockERC20
      */
-    const MockERC20 = await ethers.getContractFactory("ERC20Mock");
-    mockERC20 = await MockERC20.deploy(
-      "Mock",
-      "MCK",
-      tokeHoldingWallet.address,
-      totalSupplyOfERC20.toString(),
-      6
-    );
-    await mockERC20.deployed();
-
     /**
      * @param mockUSDC Mock ERC20 token representing USDC
      * @param totalSupplyOfERC20 total supply of our mockERC20
@@ -74,7 +66,7 @@ describe("AllowanceCrowdsale", () => {
      * @param totalSupplyOfMockUSDT total supply of our mockERC20
      */
     const MockUSDT = await ethers.getContractFactory("ERC20Mock");
-    mockUSDT = await MockUSDC.deploy(
+    mockUSDT = await MockUSDT.deploy(
       "Usdc",
       "USDC",
       signer.address,
@@ -89,6 +81,43 @@ describe("AllowanceCrowdsale", () => {
 
     acceptedStablecoins = [mockUSDC.address, mockUSDT.address];
 
+    const Settings = await ethers.getContractFactory("Settings");
+    const settings = await Settings.deploy();
+    await settings.deployed();
+
+    const VaultFactory = await ethers.getContractFactory("ERC721VaultFactory");
+    const vaultFactory = await VaultFactory.deploy(settings.address);
+    await vaultFactory.deployed();
+
+    const DummyNFT = await ethers.getContractFactory("ERC721Mock");
+    const dummyNFT = await DummyNFT.deploy("Dummy", "DMY");
+    await dummyNFT.deployed();
+
+    await dummyNFT.mint(signer.address, 0)
+    await dummyNFT.approve(vaultFactory.address, 0)
+    const tx = await vaultFactory.mint(
+      "Dummy Frac", // name
+      "DMYF", // symbol
+      dummyNFT.address, // token
+      0, // tokenID
+      tokenSupply, // supply
+      // TODO: tweak once USDC price is implemented
+      initialPrice, // list price 
+      0, // fee
+    )
+
+    const receipt = await tx.wait()
+    const [mintEvent] = receipt.events!.filter((event, i, arr) => event.event == "Mint")
+    const vaultAddress = mintEvent.args!['vault']
+    tokenVault = await ethers.getContractAt("TokenVault", vaultAddress)
+    await tokenVault.transfer(tokeHoldingWallet.address, await tokenVault.balanceOf(signer.address))
+
+    const VoteDelegator = await ethers.getContractFactory("VoteDelegator")
+    const voteDelegator = await VoteDelegator.deploy()
+    await voteDelegator.deployed()
+    await voteDelegator.initialize(tokenVault.address)
+
+
     const MembershipContract = await ethers.getContractFactory(
       "ERC721MembershipUpgradeable"
     );
@@ -97,7 +126,8 @@ describe("AllowanceCrowdsale", () => {
     await membershipContract.initialize(
       "Membership",
       "MBR",
-      mockERC20.address,
+      tokenVault.address,
+      voteDelegator.address,
       2,
       4,
       6
@@ -107,14 +137,14 @@ describe("AllowanceCrowdsale", () => {
       "AllowanceCrowdsale"
     );
     allowanceCrowdsale = await AllowanceCrowdsale.deploy(
-      mockERC20.address,
+      tokenVault.address,
       treasuryWallet.address,
       tokeHoldingWallet.address,
       membershipContract.address,
       acceptedStablecoins
     );
     await allowanceCrowdsale.deployed();
-    mockERC20
+    tokenVault
       .connect(tokeHoldingWallet)
       .approve(allowanceCrowdsale.address, ethers.constants.MaxUint256);
 
@@ -168,7 +198,7 @@ describe("AllowanceCrowdsale", () => {
       const leavesExceedingSupply = [user3.address].map((address) =>
         utils.keccak256(address)
       );
-      treeExceedingSupply = new MerkleTree(leavesSingle, utils.keccak256, {
+      treeExceedingSupply = new MerkleTree(leavesExceedingSupply, utils.keccak256, {
         sort: true,
       });
       const rootExceedingSupply = treeSingle.getHexRoot();
@@ -179,7 +209,7 @@ describe("AllowanceCrowdsale", () => {
         [
           utils.parseUnits("400", decimals),
           utils.parseUnits("800", decimals),
-          totalSupplyOfERC20.add(utils.parseUnits("400", decimals)),
+          tokenSupply.add(utils.parseUnits("400", decimals)),
         ], // BKLN tokens
         [rootSingle, rootDouble, rootExceedingSupply] // merkle roots
       );
@@ -187,6 +217,8 @@ describe("AllowanceCrowdsale", () => {
 
     describe("BKLN supply", () => {
       it("sells BKLN tokens when there is sufficient supply", async () => {
+
+
         await allowanceCrowdsale
           .connect(user1)
           .buyTokens(
@@ -202,25 +234,27 @@ describe("AllowanceCrowdsale", () => {
             }
           );
       });
+
       it("fails to sell BKLN tokens when there is insufficient supply", async () => {
         await expect(
           allowanceCrowdsale
             .connect(user1)
             .buyTokens(
-              totalSupplyOfERC20.add(utils.parseUnits("400", decimals)),
+              tokenSupply.add(utils.parseUnits("400", decimals)),
               2,
               treeExceedingSupply.getHexProof(user3.address),
               true,
               constants.AddressZero,
               {
                 value: calculateEthRate(ethUSDPrice).mul(
-                  totalSupplyOfERC20.add(utils.parseUnits("400", decimals))
+                  tokenSupply.add(utils.parseUnits("400", decimals))
                 ),
               }
             )
         ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
       });
     });
+
     describe("accepting payment with different currencies", () => {
       it("accepts payments in USDC", async () => {
         const quantity = utils.parseUnits("400", decimals);
@@ -233,7 +267,7 @@ describe("AllowanceCrowdsale", () => {
             false,
             mockUSDC.address
           );
-        expect(await mockERC20.balanceOf(user1.address)).to.be.equal(quantity);
+        expect(await tokenVault.balanceOf(user1.address)).to.be.equal(quantity);
         expect(await mockUSDC.balanceOf(treasuryWallet.address)).to.be.equal(
           quantity.mul(rate)
         );
@@ -250,7 +284,7 @@ describe("AllowanceCrowdsale", () => {
             false,
             mockUSDT.address
           );
-        expect(await mockERC20.balanceOf(user1.address)).to.be.equal(quantity);
+        expect(await tokenVault.balanceOf(user1.address)).to.be.equal(quantity);
         expect(await mockUSDT.balanceOf(treasuryWallet.address)).to.be.equal(
           quantity.mul(rate)
         );
@@ -259,7 +293,7 @@ describe("AllowanceCrowdsale", () => {
   });
 
   describe("not whitelisted", () => {
-    describe("BKLN supply", () => {});
-    describe("payment with different currencies", () => {});
+    describe("BKLN supply", () => { });
+    describe("payment with different currencies", () => { });
   });
 });
