@@ -16,28 +16,27 @@ contract ERC721MembershipUpgradeable is
     PartiallyPausableUpgradeable,
     OwnableUpgradeable
 {
-    IERC20Metadata public erc20;
     string private _membershipBaseURI;
     TokenVault private vault;
 
     struct Tier {
-        uint16 currId;
-        uint16 start;
-        uint16 end;
+        uint256 currId;
+        uint256 start;
+        uint256 end;
         uint256 price;
-        uint16[] releasedIds;
+        uint256[] releasedIds;
     }
 
-    event Redeem(address indexed owner, uint16 indexed id);
-    event Release(address indexed owner, uint16 indexed id);
+    event Redeem(address indexed owner, uint256 indexed id);
+    event Release(address indexed owner, uint256 indexed id);
 
     address private voteDelegatorLogic;
 
-    uint16[] private friendIdStack;
-    uint16[] private foundationIdStack;
-    uint16[] private genesisIdStack;
+    uint256[] private friendIdStack;
+    uint256[] private foundationIdStack;
+    uint256[] private genesisIdStack;
 
-    mapping(uint16 => address) voteDelegators;
+    mapping(uint256 => address) public voteDelegators;
 
     enum TierCode {
         GENESIS,
@@ -72,7 +71,7 @@ contract ERC721MembershipUpgradeable is
         revert("tier code out of range");
     }
 
-    function _getTier(uint16 id) internal view returns (Tier storage) {
+    function _getTier(uint256 id) internal view returns (Tier storage) {
         if (id < genesisTier.end) {
             return genesisTier;
         }
@@ -89,18 +88,16 @@ contract ERC721MembershipUpgradeable is
     function initialize(
         string memory name_,
         string memory symbol_,
-        address erc20_,
         address vault_,
-        uint16 genesisEnd,
-        uint16 foundationEnd,
-        uint16 friendEnd,
-        address voteDelegatorLogic_
+        address voteDelegatorLogic_,
+        uint256 genesisEnd,
+        uint256 foundationEnd,
+        uint256 friendEnd
     ) external initializer {
         __ERC721_init(name_, symbol_);
         __Ownable_init();
         __PartiallyPausableUpgradeable_init(owner());
 
-        erc20 = IERC20Metadata(erc20_);
         vault = TokenVault(vault_);
         voteDelegatorLogic = voteDelegatorLogic_;
 
@@ -108,7 +105,7 @@ contract ERC721MembershipUpgradeable is
             currId: 0,
             start: 0,
             end: genesisEnd,
-            price: 40000 * 10**erc20.decimals(),
+            price: 40000 * 10**vault.decimals(),
             releasedIds: friendIdStack
         });
 
@@ -116,7 +113,7 @@ contract ERC721MembershipUpgradeable is
             currId: genesisEnd,
             start: genesisEnd,
             end: foundationEnd,
-            price: 4000 * 10**erc20.decimals(),
+            price: 4000 * 10**vault.decimals(),
             releasedIds: foundationIdStack
         });
 
@@ -124,19 +121,28 @@ contract ERC721MembershipUpgradeable is
             currId: foundationEnd,
             start: foundationEnd,
             end: friendEnd,
-            price: 400 * 10**erc20.decimals(),
+            price: 400 * 10**vault.decimals(),
             releasedIds: genesisIdStack
         });
     }
 
+    function _withdrawFromVoteDelegatorProxy(uint256 id) internal {
+        address voteDelegatorAddress = voteDelegators[id];
+        if (voteDelegatorAddress != address(0)) {
+            VoteDelegator voteDelegator = VoteDelegator(voteDelegatorAddress);
+            voteDelegator.withdraw();
+        }
+    }
+
     // TODO: Implement releaseFor
-    function release(uint16 id) external {
+    function release(uint256 id) external {
         require(
             msg.sender == ownerOf(id),
             "can only release your own membership"
         );
         Tier storage tier = _getTier(id);
-        erc20.transfer(msg.sender, tier.price);
+        _withdrawFromVoteDelegatorProxy(id);
+        vault.transfer(msg.sender, tier.price);
         tier.releasedIds.push(id);
         emit Release(msg.sender, id);
         burn(id);
@@ -155,7 +161,7 @@ contract ERC721MembershipUpgradeable is
         address erc20From,
         address nftTo
     ) public {
-        uint16 id;
+        uint256 id;
         Tier storage tier = _getTierByCode(tierCode);
 
         if (tier.releasedIds.length > 0) {
@@ -170,18 +176,22 @@ contract ERC721MembershipUpgradeable is
         _safeMint(nftTo, id);
 
         require(
-            erc20.balanceOf(erc20From) >= tier.price,
+            vault.balanceOf(erc20From) >= tier.price,
             "insufficient balance"
         );
-        erc20.transferFrom(erc20From, address(this), tier.price);
+        vault.transferFrom(erc20From, address(this), tier.price);
     }
 
     function _beforeTokenTransfer(
         address _from,
         address _to,
-        uint256 _amount
+        uint256 _tokenId
     ) internal virtual override onlySenderWhenPaused {
-        super._beforeTokenTransfer(_from, _to, _amount);
+        super._beforeTokenTransfer(_from, _to, _tokenId);
+        // only run when not minting
+        if (_from != address(0)) {
+            _withdrawFromVoteDelegatorProxy(_tokenId);
+        }
     }
 
     function supportsInterface(bytes4 interfaceId)
@@ -195,32 +205,35 @@ contract ERC721MembershipUpgradeable is
             ERC721Upgradeable.supportsInterface(interfaceId);
     }
 
-    function _getVoteDelegator(uint16 nftID) internal returns (address) {
-        if (voteDelegators[nftID] == address(0)) {
+    function updateUserPrice(uint16 nftID, uint256 newPrice) external {
+        require(
+            ownerOf(nftID) == msg.sender,
+            "can only delegate votes for sender's membership NFTs"
+        );
+
+        address voteDelegatorAddress = voteDelegators[nftID];
+        // doesn't have vote delegator yet
+        if (voteDelegatorAddress == address(0)) {
             bytes memory _initializationCalldata = abi.encodeWithSignature(
-                "initialize(address,address",
-                erc20,
+                "initialize(address)",
                 vault
             );
 
-            address voteDelegator = address(
+            voteDelegatorAddress = address(
                 new InitializedProxy(
                     voteDelegatorLogic,
                     _initializationCalldata
                 )
             );
 
-            voteDelegators[nftID] = voteDelegator;
+            voteDelegators[nftID] = voteDelegatorAddress;
         }
-        return voteDelegators[nftID];
-    }
 
-    function updateUserPrice(uint16 nftID, uint256 newPrice) external {
-        require(
-            ownerOf(nftID) == msg.sender,
-            "can only delegate votes for sender's membership NFTs"
-        );
-        VoteDelegator voteDelegator = VoteDelegator(_getVoteDelegator(nftID));
+        VoteDelegator voteDelegator = VoteDelegator(voteDelegatorAddress);
+        Tier storage tier = _getTier(nftID);
+        // 0 if voting again and tier.price if after transfer/mint
+        uint256 amount = tier.price - vault.balanceOf(voteDelegatorAddress);
+        vault.transfer(voteDelegatorAddress, amount);
         voteDelegator.updateUserPrice(newPrice);
     }
 }

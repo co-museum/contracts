@@ -1,31 +1,56 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { ERC721MembershipUpgradeable, ERC20Mock } from "../typechain";
+import { ERC721MembershipUpgradeable, ERC20Mock, TokenVault, VoteDelegator } from "../typechain";
 
 describe("ERC721MembershipUpgradeable", () => {
-  let mockERC20: ERC20Mock;
   let membershipERC721: ERC721MembershipUpgradeable;
   let signer: SignerWithAddress;
   let user: SignerWithAddress;
+  let tokenVault: TokenVault;
+  let voteDelegator: VoteDelegator;
 
   const decimals = 6;
   const genesisCode = 0;
   const foundationCode = 1;
   const friendsCode = 2;
+  const initialPrice = ethers.utils.parseEther("4000")
 
   beforeEach(async () => {
     [signer, user] = await ethers.getSigners();
 
-    const MockERC20 = await ethers.getContractFactory("ERC20Mock");
-    mockERC20 = await MockERC20.deploy(
-      "Mock",
-      "MCK",
-      signer.address,
-      ethers.utils.parseUnits("4000000", decimals),
-      decimals
-    );
-    await mockERC20.deployed();
+    const Settings = await ethers.getContractFactory("Settings");
+    const settings = await Settings.deploy();
+    await settings.deployed();
+
+    const VaultFactory = await ethers.getContractFactory("ERC721VaultFactory");
+    const vaultFactory = await VaultFactory.deploy(settings.address);
+    await vaultFactory.deployed();
+
+    const DummyNFT = await ethers.getContractFactory("ERC721Mock");
+    const dummyNFT = await DummyNFT.deploy("Dummy", "DMY");
+    await dummyNFT.deployed();
+
+    await dummyNFT.mint(signer.address, 0)
+    await dummyNFT.approve(vaultFactory.address, 0)
+    const tx = await vaultFactory.mint(
+      "Dummy Frac", // name
+      "DMYF", // symbol
+      dummyNFT.address, // token
+      0, // tokenID
+      ethers.utils.parseUnits("4000000", decimals), // supply
+      // TODO: tweak once USDC price is implemented
+      initialPrice, // list price 
+      0, // fee
+    )
+
+    const receipt = await tx.wait()
+    const [mintEvent] = receipt.events!.filter((event, i, arr) => event.event == "Mint")
+    const vaultAddress = mintEvent.args!['vault']
+    tokenVault = await ethers.getContractAt("TokenVault", vaultAddress)
+
+    const VoteDelegator = await ethers.getContractFactory("VoteDelegator")
+    voteDelegator = await VoteDelegator.deploy()
 
     const MembershipERC721 = await ethers.getContractFactory(
       "ERC721MembershipUpgradeable"
@@ -35,17 +60,18 @@ describe("ERC721MembershipUpgradeable", () => {
     await membershipERC721.initialize(
       "Membership",
       "MBR",
-      mockERC20.address,
+      tokenVault.address,
+      voteDelegator.address,
       2,
       4,
       6
     );
 
-    mockERC20.approve(membershipERC721.address, ethers.constants.MaxUint256);
-    mockERC20.connect(user).approve(membershipERC721.address, ethers.constants.MaxUint256);
+    tokenVault.approve(membershipERC721.address, ethers.constants.MaxUint256);
+    tokenVault.connect(user).approve(membershipERC721.address, ethers.constants.MaxUint256);
   });
 
-  describe("redeem", () => {
+  describe("redeem with sufficient balance", () => {
     afterEach(async () => {
       // expect(await mockERC20.balanceOf(user.address)).to.be.equal(0, "not locking correct amount of ERC20")
       expect(await membershipERC721.balanceOf(user.address)).to.be.equal(
@@ -95,55 +121,38 @@ describe("ERC721MembershipUpgradeable", () => {
     let friendId: number;
 
     before(async () => {
-      genesisId = (await membershipERC721.genesisTier()).start;
-      foundationId = (await membershipERC721.foundationTier()).start;
-      friendId = (await membershipERC721.friendTier()).start;
-    });
-
-    beforeEach(async () => {
-
-      // await membershipERC721
-      //   .connect(user)
-      //   .redeem(foundationCode, user.address, user.address);
-      // await membershipERC721
-      //   .connect(user)
-      //   .redeem(friendsCode, user.address, user.address);
-
-      // membershipERC721
-      //   .connect(user)
-      //   .approve(membershipERC721.address, foundationId);
-      // membershipERC721
-      //   .connect(user)
-      //   .approve(membershipERC721.address, friendId);
+      genesisId = (await membershipERC721.genesisTier()).start.toNumber();
+      foundationId = (await membershipERC721.foundationTier()).start.toNumber();
+      friendId = (await membershipERC721.friendTier()).start.toNumber();
     });
 
     it("releases genesis", async () => {
       const price = await membershipERC721.getTierPrice(genesisCode)
-      mockERC20.transfer(user.address, price);
+      tokenVault.transfer(user.address, price);
       await membershipERC721.connect(user).redeem(genesisCode, user.address, user.address);
       membershipERC721.connect(user).approve(membershipERC721.address, genesisId);
       await membershipERC721.connect(user).release(genesisId);
-      expect(await mockERC20.balanceOf(user.address)).to.be.equal(
+      expect(await tokenVault.balanceOf(user.address)).to.be.equal(
         price, "not releasing correct amount of ERC20"
       );
     });
 
     it("releases foundation", async () => {
       const price = await membershipERC721.getTierPrice(foundationCode)
-      mockERC20.transfer(user.address, price);
+      tokenVault.transfer(user.address, price);
       await membershipERC721.connect(user).redeem(foundationCode, user.address, user.address);
       await membershipERC721.connect(user).release(foundationId);
-      expect(await mockERC20.balanceOf(user.address)).to.be.equal(
+      expect(await tokenVault.balanceOf(user.address)).to.be.equal(
         price, "not releasing correct amount of ERC20"
       );
     });
 
     it("releases friends", async () => {
       const price = await membershipERC721.getTierPrice(friendsCode)
-      mockERC20.transfer(user.address, price);
+      tokenVault.transfer(user.address, price);
       await membershipERC721.connect(user).redeem(friendsCode, user.address, user.address);
       await membershipERC721.connect(user).release(friendId);
-      expect(await mockERC20.balanceOf(user.address)).to.be.equal(
+      expect(await tokenVault.balanceOf(user.address)).to.be.equal(
         price, "not releasing correct amount of ERC20"
       );
     });
@@ -153,8 +162,8 @@ describe("ERC721MembershipUpgradeable", () => {
 
   describe("running out of tokens", () => {
     it("runs out of genesis", async () => {
-      const start = (await membershipERC721.genesisTier()).start;
-      const end = (await membershipERC721.genesisTier()).end;
+      const start = (await membershipERC721.genesisTier()).start.toNumber();
+      const end = (await membershipERC721.genesisTier()).end.toNumber();
       for (let i = start; i < end; i++) {
         await membershipERC721.redeem(
           genesisCode,
@@ -168,8 +177,8 @@ describe("ERC721MembershipUpgradeable", () => {
     });
 
     it("runs out of foundation", async () => {
-      const start = (await membershipERC721.foundationTier()).start;
-      const end = (await membershipERC721.foundationTier()).end;
+      const start = (await membershipERC721.foundationTier()).start.toNumber();
+      const end = (await membershipERC721.foundationTier()).end.toNumber();
       for (let i = start; i < end; i++) {
         await membershipERC721.redeem(
           genesisCode,
@@ -183,8 +192,8 @@ describe("ERC721MembershipUpgradeable", () => {
     });
 
     it("runs out of friend", async () => {
-      const start = (await membershipERC721.friendTier()).start;
-      const end = (await membershipERC721.friendTier()).end;
+      const start = (await membershipERC721.friendTier()).start.toNumber();
+      const end = (await membershipERC721.friendTier()).end.toNumber();
       for (let i = start; i < end; i++) {
         await membershipERC721.redeem(
           friendsCode,
@@ -206,7 +215,6 @@ describe("ERC721MembershipUpgradeable", () => {
       )
         .to.emit(membershipERC721, "Redeem")
         .withArgs(signer.address, start);
-      console.log(start);
       await expect(membershipERC721.release(start))
         .to.emit(membershipERC721, "Release")
         .withArgs(signer.address, start);
@@ -252,6 +260,89 @@ describe("ERC721MembershipUpgradeable", () => {
     });
   });
 
+  describe("voting", () => {
+    it("votes on genesis member's behalf", async () => {
+      membershipERC721.redeem(genesisCode, signer.address, signer.address)
+      const id = (await membershipERC721.genesisTier()).start;
+      const price = ethers.utils.parseEther("3500")
+      await membershipERC721.updateUserPrice(id, price)
+      expect(await tokenVault.userPrices(
+        await membershipERC721.voteDelegators(id)
+      )).to.be.equal(price)
+    })
+
+    it("votes on foundation member's behalf", async () => {
+      membershipERC721.redeem(foundationCode, signer.address, signer.address)
+      const id = (await membershipERC721.foundationTier()).start;
+      const price = ethers.utils.parseEther("4500")
+      await membershipERC721.updateUserPrice(id, price)
+      expect(await tokenVault.userPrices(
+        await membershipERC721.voteDelegators(id)
+      )).to.be.equal(price)
+    })
+
+    it("votes on friend member's behalf", async () => {
+      membershipERC721.redeem(friendsCode, signer.address, signer.address)
+      const id = (await membershipERC721.friendTier()).start;
+      const price = ethers.utils.parseEther("4000")
+      await membershipERC721.updateUserPrice(id, price)
+      expect(await tokenVault.userPrices(
+        await membershipERC721.voteDelegators(id)
+      )).to.be.equal(price)
+    })
+
+    it("reset vote to 0 after transfer", async () => {
+      console.log(await tokenVault.votingTokens())
+      console.log(await tokenVault.reservePrice())
+      membershipERC721.redeem(friendsCode, signer.address, signer.address)
+      const tierPrice = await membershipERC721.getTierPrice(friendsCode)
+
+      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(tierPrice)
+      expect(await tokenVault.reservePrice()).to.be.equal(initialPrice)
+
+      const id = (await membershipERC721.friendTier()).start;
+      const price = ethers.utils.parseEther("3500")
+      await membershipERC721.updateUserPrice(id, price)
+
+      const reservePrice = await tokenVault.reservePrice()
+      console.log(reservePrice)
+      expect(reservePrice.lt(initialPrice)).to.be.true
+
+      const delegatorProxy = await membershipERC721.voteDelegators(id)
+      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(0)
+      expect(await tokenVault.balanceOf(delegatorProxy)).to.be.equal(tierPrice)
+      await membershipERC721.transferFrom(signer.address, user.address, id)
+      expect(await tokenVault.reservePrice()).to.be.equal(initialPrice)
+      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(tierPrice)
+    })
+
+    it("reset vote to 0 after release", async () => {
+      console.log(await tokenVault.votingTokens())
+      console.log(await tokenVault.reservePrice())
+      membershipERC721.redeem(friendsCode, signer.address, signer.address)
+      const tierPrice = await membershipERC721.getTierPrice(friendsCode)
+
+      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(tierPrice)
+      expect(await tokenVault.reservePrice()).to.be.equal(initialPrice)
+
+      const id = (await membershipERC721.friendTier()).start;
+      const price = ethers.utils.parseEther("4500")
+      await membershipERC721.updateUserPrice(id, price)
+
+      const reservePrice = await tokenVault.reservePrice()
+      console.log(reservePrice)
+      expect(reservePrice.gt(initialPrice)).to.be.true
+
+      const delegatorProxy = await membershipERC721.voteDelegators(id)
+      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(0)
+      expect(await tokenVault.balanceOf(delegatorProxy)).to.be.equal(tierPrice)
+      await membershipERC721.release(id)
+      expect(await tokenVault.reservePrice()).to.be.equal(initialPrice)
+      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(0)
+    })
+  })
+
+  // TODO: reuse token vault from top-level describe
   describe("pausability", () => {
     let signer: SignerWithAddress;
     let user: SignerWithAddress;
@@ -282,6 +373,7 @@ describe("ERC721MembershipUpgradeable", () => {
         "Member",
         "MBR",
         mockERC20.address,
+        voteDelegator.address,
         2,
         4,
         6
