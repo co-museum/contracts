@@ -16,7 +16,7 @@ contract VoteDelegator is OwnableUpgradeable {
         vault.updateUserPrice(_new);
     }
 
-    function withdraw() external onlyOwner {
-        vault.transfer(owner(), vault.balanceOf(address(this)));
+    function withdraw(address to) external onlyOwner {
+        vault.transfer(to, vault.balanceOf(address(this)));
     }
 }

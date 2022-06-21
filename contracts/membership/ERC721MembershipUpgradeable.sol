@@ -126,14 +126,6 @@ contract ERC721MembershipUpgradeable is
         });
     }
 
-    function _withdrawFromVoteDelegatorProxy(uint256 id) internal {
-        address voteDelegatorAddress = voteDelegators[id];
-        if (voteDelegatorAddress != address(0)) {
-            VoteDelegator voteDelegator = VoteDelegator(voteDelegatorAddress);
-            voteDelegator.withdraw();
-        }
-    }
-
     // TODO: Implement releaseFor
     function release(uint256 id) external {
         require(
@@ -141,8 +133,15 @@ contract ERC721MembershipUpgradeable is
             "can only release your own membership"
         );
         Tier storage tier = _getTier(id);
-        _withdrawFromVoteDelegatorProxy(id);
-        vault.transfer(msg.sender, tier.price);
+
+        address voteDelegatorAddress = voteDelegators[id];
+        if (voteDelegatorAddress != address(0)) {
+            VoteDelegator voteDelegator = VoteDelegator(voteDelegatorAddress);
+            voteDelegator.withdraw(msg.sender);
+        } else {
+            vault.transfer(msg.sender, tier.price);
+        }
+
         tier.releasedIds.push(id);
         emit Release(msg.sender, id);
         burn(id);
@@ -188,9 +187,16 @@ contract ERC721MembershipUpgradeable is
         uint256 _tokenId
     ) internal virtual override onlySenderWhenPaused {
         super._beforeTokenTransfer(_from, _to, _tokenId);
-        // only run when not minting
-        if (_from != address(0)) {
-            _withdrawFromVoteDelegatorProxy(_tokenId);
+        // only run when not minting and not burning
+        address voteDelegatorAddress = voteDelegators[_tokenId];
+        // do not withdraw if there is no vote delegator, when minting, or when burning
+        if (
+            voteDelegatorAddress != address(0) &&
+            _from != address(0) &&
+            _to != address(0)
+        ) {
+            VoteDelegator voteDelegator = VoteDelegator(voteDelegatorAddress);
+            voteDelegator.withdraw(address(this));
         }
     }
 
