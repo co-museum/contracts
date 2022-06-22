@@ -12,6 +12,7 @@ enum State {
 }
 
 describe('ERC721MembershipUpgradeable', () => {
+  let mockUSDC: ERC20Mock
   let membershipERC721: ERC721MembershipUpgradeable
   let signer: SignerWithAddress
   let user: SignerWithAddress
@@ -23,6 +24,7 @@ describe('ERC721MembershipUpgradeable', () => {
   const foundationCode = 1
   const friendsCode = 2
   const initialPrice = ethers.utils.parseEther('4000')
+  const mockUSDCSupply = ethers.utils.parseUnits('50000000000', decimals)
 
   beforeEach(async () => {
     ;[signer, user] = await ethers.getSigners()
@@ -39,12 +41,17 @@ describe('ERC721MembershipUpgradeable', () => {
     const dummyNFT = await DummyNFT.deploy('Dummy', 'DMY')
     await dummyNFT.deployed()
 
+    const MockUSDC = await ethers.getContractFactory('ERC20Mock')
+    mockUSDC = await MockUSDC.deploy('usdc', 'USDC', signer.address, mockUSDCSupply, decimals)
+    await mockUSDC.deployed()
+
     await dummyNFT.mint(signer.address, 0)
     await dummyNFT.approve(vaultFactory.address, 0)
     const tx = await vaultFactory.mint(
       'Dummy Frac', // name
       'DMYF', // symbol
       dummyNFT.address, // token
+      mockUSDC.address,
       0, // tokenID
       ethers.utils.parseUnits('4000000', decimals), // supply
       // TODO: tweak once USDC price is implemented
