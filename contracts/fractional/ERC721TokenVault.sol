@@ -56,7 +56,8 @@ contract TokenVault is
         inactive,
         live,
         ended,
-        redeemed
+        redeemed,
+        disabled
     }
 
     State public auctionState;
@@ -140,10 +141,21 @@ contract TokenVault is
         curator = _curator;
         fee = _fee;
         lastClaimed = block.timestamp;
-        auctionState = State.inactive;
+        auctionState = State.disabled;
         userPrices[_curator] = _listPrice;
 
         _mint(_curator, _supply);
+    }
+
+    function toggleAuction() external {
+        require(msg.sender == Ownable(settings).owner(), "toggle:not gov");
+        if (auctionState == State.disabled) {
+            auctionState = State.inactive;
+        } else if (auctionState == State.inactive) {
+            auctionState = State.disabled;
+        } else {
+            revert("toggle:can only toggle auction between inactive and disabled");
+        }
     }
 
     /// --------------------------------

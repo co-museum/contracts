@@ -5,6 +5,10 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { TokenVault } from "../typechain";
 
+enum State {
+    INACTIVE, LIVE, ENDED, REDEEMED, DISABLED
+}
+
 describe("ERC721TokenVault", () => {
     let signer: SignerWithAddress;
     let user: SignerWithAddress;
@@ -106,6 +110,28 @@ describe("ERC721TokenVault", () => {
                 signer.address, user.address, amount)
             ).to.not.be.reverted
             expect(await tokenVault.balanceOf(user.address)).to.be.equal(amount)
+        })
+    })
+
+    describe("toggle auction", () => {
+        it("allows governance to enable auctions", async () => {
+            expect(await tokenVault.auctionState()).to.be.equal(State.DISABLED)
+            tokenVault.toggleAuction()
+            expect(await tokenVault.auctionState()).to.be.equal(State.INACTIVE)
+        })
+
+        it("allows governance to disable auctions", async () => {
+            expect(await tokenVault.auctionState()).to.be.equal(State.DISABLED)
+            tokenVault.toggleAuction()
+            expect(await tokenVault.auctionState()).to.be.equal(State.INACTIVE)
+            tokenVault.toggleAuction()
+            expect(await tokenVault.auctionState()).to.be.equal(State.DISABLED)
+        })
+
+        it("doesn't allow user to enable auctions", async() => {
+            expect(await tokenVault.auctionState()).to.be.equal(State.DISABLED)
+            await expect(tokenVault.connect(user).toggleAuction()).to.be.revertedWith("toggle:not gov")
+            expect(await tokenVault.auctionState()).to.be.equal(State.DISABLED)
         })
     })
 });
