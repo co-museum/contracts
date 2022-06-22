@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import "../lib/PartiallyPausableUpgradeable.sol";
 import "hardhat/console.sol";
@@ -13,6 +14,7 @@ import "./VoteDelegator.sol";
 
 contract ERC721MembershipUpgradeable is
     ERC721BurnableUpgradeable,
+    ERC721RoyaltyUpgradeable,
     PartiallyPausableUpgradeable,
     OwnableUpgradeable
 {
@@ -203,12 +205,17 @@ contract ERC721MembershipUpgradeable is
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(AccessControlUpgradeable, ERC721Upgradeable)
+        override(
+            AccessControlUpgradeable,
+            ERC721Upgradeable,
+            ERC721RoyaltyUpgradeable
+        )
         returns (bool)
     {
         return
             AccessControlUpgradeable.supportsInterface(interfaceId) ||
-            ERC721Upgradeable.supportsInterface(interfaceId);
+            ERC721Upgradeable.supportsInterface(interfaceId) ||
+            ERC721RoyaltyUpgradeable.supportsInterface(interfaceId);
     }
 
     function updateUserPrice(uint16 nftID, uint256 newPrice) external {
@@ -241,5 +248,32 @@ contract ERC721MembershipUpgradeable is
         uint256 amount = tier.price - vault.balanceOf(voteDelegatorAddress);
         vault.transfer(voteDelegatorAddress, amount);
         voteDelegator.updateUserPrice(newPrice);
+    }
+
+    function _burn(uint256 tokenId)
+        internal
+        virtual
+        override(ERC721RoyaltyUpgradeable, ERC721Upgradeable)
+    {
+        ERC721RoyaltyUpgradeable._burn(tokenId);
+    }
+
+    // ERC2981 Royalty functions
+    /**
+     * @dev See {ERC2981-_setDefaultRoyalty}.
+     * Sets the royalty information that all ids in this contract will default to
+     */
+    function setDefaultRoyalty(address receiver, uint96 feeNumerator)
+        external
+        onlyOwner
+    {
+        _setDefaultRoyalty(receiver, feeNumerator);
+    }
+
+    /**
+     * @dev See {ERC2981-_deleteDefaultRoyalty}.
+     */
+    function deleteDefaultRoyalty() external onlyOwner {
+        _deleteDefaultRoyalty();
     }
 }
