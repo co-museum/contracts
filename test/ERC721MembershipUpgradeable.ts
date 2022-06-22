@@ -1,7 +1,12 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { ERC721MembershipUpgradeable, ERC20Mock, TokenVault, VoteDelegator } from "../typechain";
+import {
+  ERC721MembershipUpgradeable,
+  ERC20Mock,
+  TokenVault,
+  VoteDelegator,
+} from "../typechain";
 
 describe("ERC721MembershipUpgradeable", () => {
   let membershipERC721: ERC721MembershipUpgradeable;
@@ -14,7 +19,7 @@ describe("ERC721MembershipUpgradeable", () => {
   const genesisCode = 0;
   const foundationCode = 1;
   const friendsCode = 2;
-  const initialPrice = ethers.utils.parseEther("4000")
+  const initialPrice = ethers.utils.parseEther("4000");
 
   beforeEach(async () => {
     [signer, user] = await ethers.getSigners();
@@ -31,8 +36,8 @@ describe("ERC721MembershipUpgradeable", () => {
     const dummyNFT = await DummyNFT.deploy("Dummy", "DMY");
     await dummyNFT.deployed();
 
-    await dummyNFT.mint(signer.address, 0)
-    await dummyNFT.approve(vaultFactory.address, 0)
+    await dummyNFT.mint(signer.address, 0);
+    await dummyNFT.approve(vaultFactory.address, 0);
     const tx = await vaultFactory.mint(
       "Dummy Frac", // name
       "DMYF", // symbol
@@ -40,19 +45,21 @@ describe("ERC721MembershipUpgradeable", () => {
       0, // tokenID
       ethers.utils.parseUnits("4000000", decimals), // supply
       // TODO: tweak once USDC price is implemented
-      initialPrice, // list price 
-      0, // fee
-    )
+      initialPrice, // list price
+      0 // fee
+    );
 
-    const receipt = await tx.wait()
-    const [mintEvent] = receipt.events!.filter((event, i, arr) => event.event == "Mint")
-    const vaultAddress = mintEvent.args!['vault']
-    tokenVault = await ethers.getContractAt("TokenVault", vaultAddress)
+    const receipt = await tx.wait();
+    const [mintEvent] = receipt.events!.filter(
+      (event, i, arr) => event.event == "Mint"
+    );
+    const vaultAddress = mintEvent.args!["vault"];
+    tokenVault = await ethers.getContractAt("TokenVault", vaultAddress);
 
-    const VoteDelegator = await ethers.getContractFactory("VoteDelegator")
-    voteDelegator = await VoteDelegator.deploy()
-    await voteDelegator.deployed()
-    await voteDelegator.initialize(tokenVault.address)
+    const VoteDelegator = await ethers.getContractFactory("VoteDelegator");
+    voteDelegator = await VoteDelegator.deploy();
+    await voteDelegator.deployed();
+    await voteDelegator.initialize(tokenVault.address);
 
     const MembershipERC721 = await ethers.getContractFactory(
       "ERC721MembershipUpgradeable"
@@ -70,7 +77,9 @@ describe("ERC721MembershipUpgradeable", () => {
     );
 
     tokenVault.approve(membershipERC721.address, ethers.constants.MaxUint256);
-    tokenVault.connect(user).approve(membershipERC721.address, ethers.constants.MaxUint256);
+    tokenVault
+      .connect(user)
+      .approve(membershipERC721.address, ethers.constants.MaxUint256);
   });
 
   describe("redeem with sufficient balance", () => {
@@ -129,37 +138,46 @@ describe("ERC721MembershipUpgradeable", () => {
     });
 
     it("releases genesis", async () => {
-      const price = await membershipERC721.getTierPrice(genesisCode)
+      const price = await membershipERC721.getTierPrice(genesisCode);
       tokenVault.transfer(user.address, price);
-      await membershipERC721.connect(user).redeem(genesisCode, user.address, user.address);
-      membershipERC721.connect(user).approve(membershipERC721.address, genesisId);
+      await membershipERC721
+        .connect(user)
+        .redeem(genesisCode, user.address, user.address);
+      membershipERC721
+        .connect(user)
+        .approve(membershipERC721.address, genesisId);
       await membershipERC721.connect(user).release(genesisId);
       expect(await tokenVault.balanceOf(user.address)).to.be.equal(
-        price, "not releasing correct amount of ERC20"
+        price,
+        "not releasing correct amount of ERC20"
       );
     });
 
     it("releases foundation", async () => {
-      const price = await membershipERC721.getTierPrice(foundationCode)
+      const price = await membershipERC721.getTierPrice(foundationCode);
       tokenVault.transfer(user.address, price);
-      await membershipERC721.connect(user).redeem(foundationCode, user.address, user.address);
+      await membershipERC721
+        .connect(user)
+        .redeem(foundationCode, user.address, user.address);
       await membershipERC721.connect(user).release(foundationId);
       expect(await tokenVault.balanceOf(user.address)).to.be.equal(
-        price, "not releasing correct amount of ERC20"
+        price,
+        "not releasing correct amount of ERC20"
       );
     });
 
     it("releases friends", async () => {
-      const price = await membershipERC721.getTierPrice(friendsCode)
+      const price = await membershipERC721.getTierPrice(friendsCode);
       tokenVault.transfer(user.address, price);
-      await membershipERC721.connect(user).redeem(friendsCode, user.address, user.address);
+      await membershipERC721
+        .connect(user)
+        .redeem(friendsCode, user.address, user.address);
       await membershipERC721.connect(user).release(friendId);
       expect(await tokenVault.balanceOf(user.address)).to.be.equal(
-        price, "not releasing correct amount of ERC20"
+        price,
+        "not releasing correct amount of ERC20"
       );
     });
-
-
   });
 
   describe("running out of tokens", () => {
@@ -264,85 +282,91 @@ describe("ERC721MembershipUpgradeable", () => {
 
   describe("voting", () => {
     it("votes on genesis member's behalf", async () => {
-      membershipERC721.redeem(genesisCode, signer.address, signer.address)
+      membershipERC721.redeem(genesisCode, signer.address, signer.address);
       const id = (await membershipERC721.genesisTier()).start;
-      const price = ethers.utils.parseEther("3500")
-      await membershipERC721.updateUserPrice(id, price)
-      expect(await tokenVault.userPrices(
-        await membershipERC721.voteDelegators(id)
-      )).to.be.equal(price)
-    })
+      const price = ethers.utils.parseEther("3500");
+      await membershipERC721.updateUserPrice(id, price);
+      expect(
+        await tokenVault.userPrices(await membershipERC721.voteDelegators(id))
+      ).to.be.equal(price);
+    });
 
     it("votes on foundation member's behalf", async () => {
-      membershipERC721.redeem(foundationCode, signer.address, signer.address)
+      membershipERC721.redeem(foundationCode, signer.address, signer.address);
       const id = (await membershipERC721.foundationTier()).start;
-      const price = ethers.utils.parseEther("4500")
-      await membershipERC721.updateUserPrice(id, price)
-      expect(await tokenVault.userPrices(
-        await membershipERC721.voteDelegators(id)
-      )).to.be.equal(price)
-    })
+      const price = ethers.utils.parseEther("4500");
+      await membershipERC721.updateUserPrice(id, price);
+      expect(
+        await tokenVault.userPrices(await membershipERC721.voteDelegators(id))
+      ).to.be.equal(price);
+    });
 
     it("votes on friend member's behalf", async () => {
-      membershipERC721.redeem(friendsCode, signer.address, signer.address)
+      membershipERC721.redeem(friendsCode, signer.address, signer.address);
       const id = (await membershipERC721.friendTier()).start;
-      const price = ethers.utils.parseEther("4000")
-      await membershipERC721.updateUserPrice(id, price)
-      expect(await tokenVault.userPrices(
-        await membershipERC721.voteDelegators(id)
-      )).to.be.equal(price)
-    })
+      const price = ethers.utils.parseEther("4000");
+      await membershipERC721.updateUserPrice(id, price);
+      expect(
+        await tokenVault.userPrices(await membershipERC721.voteDelegators(id))
+      ).to.be.equal(price);
+    });
 
     it("reset vote to 0 after transfer", async () => {
-      console.log(await tokenVault.votingTokens())
-      console.log(await tokenVault.reservePrice())
-      membershipERC721.redeem(friendsCode, signer.address, signer.address)
-      const tierPrice = await membershipERC721.getTierPrice(friendsCode)
+      membershipERC721.redeem(friendsCode, signer.address, signer.address);
+      const tierPrice = await membershipERC721.getTierPrice(friendsCode);
 
-      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(tierPrice)
-      expect(await tokenVault.reservePrice()).to.be.equal(initialPrice)
+      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(
+        tierPrice
+      );
+      expect(await tokenVault.reservePrice()).to.be.equal(initialPrice);
 
       const id = (await membershipERC721.friendTier()).start;
-      const price = ethers.utils.parseEther("3500")
-      await membershipERC721.updateUserPrice(id, price)
+      const price = ethers.utils.parseEther("3500");
+      await membershipERC721.updateUserPrice(id, price);
 
-      const reservePrice = await tokenVault.reservePrice()
-      console.log(reservePrice)
-      expect(reservePrice.lt(initialPrice)).to.be.true
+      const reservePrice = await tokenVault.reservePrice();
+      expect(reservePrice.lt(initialPrice)).to.be.true;
 
-      const delegatorProxy = await membershipERC721.voteDelegators(id)
-      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(0)
-      expect(await tokenVault.balanceOf(delegatorProxy)).to.be.equal(tierPrice)
-      await membershipERC721.transferFrom(signer.address, user.address, id)
-      expect(await tokenVault.reservePrice()).to.be.equal(initialPrice)
-      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(tierPrice)
-    })
+      const delegatorProxy = await membershipERC721.voteDelegators(id);
+      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(
+        0
+      );
+      expect(await tokenVault.balanceOf(delegatorProxy)).to.be.equal(tierPrice);
+      await membershipERC721.transferFrom(signer.address, user.address, id);
+      expect(await tokenVault.reservePrice()).to.be.equal(initialPrice);
+      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(
+        tierPrice
+      );
+    });
 
     it("reset vote to 0 after release", async () => {
-      console.log(await tokenVault.votingTokens())
-      console.log(await tokenVault.reservePrice())
-      membershipERC721.redeem(friendsCode, signer.address, signer.address)
-      const tierPrice = await membershipERC721.getTierPrice(friendsCode)
+      membershipERC721.redeem(friendsCode, signer.address, signer.address);
+      const tierPrice = await membershipERC721.getTierPrice(friendsCode);
 
-      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(tierPrice)
-      expect(await tokenVault.reservePrice()).to.be.equal(initialPrice)
+      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(
+        tierPrice
+      );
+      expect(await tokenVault.reservePrice()).to.be.equal(initialPrice);
 
       const id = (await membershipERC721.friendTier()).start;
-      const price = ethers.utils.parseEther("4500")
-      await membershipERC721.updateUserPrice(id, price)
+      const price = ethers.utils.parseEther("4500");
+      await membershipERC721.updateUserPrice(id, price);
 
-      const reservePrice = await tokenVault.reservePrice()
-      console.log(reservePrice)
-      expect(reservePrice.gt(initialPrice)).to.be.true
+      const reservePrice = await tokenVault.reservePrice();
+      expect(reservePrice.gt(initialPrice)).to.be.true;
 
-      const delegatorProxy = await membershipERC721.voteDelegators(id)
-      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(0)
-      expect(await tokenVault.balanceOf(delegatorProxy)).to.be.equal(tierPrice)
-      await membershipERC721.release(id)
-      expect(await tokenVault.reservePrice()).to.be.equal(initialPrice)
-      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(0)
-    })
-  })
+      const delegatorProxy = await membershipERC721.voteDelegators(id);
+      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(
+        0
+      );
+      expect(await tokenVault.balanceOf(delegatorProxy)).to.be.equal(tierPrice);
+      await membershipERC721.release(id);
+      expect(await tokenVault.reservePrice()).to.be.equal(initialPrice);
+      expect(await tokenVault.balanceOf(membershipERC721.address)).to.be.equal(
+        0
+      );
+    });
+  });
 
   // TODO: reuse token vault from top-level describe
   describe("pausability", () => {
