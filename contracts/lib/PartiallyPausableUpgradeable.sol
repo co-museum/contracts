@@ -9,7 +9,6 @@ contract PartiallyPausableUpgradeable is PausableUpgradeable, AccessControlUpgra
     bytes32 public constant SENDER_ROLE = keccak256("SENDER_ROLE");
     address public ownerAddress;
 
-
     function __PartiallyPausableUpgradeable_init(address _ownerAddress) internal onlyInitializing {
         __Pausable_init();
         __AccessControl_init();
@@ -34,12 +33,8 @@ contract PartiallyPausableUpgradeable is PausableUpgradeable, AccessControlUpgra
         _unpause();
     }
 
-
-    modifier onlySenderWhenPaused () {
-        require(
-            !paused() || hasRole(SENDER_ROLE, msg.sender),
-            "No permission to send"
-        );
+    modifier onlySenderWhenPaused() {
+        require(!paused() || hasRole(SENDER_ROLE, msg.sender), "No permission to send");
         _;
     }
 }

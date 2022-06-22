@@ -52,10 +52,7 @@ contract AllowanceCrowdsale is Ownable {
         address _membershipContract,
         address[] memory _acceptedStablecoins
     ) {
-        require(
-            _tokenHoldingWallet != address(0),
-            "Token wallet is the zero address"
-        );
+        require(_tokenHoldingWallet != address(0), "Token wallet is the zero address");
         isActive = false;
         tokenContract = IERC20(_tokenAddress);
         treasuryWallet = _treasuryWallet;
@@ -83,25 +80,17 @@ contract AllowanceCrowdsale is Ownable {
         bytes32[] calldata merkleRoots
     ) external onlyOwner {
         require(
-            tierCodes.length == allocations.length &&
-                allocations.length == merkleRoots.length,
+            tierCodes.length == allocations.length && allocations.length == merkleRoots.length,
             "Whitelists arrays should be of equal length"
         );
 
-        require(
-            tierCodes.length != 0,
-            "Whitelists arrays.length should be > 0"
-        );
+        require(tierCodes.length != 0, "Whitelists arrays.length should be > 0");
 
         isActive = true;
 
         for (uint256 i = 0; i < tierCodes.length; i++) {
             whitelists.push(
-                Whitelist({
-                    tierCode: tierCodes[i],
-                    allocation: allocations[i],
-                    merkleRoot: merkleRoots[i]
-                })
+                Whitelist({tierCode: tierCodes[i], allocation: allocations[i], merkleRoot: merkleRoots[i]})
             );
         }
     }
@@ -124,19 +113,9 @@ contract AllowanceCrowdsale is Ownable {
         Whitelist storage whitelist = whitelists[whitelistIndex];
         uint256 allocation = whitelist.allocation;
         uint256 price = membershipContract.getTierPrice(whitelist.tierCode);
-        _validatePurchase(
-            allocation,
-            quantity,
-            price,
-            proof,
-            whitelist.merkleRoot
-        );
+        _validatePurchase(allocation, quantity, price, proof, whitelist.merkleRoot);
         _receivePayment(payWithEth, quantity, _stablecoinAddress);
-        tokenContract.safeTransferFrom(
-            tokenHoldingWallet,
-            msg.sender,
-            quantity
-        );
+        tokenContract.safeTransferFrom(tokenHoldingWallet, msg.sender, quantity);
     }
 
     function buyNFTs(
@@ -150,19 +129,9 @@ contract AllowanceCrowdsale is Ownable {
         uint256 allocation = whitelist.allocation;
         uint256 price = membershipContract.getTierPrice(whitelist.tierCode);
         uint256 quantity = numNFTs * price;
-        _validatePurchase(
-            allocation,
-            quantity,
-            price,
-            proof,
-            whitelist.merkleRoot
-        );
+        _validatePurchase(allocation, quantity, price, proof, whitelist.merkleRoot);
         _receivePayment(payWithEth, quantity, _stablecoinAddress);
-        membershipContract.redeem(
-            whitelist.tierCode,
-            tokenHoldingWallet,
-            msg.sender
-        );
+        membershipContract.redeem(whitelist.tierCode, tokenHoldingWallet, msg.sender);
     }
 
     function _validatePurchase(
@@ -176,21 +145,10 @@ contract AllowanceCrowdsale is Ownable {
             allocation % quantity == 0 && quantity % price == 0,
             "Must purchase tokens in discrete quantities based on allocation"
         );
-        require(
-            MerkleProof.verify(
-                proof,
-                batchRoot,
-                keccak256(abi.encodePacked(msg.sender))
-            ),
-            "Invalid proof"
-        );
+        require(MerkleProof.verify(proof, batchRoot, keccak256(abi.encodePacked(msg.sender))), "Invalid proof");
     }
 
-    function getStablecoin(address stablecoinAddress)
-        internal
-        view
-        returns (IERC20)
-    {
+    function getStablecoin(address stablecoinAddress) internal view returns (IERC20) {
         bool hasTokenAddress = false;
         for (uint256 i = 0; i < acceptedStablecoins.length; i++) {
             if (stablecoinAddress == acceptedStablecoins[i]) {
@@ -211,16 +169,9 @@ contract AllowanceCrowdsale is Ownable {
         address _stablecoinAddress
     ) internal {
         if (!payWithEth) {
-            getStablecoin(_stablecoinAddress).transferFrom(
-                msg.sender,
-                treasuryWallet,
-                quantity * stablecoinRate
-            );
+            getStablecoin(_stablecoinAddress).transferFrom(msg.sender, treasuryWallet, quantity * stablecoinRate);
         } else {
-            require(
-                msg.value >= quantity * ethRate,
-                "Insufficient funds to buy tokens"
-            );
+            require(msg.value >= quantity * ethRate, "Insufficient funds to buy tokens");
             _forwardFunds();
         }
     }

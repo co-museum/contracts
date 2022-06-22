@@ -23,13 +23,7 @@ contract ERC721VaultFactory is Ownable, Pausable {
     /// @notice the TokenVault logic contract
     address public immutable logic;
 
-    event Mint(
-        address indexed token,
-        uint256 id,
-        uint256 price,
-        address vault,
-        uint256 vaultId
-    );
+    event Mint(address indexed token, uint256 id, uint256 price, address vault, uint256 vaultId);
 
     constructor(address _settings) {
         settings = _settings;
@@ -64,9 +58,7 @@ contract ERC721VaultFactory is Ownable, Pausable {
             _symbol
         );
 
-        address vault = address(
-            new InitializedProxy(logic, _initializationCalldata)
-        );
+        address vault = address(new InitializedProxy(logic, _initializationCalldata));
 
         emit Mint(_token, _id, _listPrice, vault, vaultCount);
 
