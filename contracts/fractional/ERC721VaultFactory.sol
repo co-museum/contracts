@@ -41,13 +41,14 @@ contract ERC721VaultFactory is Ownable, Pausable {
         string memory _name,
         string memory _symbol,
         address _token,
+        address _usdc,
         uint256 _id,
         uint256 _supply,
         uint256 _listPrice,
         uint256 _fee
     ) external whenNotPaused returns (uint256) {
         bytes memory _initializationCalldata = abi.encodeWithSignature(
-            "initialize(address,address,uint256,uint256,uint256,uint256,string,string)",
+            "initialize(address,address,uint256,uint256,uint256,uint256,string,string,address)",
             msg.sender,
             _token,
             _id,
@@ -55,7 +56,8 @@ contract ERC721VaultFactory is Ownable, Pausable {
             _listPrice,
             _fee,
             _name,
-            _symbol
+            _symbol,
+            _usdc
         );
 
         address vault = address(new InitializedProxy(logic, _initializationCalldata));

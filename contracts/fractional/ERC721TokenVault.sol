@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "./Settings.sol";
-import "./Interfaces/IWETH.sol";
 import "../lib/PartiallyPausableUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
@@ -16,8 +16,8 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     /// -------- BASIC INFORMATION --------
     /// -----------------------------------
 
-    /// @notice weth address
-    address public constant weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    /// @notice usdc address
+    address public usdc;
 
     /// -----------------------------------
     /// -------- TOKEN INFORMATION --------
@@ -123,7 +123,8 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         uint256 _listPrice,
         uint256 _fee,
         string memory _name,
-        string memory _symbol
+        string memory _symbol,
+        address _usdc
     ) external initializer {
         // initialize inherited contracts
         __ERC20_init(_name, _symbol);
@@ -139,6 +140,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         lastClaimed = block.timestamp;
         auctionState = State.disabled;
         userPrices[_curator] = _listPrice;
+        usdc = _usdc;
 
         _mint(_curator, _supply);
     }
@@ -391,7 +393,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
             auctionEnd += 15 minutes;
         }
 
-        _sendETHOrWETH(winning, livePrice);
+        _sendUSDC(winning, livePrice);
 
         livePrice = msg.value;
         winning = payable(msg.sender);
@@ -435,22 +437,14 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         uint256 share = (bal * address(this).balance) / totalSupply();
         _burn(msg.sender, bal);
 
-        _sendETHOrWETH(payable(msg.sender), share);
+        _sendUSDC(msg.sender, share);
 
         emit Cash(msg.sender, share);
     }
 
     // Will attempt to transfer ETH, but will transfer WETH instead if it fails.
-    function _sendETHOrWETH(address to, uint256 value) internal {
-        // Try to transfer ETH to the given recipient.
-        if (!_attemptETHTransfer(to, value)) {
-            // If the transfer fails, wrap and send as WETH, so that
-            // the auction is not impeded and the recipient still
-            // can claim ETH via the WETH contract (similar to escrow).
-            IWETH(weth).deposit{value: value}();
-            IWETH(weth).transfer(to, value);
-            // At this point, the recipient can unwrap WETH.
-        }
+    function _sendUSDC(address to, uint256 value) internal {
+        IERC20(usdc).transfer(to, value);
     }
 
     // Sending ETH is not guaranteed complete, and the method used here will return false if

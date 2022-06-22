@@ -3,7 +3,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { TokenVault } from '../typechain'
+import { ERC20Mock, TokenVault } from '../typechain'
 
 describe('ERC721TokenVault', () => {
   let signer: SignerWithAddress
@@ -12,6 +12,9 @@ describe('ERC721TokenVault', () => {
   let tokenVault: TokenVault
   let supportRole: string
   let senderRole: string
+  let mockUSDC: ERC20Mock
+  const decimals = 6
+  const mockUSDCSupply = ethers.utils.parseUnits('50000000000', decimals)
 
   beforeEach(async () => {
     ;[signer, user, crowdsaleContract] = await ethers.getSigners()
@@ -19,6 +22,10 @@ describe('ERC721TokenVault', () => {
     const Settings = await ethers.getContractFactory('Settings')
     const settings = await Settings.deploy()
     await settings.deployed()
+
+    const MockUSDC = await ethers.getContractFactory('ERC20Mock')
+    mockUSDC = await MockUSDC.deploy('usdc', 'USDC', signer.address, mockUSDCSupply, decimals)
+    await mockUSDC.deployed()
 
     const VaultFactory = await ethers.getContractFactory('ERC721VaultFactory')
     const vaultFactory = await VaultFactory.deploy(settings.address)
@@ -34,6 +41,7 @@ describe('ERC721TokenVault', () => {
       'Dummy Frac', // name
       'DMYF', // symbol
       dummyNFT.address, // token
+      mockUSDC.address,
       0, // tokenID
       ethers.utils.parseEther('10000'), // supply
       10, // listPrice

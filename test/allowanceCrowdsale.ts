@@ -81,6 +81,7 @@ describe('AllowanceCrowdsale', () => {
       'Dummy Frac', // name
       'DMYF', // symbol
       dummyNFT.address, // token
+      mockUSDC.address,
       0, // tokenID
       tokenSupply, // supply
       // TODO: tweak once USDC price is implemented
