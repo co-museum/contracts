@@ -55,11 +55,7 @@ contract ERC721MembershipUpgradeable is
     }
 
     // NOTE: for some reason mappings don't work for this use case
-    function _getTierByCode(TierCode tierCode)
-        internal
-        view
-        returns (Tier storage)
-    {
+    function _getTierByCode(TierCode tierCode) internal view returns (Tier storage) {
         if (tierCode == TierCode.GENESIS) {
             return genesisTier;
         }
@@ -130,10 +126,7 @@ contract ERC721MembershipUpgradeable is
 
     // TODO: Implement releaseFor
     function release(uint256 id) external {
-        require(
-            msg.sender == ownerOf(id),
-            "can only release your own membership"
-        );
+        require(msg.sender == ownerOf(id), "can only release your own membership");
         Tier storage tier = _getTier(id);
 
         address voteDelegatorAddress = voteDelegators[id];
@@ -176,10 +169,7 @@ contract ERC721MembershipUpgradeable is
         emit Redeem(nftTo, id);
         _safeMint(nftTo, id);
 
-        require(
-            vault.balanceOf(erc20From) >= tier.price,
-            "insufficient balance"
-        );
+        require(vault.balanceOf(erc20From) >= tier.price, "insufficient balance");
         vault.transferFrom(erc20From, address(this), tier.price);
     }
 
@@ -192,11 +182,7 @@ contract ERC721MembershipUpgradeable is
         // only run when not minting and not burning
         address voteDelegatorAddress = voteDelegators[_tokenId];
         // do not withdraw if there is no vote delegator, when minting, or when burning
-        if (
-            voteDelegatorAddress != address(0) &&
-            _from != address(0) &&
-            _to != address(0)
-        ) {
+        if (voteDelegatorAddress != address(0) && _from != address(0) && _to != address(0)) {
             VoteDelegator voteDelegator = VoteDelegator(voteDelegatorAddress);
             voteDelegator.withdraw(address(this));
         }
@@ -205,11 +191,7 @@ contract ERC721MembershipUpgradeable is
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(
-            AccessControlUpgradeable,
-            ERC721Upgradeable,
-            ERC721RoyaltyUpgradeable
-        )
+        override(AccessControlUpgradeable, ERC721Upgradeable, ERC721RoyaltyUpgradeable)
         returns (bool)
     {
         return
@@ -219,25 +201,14 @@ contract ERC721MembershipUpgradeable is
     }
 
     function updateUserPrice(uint16 nftID, uint256 newPrice) external {
-        require(
-            ownerOf(nftID) == msg.sender,
-            "can only delegate votes for sender's membership NFTs"
-        );
+        require(ownerOf(nftID) == msg.sender, "can only delegate votes for sender's membership NFTs");
 
         address voteDelegatorAddress = voteDelegators[nftID];
         // doesn't have vote delegator yet
         if (voteDelegatorAddress == address(0)) {
-            bytes memory _initializationCalldata = abi.encodeWithSignature(
-                "initialize(address)",
-                vault
-            );
+            bytes memory _initializationCalldata = abi.encodeWithSignature("initialize(address)", vault);
 
-            voteDelegatorAddress = address(
-                new InitializedProxy(
-                    voteDelegatorLogic,
-                    _initializationCalldata
-                )
-            );
+            voteDelegatorAddress = address(new InitializedProxy(voteDelegatorLogic, _initializationCalldata));
 
             voteDelegators[nftID] = voteDelegatorAddress;
         }
@@ -250,11 +221,7 @@ contract ERC721MembershipUpgradeable is
         voteDelegator.updateUserPrice(newPrice);
     }
 
-    function _burn(uint256 tokenId)
-        internal
-        virtual
-        override(ERC721RoyaltyUpgradeable, ERC721Upgradeable)
-    {
+    function _burn(uint256 tokenId) internal virtual override(ERC721RoyaltyUpgradeable, ERC721Upgradeable) {
         ERC721RoyaltyUpgradeable._burn(tokenId);
     }
 
@@ -263,10 +230,7 @@ contract ERC721MembershipUpgradeable is
      * @dev See {ERC2981-_setDefaultRoyalty}.
      * Sets the royalty information that all ids in this contract will default to
      */
-    function setDefaultRoyalty(address receiver, uint96 feeNumerator)
-        external
-        onlyOwner
-    {
+    function setDefaultRoyalty(address receiver, uint96 feeNumerator) external onlyOwner {
         _setDefaultRoyalty(receiver, feeNumerator);
     }
 

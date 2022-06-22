@@ -8,11 +8,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
-contract TokenVault is
-    ERC20Upgradeable,
-    ERC721HolderUpgradeable,
-    PartiallyPausableUpgradeable
-{
+contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausableUpgradeable {
     using Address for address;
 
     uint8 constant _decimals = 6;
@@ -173,10 +169,7 @@ contract TokenVault is
     /// @notice allow governance to remove bad reserve prices
     function removeReserve(address _user) external {
         require(msg.sender == Ownable(settings).owner(), "remove:not gov");
-        require(
-            auctionState == State.inactive,
-            "update:auction live cannot update price"
-        );
+        require(auctionState == State.inactive, "update:auction live cannot update price");
 
         uint256 old = userPrices[_user];
         require(0 != old, "update:not an update");
@@ -207,8 +200,7 @@ contract TokenVault is
     function updateAuctionLength(uint256 _length) external {
         require(msg.sender == curator, "update:not curator");
         require(
-            _length >= ISettings(settings).minAuctionLength() &&
-                _length <= ISettings(settings).maxAuctionLength(),
+            _length >= ISettings(settings).minAuctionLength() && _length <= ISettings(settings).maxAuctionLength(),
             "update:invalid auction length"
         );
 
@@ -221,10 +213,7 @@ contract TokenVault is
     function updateFee(uint256 _fee) external {
         require(msg.sender == curator, "update:not curator");
         require(_fee < fee, "update:can't raise");
-        require(
-            _fee <= ISettings(settings).maxCuratorFee(),
-            "update:cannot increase fee this high"
-        );
+        require(_fee <= ISettings(settings).maxCuratorFee(), "update:cannot increase fee this high");
 
         _claimFees();
 
@@ -239,10 +228,7 @@ contract TokenVault is
 
     /// @dev interal fuction to calculate and mint fees
     function _claimFees() internal {
-        require(
-            auctionState != State.ended,
-            "claim:cannot claim after auction ends"
-        );
+        require(auctionState != State.ended, "claim:cannot claim after auction ends");
 
         // get how much in fees the curator would make in a year
         uint256 currentAnnualFee = (fee * totalSupply()) / 1000;
@@ -279,10 +265,7 @@ contract TokenVault is
     /// @notice a function for an end user to update their desired sale price
     /// @param _new the desired price in ETH
     function updateUserPrice(uint256 _new) external {
-        require(
-            auctionState == State.inactive,
-            "update:auction live cannot update price"
-        );
+        require(auctionState == State.inactive, "update:auction live cannot update price");
         uint256 old = userPrices[msg.sender];
         require(_new != old, "update:not an update");
         uint256 weight = balanceOf(msg.sender);
@@ -299,11 +282,9 @@ contract TokenVault is
         else if (old == 0) {
             uint256 averageReserve = reserveTotal / votingTokens;
 
-            uint256 reservePriceMin = (averageReserve *
-                ISettings(settings).minReserveFactor()) / 1000;
+            uint256 reservePriceMin = (averageReserve * ISettings(settings).minReserveFactor()) / 1000;
             require(_new >= reservePriceMin, "update:reserve price too low");
-            uint256 reservePriceMax = (averageReserve *
-                ISettings(settings).maxReserveFactor()) / 1000;
+            uint256 reservePriceMax = (averageReserve * ISettings(settings).maxReserveFactor()) / 1000;
             require(_new <= reservePriceMax, "update:reserve price too high");
 
             votingTokens += weight;
@@ -316,14 +297,11 @@ contract TokenVault is
         }
         // they are updating their vote
         else {
-            uint256 averageReserve = (reserveTotal - (old * weight)) /
-                (votingTokens - weight);
+            uint256 averageReserve = (reserveTotal - (old * weight)) / (votingTokens - weight);
 
-            uint256 reservePriceMin = (averageReserve *
-                ISettings(settings).minReserveFactor()) / 1000;
+            uint256 reservePriceMin = (averageReserve * ISettings(settings).minReserveFactor()) / 1000;
             require(_new >= reservePriceMin, "update:reserve price too low");
-            uint256 reservePriceMax = (averageReserve *
-                ISettings(settings).maxReserveFactor()) / 1000;
+            uint256 reservePriceMax = (averageReserve * ISettings(settings).maxReserveFactor()) / 1000;
             require(_new <= reservePriceMax, "update:reserve price too high");
 
             reserveTotal = reserveTotal + (weight * _new) - (weight * old);
@@ -362,10 +340,7 @@ contract TokenVault is
                 }
                 // both holders are voters
                 else {
-                    reserveTotal =
-                        reserveTotal +
-                        (_amount * toPrice) -
-                        (_amount * fromPrice);
+                    reserveTotal = reserveTotal + (_amount * toPrice) - (_amount * fromPrice);
                 }
             }
         }
@@ -376,8 +351,7 @@ contract TokenVault is
         require(auctionState == State.inactive, "start:no auction starts");
         require(msg.value >= reservePrice(), "start:too low bid");
         require(
-            votingTokens * 1000 >=
-                ISettings(settings).minVotePercentage() * totalSupply(),
+            votingTokens * 1000 >= ISettings(settings).minVotePercentage() * totalSupply(),
             "start:not enough voters"
         );
 
@@ -468,10 +442,7 @@ contract TokenVault is
     // it fails. For example, a contract can block ETH transfer, or might use
     // an excessive amount of gas, thereby griefing a new bidder.
     // We should limit the gas used in transfers, and handle failure cases.
-    function _attemptETHTransfer(address to, uint256 value)
-        internal
-        returns (bool)
-    {
+    function _attemptETHTransfer(address to, uint256 value) internal returns (bool) {
         // Here increase the gas limit a reasonable amount above the default, and try
         // to send ETH to the recipient.
         // NOTE: This might allow the recipient to attempt a limited reentrancy attack.
