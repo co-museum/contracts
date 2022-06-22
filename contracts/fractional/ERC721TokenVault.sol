@@ -292,7 +292,7 @@ contract TokenVault is
     /// @param _new the desired price in ETH
     function updateUserPrice(uint256 _new) external {
         require(
-            auctionState == State.inactive,
+            auctionState == State.inactive || auctionState == State.disabled,
             "update:auction live cannot update price"
         );
         uint256 old = userPrices[msg.sender];
@@ -355,7 +355,7 @@ contract TokenVault is
         address _to,
         uint256 _amount
     ) internal virtual override onlySenderWhenPaused {
-        if (auctionState == State.inactive) {
+        if (auctionState == State.inactive || auctionState == State.disabled) {
             uint256 fromPrice = userPrices[_from];
             uint256 toPrice = userPrices[_to];
 
