@@ -14,7 +14,7 @@ describe('ERC721TokenVault', () => {
   let senderRole: string
 
   beforeEach(async () => {
-    [signer, user, crowdsaleContract] = await ethers.getSigners()
+    ;[signer, user, crowdsaleContract] = await ethers.getSigners()
 
     const Settings = await ethers.getContractFactory('Settings')
     const settings = await Settings.deploy()
