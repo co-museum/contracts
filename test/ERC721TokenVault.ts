@@ -2,8 +2,9 @@
 
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expect } from 'chai'
+import { settings } from 'cluster'
 import { ethers } from 'hardhat'
-import { ERC20Mock, TokenVault } from '../typechain'
+import { ERC20Mock, Settings, TokenVault } from '../typechain'
 
 describe('ERC721TokenVault', () => {
   let signer: SignerWithAddress
@@ -15,12 +16,15 @@ describe('ERC721TokenVault', () => {
   let mockUSDC: ERC20Mock
   const decimals = 6
   const mockUSDCSupply = ethers.utils.parseUnits('50000000000', decimals)
+  const nftPrice = ethers.utils.parseUnits('4000000', decimals)
+  const tokenSupply = nftPrice
+  let settings: Settings
 
   beforeEach(async () => {
     ;[signer, user, crowdsaleContract] = await ethers.getSigners()
 
     const Settings = await ethers.getContractFactory('Settings')
-    const settings = await Settings.deploy()
+    settings = await Settings.deploy()
     await settings.deployed()
 
     const MockUSDC = await ethers.getContractFactory('ERC20Mock')
@@ -43,8 +47,8 @@ describe('ERC721TokenVault', () => {
       dummyNFT.address, // token
       mockUSDC.address,
       0, // tokenID
-      ethers.utils.parseEther('10000'), // supply
-      10, // listPrice
+      tokenSupply, // supply
+      nftPrice, // list price
       0, // fee
     )
 
@@ -114,5 +118,21 @@ describe('ERC721TokenVault', () => {
         .reverted
       expect(await tokenVault.balanceOf(user.address)).to.be.equal(amount)
     })
+  })
+
+  describe('usdc auction', () => {
+    it('allows users to start auction in usdc', async () => {
+      const newPrice = nftPrice.mul(2)
+      await tokenVault.updateUserPrice(newPrice)
+      await tokenVault.toggleAuctions()
+      await mockUSDC.approve(tokenVault.address, ethers.constants.MaxUint256)
+      await tokenVault.start(newPrice)
+      expect(await tokenVault.winning()).to.be.equal(signer.address)
+      expect(await tokenVault.livePrice()).to.be.equal(newPrice)
+      const balance = await mockUSDC.balanceOf(tokenVault.address)
+      expect(balance.eq(newPrice)).to.be.true
+    })
+
+    // TODO: manipulate time and test auction payout
   })
 })

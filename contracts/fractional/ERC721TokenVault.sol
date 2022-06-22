@@ -46,7 +46,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     uint256 public livePrice;
 
     /// @notice the current user winning the token auction
-    address payable public winning;
+    address public winning;
 
     enum State {
         disabled,
@@ -364,9 +364,9 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     }
 
     /// @notice kick off an auction. Must send reservePrice in ETH
-    function start() external payable {
+    function start(uint256 _bid) external {
         require(auctionState == State.inactive, "start:no auction starts");
-        require(msg.value >= reservePrice(), "start:too low bid");
+        require(_bid >= reservePrice(), "start:too low bid");
         require(
             votingTokens * 1000 >= ISettings(settings).minVotePercentage() * totalSupply(),
             "start:not enough voters"
@@ -374,18 +374,19 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
 
         auctionEnd = block.timestamp + auctionLength;
         auctionState = State.live;
+        IERC20(usdc).transferFrom(msg.sender, address(this), _bid);
 
-        livePrice = msg.value;
-        winning = payable(msg.sender);
+        livePrice = _bid;
+        winning = msg.sender;
 
-        emit Start(msg.sender, msg.value);
+        emit Start(msg.sender, _bid);
     }
 
     /// @notice an external function to bid on purchasing the vaults NFT. The msg.value is the bid amount
-    function bid() external payable {
+    function bid(uint256 _bid) external {
         require(auctionState == State.live, "bid:auction is not live");
         uint256 increase = ISettings(settings).minBidIncrease() + 1000;
-        require(msg.value * 1000 >= livePrice * increase, "bid:too low bid");
+        require(_bid * 1000 >= livePrice * increase, "bid:too low bid");
         require(block.timestamp < auctionEnd, "bid:auction ended");
 
         // If bid is within 15 minutes of auction end, extend auction
@@ -393,12 +394,12 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
             auctionEnd += 15 minutes;
         }
 
-        _sendUSDC(winning, livePrice);
+        IERC20(usdc).transferFrom(msg.sender, address(this), _bid);
 
-        livePrice = msg.value;
-        winning = payable(msg.sender);
+        livePrice = _bid;
+        winning = msg.sender;
 
-        emit Bid(msg.sender, msg.value);
+        emit Bid(msg.sender, _bid);
     }
 
     /// @notice an external function to end an auction after the timer has run out
@@ -437,14 +438,9 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         uint256 share = (bal * address(this).balance) / totalSupply();
         _burn(msg.sender, bal);
 
-        _sendUSDC(msg.sender, share);
+        IERC20(usdc).transfer(msg.sender, share);
 
         emit Cash(msg.sender, share);
-    }
-
-    // Will attempt to transfer ETH, but will transfer WETH instead if it fails.
-    function _sendUSDC(address to, uint256 value) internal {
-        IERC20(usdc).transfer(to, value);
     }
 
     // Sending ETH is not guaranteed complete, and the method used here will return false if
