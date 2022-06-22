@@ -49,6 +49,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     address payable public winning;
 
     enum State {
+        disabled,
         inactive,
         live,
         ended,
@@ -136,10 +137,21 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         curator = _curator;
         fee = _fee;
         lastClaimed = block.timestamp;
-        auctionState = State.inactive;
+        auctionState = State.disabled;
         userPrices[_curator] = _listPrice;
 
         _mint(_curator, _supply);
+    }
+
+    function toggleAuctions() external {
+        require(msg.sender == Ownable(settings).owner(), "toggle:not gov");
+        if (auctionState == State.disabled) {
+            auctionState = State.inactive;
+        } else if (auctionState == State.inactive) {
+            auctionState = State.disabled;
+        } else {
+            revert("toggle:can only toggle auction between inactive and disabled");
+        }
     }
 
     /// --------------------------------
@@ -265,7 +277,10 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     /// @notice a function for an end user to update their desired sale price
     /// @param _new the desired price in ETH
     function updateUserPrice(uint256 _new) external {
-        require(auctionState == State.inactive, "update:auction live cannot update price");
+        require(
+            auctionState == State.inactive || auctionState == State.disabled,
+            "update:auction live cannot update price"
+        );
         uint256 old = userPrices[msg.sender];
         require(_new != old, "update:not an update");
         uint256 weight = balanceOf(msg.sender);
@@ -321,7 +336,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         address _to,
         uint256 _amount
     ) internal virtual override onlySenderWhenPaused {
-        if (auctionState == State.inactive) {
+        if (auctionState == State.inactive || auctionState == State.disabled) {
             uint256 fromPrice = userPrices[_from];
             uint256 toPrice = userPrices[_to];
 

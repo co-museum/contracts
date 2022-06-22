@@ -3,6 +3,14 @@ import { expect } from 'chai'
 import { ethers } from 'hardhat'
 import { ERC721MembershipUpgradeable, ERC20Mock, TokenVault, VoteDelegator } from '../typechain'
 
+enum State {
+  DISABLED,
+  INACTIVE,
+  LIVE,
+  ENDED,
+  REDEEMED,
+}
+
 describe('ERC721MembershipUpgradeable', () => {
   let membershipERC721: ERC721MembershipUpgradeable
   let signer: SignerWithAddress
@@ -354,6 +362,28 @@ describe('ERC721MembershipUpgradeable', () => {
         const id = (await membershipERC721.friendTier()).start
         await expect(membershipERC721.transferFrom(signer.address, user.address, id)).to.not.be.reverted
         expect(await membershipERC721.ownerOf(id)).to.be.equal(user.address)
+      })
+    })
+
+    describe('toggle auctions', () => {
+      it('allows governance to enable auctions', async () => {
+        expect(await tokenVault.auctionState()).to.be.equal(State.DISABLED)
+        tokenVault.toggleAuctions()
+        expect(await tokenVault.auctionState()).to.be.equal(State.INACTIVE)
+      })
+
+      it('allows governance to disable auctions', async () => {
+        expect(await tokenVault.auctionState()).to.be.equal(State.DISABLED)
+        tokenVault.toggleAuctions()
+        expect(await tokenVault.auctionState()).to.be.equal(State.INACTIVE)
+        tokenVault.toggleAuctions()
+        expect(await tokenVault.auctionState()).to.be.equal(State.DISABLED)
+      })
+
+      it("doesn't allow user to enable auctions", async () => {
+        expect(await tokenVault.auctionState()).to.be.equal(State.DISABLED)
+        await expect(tokenVault.connect(user).toggleAuctions()).to.be.revertedWith('toggle:not gov')
+        expect(await tokenVault.auctionState()).to.be.equal(State.DISABLED)
       })
     })
   })
