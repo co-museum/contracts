@@ -17,6 +17,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     /// -----------------------------------
 
     /// @notice usdc address
+    /// custom:update transact in USDC
     address public usdc;
 
     /// -----------------------------------
@@ -48,6 +49,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     /// @notice the current user winning the token auction
     address public winning;
 
+    /// @custom:update add disabled state to turn off acutions
     enum State {
         disabled,
         inactive,
@@ -115,6 +117,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         settings = _settings;
     }
 
+    /// custom:update transact in usdc
     function initialize(
         address _curator,
         address _token,
@@ -278,6 +281,8 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
 
     /// @notice a function for an end user to update their desired sale price
     /// @param _new the desired price in ETH
+    /// @custom:update only allow changes to price when auction is not ongoing
+    /// (inactive/disabled)
     function updateUserPrice(uint256 _new) external {
         require(
             auctionState == State.inactive || auctionState == State.disabled,
@@ -333,6 +338,8 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     /// @param _from the ERC20 token sender
     /// @param _to the ERC20 token receiver
     /// @param _amount the ERC20 token amount
+    /// @custom:update only recompute reserve price when auction is not ongoing
+    /// (inactive/disabled)
     function _beforeTokenTransfer(
         address _from,
         address _to,
@@ -363,7 +370,8 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         }
     }
 
-    /// @notice kick off an auction. Must send reservePrice in ETH
+    /// @notice kick off an auction. Must give USDC allowance
+    /// custom:update accept payment in USDC and don't accept ETH
     function start(uint256 _bid) external {
         require(auctionState == State.inactive, "start:no auction starts");
         require(_bid >= reservePrice(), "start:too low bid");
@@ -383,6 +391,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     }
 
     /// @notice an external function to bid on purchasing the vaults NFT. The msg.value is the bid amount
+    /// custom:update accept payment in USDC and don't accept ETH
     function bid(uint256 _bid) external {
         require(auctionState == State.live, "bid:auction is not live");
         uint256 increase = ISettings(settings).minBidIncrease() + 1000;
@@ -431,6 +440,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     }
 
     /// @notice an external function to burn ERC20 tokens to receive ETH from ERC721 token purchase
+    /// custom:update send USDC on burn
     function cash() external {
         require(auctionState == State.ended, "cash:vault not closed yet");
         uint256 bal = balanceOf(msg.sender);
@@ -441,17 +451,5 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         IERC20(usdc).transfer(msg.sender, share);
 
         emit Cash(msg.sender, share);
-    }
-
-    // Sending ETH is not guaranteed complete, and the method used here will return false if
-    // it fails. For example, a contract can block ETH transfer, or might use
-    // an excessive amount of gas, thereby griefing a new bidder.
-    // We should limit the gas used in transfers, and handle failure cases.
-    function _attemptETHTransfer(address to, uint256 value) internal returns (bool) {
-        // Here increase the gas limit a reasonable amount above the default, and try
-        // to send ETH to the recipient.
-        // NOTE: This might allow the recipient to attempt a limited reentrancy attack.
-        (bool success, ) = to.call{value: value, gas: 30000}("");
-        return success;
     }
 }
