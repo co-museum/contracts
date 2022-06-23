@@ -11,6 +11,6 @@ jobs:
       - uses: borales/actions-yarn@v3.0.0
         with:
           cmd: install
-      - run: yarn prettier --list-different contracts test scripts .github .vscode
+      - run: yarn prettier-check
       - run: yarn hardhat compile
       - run: yarn hardhat test

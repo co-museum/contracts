@@ -1,4 +1,4 @@
-//SPDX-License-Identifier: Unlicensed
+//SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -222,7 +222,7 @@ contract AllowanceCrowdsale is Ownable {
     function _receivePayment(
         bool payWithEth,
         uint256 quantity,
-        address _stablecoinAddress\
+        address _stablecoinAddress
     ) internal {
         if (!payWithEth) {
             getStablecoin(_stablecoinAddress).transferFrom(msg.sender, treasuryWallet, quantity * stablecoinRate);
