@@ -14,3 +14,4 @@ jobs:
       - run: yarn prettier-check
       - run: yarn hardhat compile
       - run: yarn hardhat test
+# TODO: upload artifacts (ABI, docs)
