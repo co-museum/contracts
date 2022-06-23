@@ -9,71 +9,91 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "../membership/ERC721MembershipUpgradeable.sol";
 
-/**
- * @title AllowanceCrowdsale
- * @dev Extension of Crowdsale where tokens are held by a wallet, which approves an allowance to the crowdsale.
- */
+/// @title A discrete whitelisted allowance crowdsale for $ART tokens and
+/// membership NFTs
+/// @notice You can only sell discrete number of tokens and associated number of
+/// membership NFTs in a proportion determined by the membership contract and the allocation determined by the seller.
+/// @dev Whitelists are stored as merkle tree roots. Merkle proofs are provided
+/// by a client software that is communicating with a backend storing the entire
+/// merkle tree. The crowdsale needs to be aware of both the token contract and the membership contract.
 contract AllowanceCrowdsale is Ownable {
     using SafeERC20 for IERC20;
+
+    /// @dev The _claimed variable represents whether the user has claimed thier $ART tokens allocation fully or partially without regard to crowdsale rounds
     mapping(address => bool) private _claimed;
 
-    // ======== STRUCTS ========
+    /// @notice Struct represeting a single group of whitelisted users
+    /// determined by the merkle root of a list of addresses and their
+    /// allocations. Each address can only ever be whitelisted once across rounds.
+    /// @param tierCode The code associated with a partcular tier in the membership contract
+    /// @param allocation The address allocation expressed in $ART tokens (number of membershio NFTs is computed by dividing by NFT price)
+    /// @param merkleRoot The merkle root of a list of addresses
     struct Whitelist {
         ERC721MembershipUpgradeable.TierCode tierCode;
-        uint256 allocation; // in tokenAddress token
+        uint256 allocation;
         bytes32 merkleRoot;
     }
 
-    // ======== STATE VARIABLES ========
-    address private _tokenWallet;
+    /// @return isActice Checks whether sale is active.
     bool public isActive;
-    Whitelist[] private whitelists;
-    uint256 public stablecoinRate; // NOTE: all stablecoins assumed to have same number of decimals as token
+    /// @return stablecoinRate Price of smallest unit of $ART token in smallest unit of stablecoin assuming same number of decimals in stablecoin and $ART token
+    uint256 public stablecoinRate;
+    /// @return ethRate Price of smallest unit of $ART token in wei
     uint256 public ethRate;
+    /// @return treasuryWallet Address of wallet receiving crowdsale funds
     address payable public treasuryWallet;
+    /// @return tokenHoldingWallet Address holding the tokens, which has approved allowance to the crowdsale
     address public tokenHoldingWallet;
+    /// @return acceptedStablecoins An array of accepted stablecoin addresses
     address[] public acceptedStablecoins;
-    IERC20 public tokenContract;
-    ERC721MembershipUpgradeable public membershipContract;
+    /// @return tokenContract Address of $ART token contract
+    address public tokenContract;
+    /// @return membershipContract Address holding and minting memberships
+    address public membershipContract;
+    /// @dev Array of whitelists in ongoing sale
+    Whitelist[] private whitelists;
 
-    // ======== CONSTRUCTOR ========
-    /**
-     * @dev Constructor, takes token wallet address.
-     * @param _tokenAddress Address of the token being sold
-     * @param _treasuryWallet Address where collected funds will be forwarded to
-     * @param _tokenHoldingWallet Address holding the tokens, which has approved allowance to the crowdsale.
-     * @param _membershipContract Address holding and minting memberships
-     * @param _acceptedStablecoins Array of stablecoin
-     */
+    /// @param _tokenContract Address of $ART token contract
+    /// @param _treasuryWallet Address of wallet receiving crowdsale funds
+    /// @param _tokenHoldingWallet Address holding the tokens, which has approved allowance to the crowdsale
+    /// @param _membershipContract Address holding and minting memberships
+    /// @param _acceptedStablecoins An array of accepted stablecoin addresses
     constructor(
-        address _tokenAddress,
+        address _tokenContract,
         address payable _treasuryWallet,
         address _tokenHoldingWallet,
         address _membershipContract,
         address[] memory _acceptedStablecoins
     ) {
-        require(_tokenHoldingWallet != address(0), "Token wallet is the zero address");
+        require(_tokenHoldingWallet != address(0), "crowdsale:token wallet is the zero address");
         isActive = false;
-        tokenContract = IERC20(_tokenAddress);
+        tokenContract = _tokenContract;
         treasuryWallet = _treasuryWallet;
         tokenHoldingWallet = _tokenHoldingWallet;
-        membershipContract = ERC721MembershipUpgradeable(_membershipContract);
+        membershipContract = _membershipContract;
         acceptedStablecoins = _acceptedStablecoins;
     }
 
-    /**
-     * @dev Reverts if not in crowdsale time range.
-     */
+    /// @dev Reverts if sale is not active.
     modifier onlyWhileOpen() {
-        require(isActive, "Crowdsale: not open");
+        require(isActive, "crowdsale:not open");
         _;
     }
 
+    /// @notice Sets the rate for the smallest unit of $ART token for stablecoins and ETH
+    /// @dev We assume that the stablecoin and the $ART token have the same decimals
+    /// @param _stablecoinRate Price of smallest unit of $ART token in smallest unit of stablecoin assuming same number of decimals in stablecoin and $ART token
+    /// @param _ethRate Price of smallest unit of $ART token in wei
     function setRates(uint256 _stablecoinRate, uint256 _ethRate) external {
         stablecoinRate = _stablecoinRate;
         ethRate = _ethRate;
     }
 
+    /// @notice Starts a sale for a batch of $ART token/associated NFTs for whitelisted addresses
+    /// @dev Index i in each array represents the associated parameter in whitelists[i], giving the contract information about the whitelisted addresses for this batch.
+    /// @param tierCodes An array of codes associated with a partcular tier in the membership contract
+    /// @param allocations An array of address allocation expressed in $ART tokens (number of membershio NFTs is computed by dividing by NFT price)
+    /// @param merkleRoots An array of merkle roots of a list of addresses
     function startSale(
         ERC721MembershipUpgradeable.TierCode[] calldata tierCodes,
         uint256[] calldata allocations,
@@ -81,10 +101,10 @@ contract AllowanceCrowdsale is Ownable {
     ) external onlyOwner {
         require(
             tierCodes.length == allocations.length && allocations.length == merkleRoots.length,
-            "Whitelists arrays should be of equal length"
+            "crowdsale:whitelists arrays should be of equal length"
         );
 
-        require(tierCodes.length != 0, "Whitelists arrays.length should be > 0");
+        require(tierCodes.length != 0, "crowdsale:whitelists arrays.length should be > 0");
 
         isActive = true;
 
@@ -95,6 +115,8 @@ contract AllowanceCrowdsale is Ownable {
         }
     }
 
+    /// @notice Stops a sale for a batch of $ART tokens/associated NFTs for whitelisted addresses
+    /// @dev Whitelists array is cleared at the end of the batch.
     function stopSale() external onlyOwner {
         isActive = false;
         // TODO: test when whitelist is uninitialised
@@ -103,6 +125,14 @@ contract AllowanceCrowdsale is Ownable {
         }
     }
 
+    /// @notice Helps a whitelisted user buy $ART tokens based on thier allocation
+    /// @param quantity Number of $ART tokens a user wants to buy
+    /// @param whitelistIndex Index of the whitelist in the array of whitelists
+    /// @dev There can be several whitelists in a batch of token sale with different allocations. WhiltelistIndex represents which which whitelist a user belongs to
+    /// @param proof Merkle proof used to verify that the msg.sender is a part of a Merkle tree
+    /// @param payWithEth Whether msg.sender pays with ETH or stablecoin
+    /// @param _stablecoinAddress Stablecoin addresses used to buy tokens
+    /// @dev _stablecoinAddress is passed as the zero address if payWithEth is true
     function buyTokens(
         uint256 quantity,
         uint8 whitelistIndex,
@@ -110,14 +140,24 @@ contract AllowanceCrowdsale is Ownable {
         bool payWithEth,
         address _stablecoinAddress
     ) external payable {
+        require(!_claimed[msg.sender], "crowdsale:user has already claimed allocation");
         Whitelist storage whitelist = whitelists[whitelistIndex];
         uint256 allocation = whitelist.allocation;
-        uint256 price = membershipContract.getTierPrice(whitelist.tierCode);
+        uint256 price = ERC721MembershipUpgradeable(membershipContract).getTierPrice(whitelist.tierCode);
         _validatePurchase(allocation, quantity, price, proof, whitelist.merkleRoot);
         _receivePayment(payWithEth, quantity, _stablecoinAddress);
-        tokenContract.safeTransferFrom(tokenHoldingWallet, msg.sender, quantity);
+        IERC20(tokenContract).safeTransferFrom(tokenHoldingWallet, msg.sender, quantity);
+        _claimed[msg.sender] = true;
     }
 
+    /// @notice Helps a whitelisted user buy membership NFTs based on thier allocation
+    /// @param numNFTs Number of NFTs a user wants to buy
+    /// @param whitelistIndex Index of the whitelist in the array of whitelists
+    /// @dev There can be several whitelists in a batch of token sale with different allocations. WhiltelistIndex represents which which whitelist a user belongs to
+    /// @param proof Merkle proof used to verify that the msg.sender is a part of a Merkle tree
+    /// @param payWithEth  Whether msg.sender pays with ETH or stablecoin
+    /// @param _stablecoinAddress Stablecoin addresses used to buy tokens
+    /// @dev _stablecoinAddress is passed as the zero address if payWithEth is true
     function buyNFTs(
         uint256 numNFTs,
         uint8 whitelistIndex,
@@ -125,29 +165,40 @@ contract AllowanceCrowdsale is Ownable {
         bool payWithEth,
         address _stablecoinAddress
     ) external payable {
+        require(!_claimed[msg.sender], "crowdsale:user has already claimed allocation");
         Whitelist storage whitelist = whitelists[whitelistIndex];
         uint256 allocation = whitelist.allocation;
-        uint256 price = membershipContract.getTierPrice(whitelist.tierCode);
+        uint256 price = ERC721MembershipUpgradeable(membershipContract).getTierPrice(whitelist.tierCode);
         uint256 quantity = numNFTs * price;
         _validatePurchase(allocation, quantity, price, proof, whitelist.merkleRoot);
         _receivePayment(payWithEth, quantity, _stablecoinAddress);
-        membershipContract.redeem(whitelist.tierCode, tokenHoldingWallet, msg.sender);
+        ERC721MembershipUpgradeable(membershipContract).redeem(whitelist.tierCode, tokenHoldingWallet, msg.sender);
+        _claimed[msg.sender] = true;
     }
 
+    /// @dev Validates if the purchase is being made in a discrete number of tokens, the discrete numbers being determined by the price of NFTs in terms of $ART tokens
+    /// @dev quantity % price -> Ensures discreteness  because quantity has to be a integer * price
+    /// @dev allocation % quantity -> Ensure you cannot buy a lower tier because if quantity > allocation, the reaminder != 0 (== quantity)
+    /// @param allocation The address allocation expressed in $ART tokens (number of membershio NFTs is computed by dividing by NFT price)
+    /// @param quantity Number of $ART tokens a user wants to buy (For NFTs, compute in terms of $ART tokens based on tier)
+    /// @param price Price of tier in terms of $ART token
+    /// @param whitelistRoot The merkle root of a list of addresses for whitelists[i]
     function _validatePurchase(
         uint256 allocation,
         uint256 quantity,
         uint256 price,
         bytes32[] calldata proof,
-        bytes32 batchRoot
+        bytes32 whitelistRoot
     ) internal view {
         require(
             allocation % quantity == 0 && quantity % price == 0,
-            "Must purchase tokens in discrete quantities based on allocation"
+            "crowdsale:must purchase tokens in discrete quantities based on allocation"
         );
-        require(MerkleProof.verify(proof, batchRoot, keccak256(abi.encodePacked(msg.sender))), "Invalid proof");
+        require(MerkleProof.verify(proof, whitelistRoot, keccak256(abi.encodePacked(msg.sender))), "Invalid proof");
     }
 
+    /// @dev Checks whether stablecoin is accepted and teturns the stablecoin
+    /// @param stablecoinAddress Address of stablecoin
     function getStablecoin(address stablecoinAddress) internal view returns (IERC20) {
         bool hasTokenAddress = false;
         for (uint256 i = 0; i < acceptedStablecoins.length; i++) {
@@ -155,23 +206,28 @@ contract AllowanceCrowdsale is Ownable {
                 hasTokenAddress = true;
             }
         }
-        require(hasTokenAddress, "Stablecoin not supported");
+        require(hasTokenAddress, "crowdsale:stablecoin not supported");
         return IERC20(stablecoinAddress);
     }
 
+    /// @dev Sends ETH to treasuryWallet
     function _forwardFunds() internal {
         treasuryWallet.transfer(msg.value);
     }
 
+    /// @dev Transfers either stablecoin or ETH to treasury wallet
+    /// @param payWithEth Whether msg.sender pays with ETH or stablecoin
+    /// @param quantity Number of $ART tokens a user wants to buy (For NFTs, compute in terms of $ART tokens based on tier)
+    /// @param _stablecoinAddress Stablecoin addresses used to buy tokens
     function _receivePayment(
         bool payWithEth,
         uint256 quantity,
-        address _stablecoinAddress
+        address _stablecoinAddress\
     ) internal {
         if (!payWithEth) {
             getStablecoin(_stablecoinAddress).transferFrom(msg.sender, treasuryWallet, quantity * stablecoinRate);
         } else {
-            require(msg.value >= quantity * ethRate, "Insufficient funds to buy tokens");
+            require(msg.value >= quantity * ethRate, "crowdsale:insufficient funds to buy tokens");
             _forwardFunds();
         }
     }
