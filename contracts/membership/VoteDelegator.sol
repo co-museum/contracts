@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../fractional/ERC721TokenVault.sol";
 
+/// @title Logic contract (used through a proxy) to vote for reserve price in
+/// TokenVault by membership NFT
 contract VoteDelegator is OwnableUpgradeable {
     TokenVault private vault;
 

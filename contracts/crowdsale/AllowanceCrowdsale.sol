@@ -12,21 +12,28 @@ import "../membership/ERC721MembershipUpgradeable.sol";
 /// @title A discrete whitelisted allowance crowdsale for $ART tokens and
 /// membership NFTs
 /// @notice You can only sell discrete number of tokens and associated number of
-/// membership NFTs in a proportion determined by the membership contract and the allocation determined by the seller.
+/// membership NFTs in a proportion determined by the membership contract and
+/// the allocation determined by the seller.
 /// @dev Whitelists are stored as merkle tree roots. Merkle proofs are provided
 /// by a client software that is communicating with a backend storing the entire
-/// merkle tree. The crowdsale needs to be aware of both the token contract and the membership contract.
+/// merkle tree. The crowdsale needs to be aware of both the token contract and
+/// the membership contract.
 contract AllowanceCrowdsale is Ownable {
     using SafeERC20 for IERC20;
 
-    /// @dev The _claimed variable represents whether the user has claimed thier $ART tokens allocation fully or partially without regard to crowdsale rounds
+    /// @dev The _claimed variable represents whether the user has claimed thier
+    /// $ART tokens allocation fully or partially without regard to crowdsale
+    /// rounds
     mapping(address => bool) private _claimed;
 
     /// @notice Struct represeting a single group of whitelisted users
     /// determined by the merkle root of a list of addresses and their
-    /// allocations. Each address can only ever be whitelisted once across rounds.
-    /// @param tierCode The code associated with a partcular tier in the membership contract
-    /// @param allocation The address allocation expressed in $ART tokens (number of membershio NFTs is computed by dividing by NFT price)
+    /// allocations. Each address can only ever be whitelisted once across
+    /// rounds.
+    /// @param tierCode The code associated with a partcular tier in the
+    /// membership contract
+    /// @param allocation The address allocation expressed in $ART tokens
+    /// (number of membershio NFTs is computed by dividing by NFT price)
     /// @param merkleRoot The merkle root of a list of addresses
     struct Whitelist {
         ERC721MembershipUpgradeable.TierCode tierCode;
@@ -36,13 +43,16 @@ contract AllowanceCrowdsale is Ownable {
 
     /// @return isActice Checks whether sale is active.
     bool public isActive;
-    /// @return stablecoinRate Price of smallest unit of $ART token in smallest unit of stablecoin assuming same number of decimals in stablecoin and $ART token
+    /// @return stablecoinRate Price of smallest unit of $ART token in smallest
+    /// unit of stablecoin assuming same number of decimals in stablecoin and
+    /// $ART token
     uint256 public stablecoinRate;
     /// @return ethRate Price of smallest unit of $ART token in wei
     uint256 public ethRate;
     /// @return treasuryWallet Address of wallet receiving crowdsale funds
     address payable public treasuryWallet;
-    /// @return tokenHoldingWallet Address holding the tokens, which has approved allowance to the crowdsale
+    /// @return tokenHoldingWallet Address holding the tokens, which has
+    /// approved allowance to the crowdsale
     address public tokenHoldingWallet;
     /// @return acceptedStablecoins An array of accepted stablecoin addresses
     address[] public acceptedStablecoins;
@@ -55,7 +65,8 @@ contract AllowanceCrowdsale is Ownable {
 
     /// @param _tokenContract Address of $ART token contract
     /// @param _treasuryWallet Address of wallet receiving crowdsale funds
-    /// @param _tokenHoldingWallet Address holding the tokens, which has approved allowance to the crowdsale
+    /// @param _tokenHoldingWallet Address holding the tokens, which has
+    /// approved allowance to the crowdsale
     /// @param _membershipContract Address holding and minting memberships
     /// @param _acceptedStablecoins An array of accepted stablecoin addresses
     constructor(
@@ -80,19 +91,28 @@ contract AllowanceCrowdsale is Ownable {
         _;
     }
 
-    /// @notice Sets the rate for the smallest unit of $ART token for stablecoins and ETH
-    /// @dev We assume that the stablecoin and the $ART token have the same decimals
-    /// @param _stablecoinRate Price of smallest unit of $ART token in smallest unit of stablecoin assuming same number of decimals in stablecoin and $ART token
+    /// @notice Sets the rate for the smallest unit of $ART token for
+    /// stablecoins and ETH
+    /// @dev We assume that the stablecoin and the $ART token have the same
+    /// decimals
+    /// @param _stablecoinRate Price of smallest unit of $ART token in smallest
+    /// unit of stablecoin assuming same number of decimals in stablecoin and
+    /// $ART token
     /// @param _ethRate Price of smallest unit of $ART token in wei
     function setRates(uint256 _stablecoinRate, uint256 _ethRate) external {
         stablecoinRate = _stablecoinRate;
         ethRate = _ethRate;
     }
 
-    /// @notice Starts a sale for a batch of $ART token/associated NFTs for whitelisted addresses
-    /// @dev Index i in each array represents the associated parameter in whitelists[i], giving the contract information about the whitelisted addresses for this batch.
-    /// @param tierCodes An array of codes associated with a partcular tier in the membership contract
-    /// @param allocations An array of address allocation expressed in $ART tokens (number of membershio NFTs is computed by dividing by NFT price)
+    /// @notice Starts a sale for a batch of $ART token/associated NFTs for
+    /// whitelisted addresses
+    /// @dev Index i in each array represents the associated parameter in
+    /// whitelists[i], giving the contract information about the whitelisted
+    /// addresses for this batch.
+    /// @param tierCodes An array of codes associated with a partcular tier in
+    /// the membership contract
+    /// @param allocations An array of address allocation expressed in $ART
+    /// tokens (number of membershio NFTs is computed by dividing by NFT price)
     /// @param merkleRoots An array of merkle roots of a list of addresses
     function startSale(
         ERC721MembershipUpgradeable.TierCode[] calldata tierCodes,
@@ -115,7 +135,8 @@ contract AllowanceCrowdsale is Ownable {
         }
     }
 
-    /// @notice Stops a sale for a batch of $ART tokens/associated NFTs for whitelisted addresses
+    /// @notice Stops a sale for a batch of $ART tokens/associated NFTs for
+    /// whitelisted addresses
     /// @dev Whitelists array is cleared at the end of the batch.
     function stopSale() external onlyOwner {
         isActive = false;
@@ -125,14 +146,19 @@ contract AllowanceCrowdsale is Ownable {
         }
     }
 
-    /// @notice Helps a whitelisted user buy $ART tokens based on thier allocation
+    /// @notice Helps a whitelisted user buy $ART tokens based on thier
+    /// allocation
     /// @param quantity Number of $ART tokens a user wants to buy
     /// @param whitelistIndex Index of the whitelist in the array of whitelists
-    /// @dev There can be several whitelists in a batch of token sale with different allocations. WhiltelistIndex represents which which whitelist a user belongs to
-    /// @param proof Merkle proof used to verify that the msg.sender is a part of a Merkle tree
+    /// @dev There can be several whitelists in a batch of token sale with
+    /// different allocations. WhiltelistIndex represents which which whitelist
+    /// a user belongs to
+    /// @param proof Merkle proof used to verify that the msg.sender is a part
+    /// of a Merkle tree
     /// @param payWithEth Whether msg.sender pays with ETH or stablecoin
     /// @param _stablecoinAddress Stablecoin addresses used to buy tokens
-    /// @dev _stablecoinAddress is passed as the zero address if payWithEth is true
+    /// @dev _stablecoinAddress is passed as the zero address if payWithEth is
+    /// true
     function buyTokens(
         uint256 quantity,
         uint8 whitelistIndex,
@@ -150,14 +176,19 @@ contract AllowanceCrowdsale is Ownable {
         _claimed[msg.sender] = true;
     }
 
-    /// @notice Helps a whitelisted user buy membership NFTs based on thier allocation
+    /// @notice Helps a whitelisted user buy membership NFTs based on thier
+    /// allocation
     /// @param numNFTs Number of NFTs a user wants to buy
     /// @param whitelistIndex Index of the whitelist in the array of whitelists
-    /// @dev There can be several whitelists in a batch of token sale with different allocations. WhiltelistIndex represents which which whitelist a user belongs to
-    /// @param proof Merkle proof used to verify that the msg.sender is a part of a Merkle tree
+    /// @dev There can be several whitelists in a batch of token sale with
+    /// different allocations. WhiltelistIndex represents which which whitelist
+    /// a user belongs to
+    /// @param proof Merkle proof used to verify that the msg.sender is a part
+    /// of a Merkle tree
     /// @param payWithEth  Whether msg.sender pays with ETH or stablecoin
     /// @param _stablecoinAddress Stablecoin addresses used to buy tokens
-    /// @dev _stablecoinAddress is passed as the zero address if payWithEth is true
+    /// @dev _stablecoinAddress is passed as the zero address if payWithEth is
+    /// true
     function buyNFTs(
         uint256 numNFTs,
         uint8 whitelistIndex,
@@ -176,13 +207,20 @@ contract AllowanceCrowdsale is Ownable {
         _claimed[msg.sender] = true;
     }
 
-    /// @dev Validates if the purchase is being made in a discrete number of tokens, the discrete numbers being determined by the price of NFTs in terms of $ART tokens
-    /// @dev quantity % price -> Ensures discreteness  because quantity has to be a integer * price
-    /// @dev allocation % quantity -> Ensure you cannot buy a lower tier because if quantity > allocation, the reaminder != 0 (== quantity)
-    /// @param allocation The address allocation expressed in $ART tokens (number of membershio NFTs is computed by dividing by NFT price)
-    /// @param quantity Number of $ART tokens a user wants to buy (For NFTs, compute in terms of $ART tokens based on tier)
+    /// @dev Validates if the purchase is being made in a discrete number of
+    /// tokens, the discrete numbers being determined by the price of NFTs in
+    /// terms of $ART tokens
+    /// @dev quantity % price -> Ensures discreteness  because quantity has to
+    /// be a integer * price
+    /// @dev allocation % quantity -> Ensure you cannot buy a lower tier because
+    /// if quantity > allocation, the reaminder != 0 (== quantity)
+    /// @param allocation The address allocation expressed in $ART tokens
+    /// (number of membershio NFTs is computed by dividing by NFT price)
+    /// @param quantity Number of $ART tokens a user wants to buy (For NFTs,
+    /// compute in terms of $ART tokens based on tier)
     /// @param price Price of tier in terms of $ART token
-    /// @param whitelistRoot The merkle root of a list of addresses for whitelists[i]
+    /// @param whitelistRoot The merkle root of a list of addresses for
+    /// whitelists[i]
     function _validatePurchase(
         uint256 allocation,
         uint256 quantity,
@@ -217,7 +255,8 @@ contract AllowanceCrowdsale is Ownable {
 
     /// @dev Transfers either stablecoin or ETH to treasury wallet
     /// @param payWithEth Whether msg.sender pays with ETH or stablecoin
-    /// @param quantity Number of $ART tokens a user wants to buy (For NFTs, compute in terms of $ART tokens based on tier)
+    /// @param quantity Number of $ART tokens a user wants to buy (For NFTs,
+    /// compute in terms of $ART tokens based on tier)
     /// @param _stablecoinAddress Stablecoin addresses used to buy tokens
     function _receivePayment(
         bool payWithEth,
