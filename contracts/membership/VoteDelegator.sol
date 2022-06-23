@@ -26,7 +26,7 @@ contract VoteDelegator is OwnableUpgradeable {
 
     /// @notice refund $ART tokens to address _to
     /// @param _to is the membership contract when transfering and the user address when
-    /// releasing 
+    /// releasing
     function withdraw(address _to) external onlyOwner {
         TokenVault(vault).transfer(_to, TokenVault(vault).balanceOf(address(this)));
     }
