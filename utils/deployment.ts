@@ -19,7 +19,7 @@ export async function deployERC20Mock(
   signer: SignerWithAddress,
   name = 'ERC20',
   symbol = 'ERC20',
-  supply: BigNumberish,
+  supply = ethers.utils.parseUnits('9000000', 6),
   decimals = 6,
 ): Promise<IERC20> {
   const MockERC20 = await ethers.getContractFactory('ERC20Mock')

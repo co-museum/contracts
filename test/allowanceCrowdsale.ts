@@ -44,6 +44,7 @@ describe('AllowanceCrowdsale', () => {
     }
 
     const vaultFactory = await deployVaultFactory()
+
     const dummyNFT = await deployERC721Mock()
     await dummyNFT.mint(signer.address, 0)
     await dummyNFT.approve(vaultFactory.address, 0)
