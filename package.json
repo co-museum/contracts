@@ -3,7 +3,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "deploy-test": "hardhat run --network localhost scripts/DeployTest.ts",
-    "prettier-check": "prettier --list-different contracts test scripts .github .vscode"
+    "prettier-check": "prettier --list-different contracts test scripts utils .github .vscode"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.0",
