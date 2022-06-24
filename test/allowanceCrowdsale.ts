@@ -165,63 +165,141 @@ describe('AllowanceCrowdsale', () => {
       )
     })
 
-    describe('BKLN supply', () => {
-      it('sells BKLN tokens when there is sufficient supply', async () => {
-        await allowanceCrowdsale
-          .connect(user1)
-          .buyTokens(
-            utils.parseUnits('400', decimals),
-            0,
-            treeSingle.getHexProof(user1.address),
-            true,
-            constants.AddressZero,
-            {
-              value: calculateEthRate(ethUSDPrice).mul(utils.parseUnits('400', decimals)),
-            },
-          )
-      })
+    describe('Before sale', () => {
+      it('cannot buy $ART tokens with ETH', async () => {})
+      it('cannot buy $ART tokens with accepted stablecoin', async () => {})
 
-      it('fails to sell BKLN tokens when there is insufficient supply', async () => {
-        await expect(
-          allowanceCrowdsale
-            .connect(user1)
-            .buyTokens(
-              tokenSupply.add(utils.parseUnits('400', decimals)),
-              2,
-              treeExceedingSupply.getHexProof(user3.address),
-              true,
-              constants.AddressZero,
-              {
-                value: calculateEthRate(ethUSDPrice).mul(tokenSupply.add(utils.parseUnits('400', decimals))),
-              },
-            ),
-        ).to.be.revertedWith('ERC20: transfer amount exceeds balance')
-      })
+      it('cannot buy membership NFTs with ETH', async () => {})
+      it('cannot buy membership NFTs with accepted stablecoin', async () => {})
     })
 
-    describe('accepting payment with different currencies', () => {
-      it('accepts payments in USDC', async () => {
-        const quantity = utils.parseUnits('400', decimals)
-        await allowanceCrowdsale
-          .connect(user1)
-          .buyTokens(quantity, 0, treeSingle.getHexProof(user1.address), false, mockUSDC.address)
-        expect(await tokenVault.balanceOf(user1.address)).to.be.equal(quantity)
-        expect(await mockUSDC.balanceOf(treasuryWallet.address)).to.be.equal(quantity.mul(rate))
+    describe('After sale', () => {
+      it('cannot buy $ART tokens with ETH', async () => {})
+      it('cannot buy $ART tokens with accepted stablecoin', async () => {})
+
+      it('cannot buy membership NFTs with ETH', async () => {})
+      it('cannot buy membership NFTs with accepted stablecoin', async () => {})
+    })
+
+    describe('During Sale', () => {
+      describe('before rates are set', () => {
+        it('cannot buy $ART tokens with ETH', async () => {})
+        it('cannot buy $ART tokens with accepted stablecoin', async () => {})
+        it('cannot buy membership NFTs with ETH', async () => {})
+        it('cannot buy membership NFTs with accepted stablecoin', async () => {})
       })
 
-      it('accepts payments in USDT', async () => {
-        const quantity = utils.parseUnits('400', decimals)
-        await allowanceCrowdsale
-          .connect(user1)
-          .buyTokens(quantity, 0, treeSingle.getHexProof(user1.address), false, mockUSDT.address)
-        expect(await tokenVault.balanceOf(user1.address)).to.be.equal(quantity)
-        expect(await mockUSDT.balanceOf(treasuryWallet.address)).to.be.equal(quantity.mul(rate))
+      describe('after rates are set', () => {
+        describe('indiscrete purchases', () => {
+          it('cannot buy lower tier $ART tokens', async () => {})
+          it('cannot buy invalid fractional allocation of $ART tokens', async () => {})
+        })
+
+        describe('discrete purchases', () => {
+          describe('full allocation of $ART tokens', () => {
+            describe('with sufficient funds', () => {
+              it('can buy full allocation of $ART tokens with ETH', async () => {})
+              it('can buy full allocation of $ART tokens with accepted stablecoin', async () => {})
+            })
+
+            describe('with insufficient funds', () => {
+              it('cannot buy full allocation of $ART tokens with ETH', async () => {})
+              it('cannot buy full allocation of $ART tokens with accepted stablecoin', async () => {})
+            })
+          })
+          describe('partial allocation of $ART tokens', () => {
+            describe('with sufficient funds', () => {
+              it('can buy valid partial allocation of $ART tokens with ETH', async () => {})
+              it('can buy valid partial allocation of $ART tokens with accepted stablecoin', async () => {})
+            })
+
+            describe('with insufficient funds', () => {
+              it('can buy valid partial allocation of $ART tokens with ETH', async () => {})
+              it('can buy valid partial allocation of $ART tokens with accepted stablecoin', async () => {})
+            })
+          })
+        })
       })
+
+      // describe('BKLN supply', () => {
+      //   it('sells BKLN tokens when there is sufficient supply', async () => {
+      //     await allowanceCrowdsale
+      //       .connect(user1)
+      //       .buyTokens(
+      //         utils.parseUnits('400', decimals),
+      //         0,
+      //         treeSingle.getHexProof(user1.address),
+      //         true,
+      //         constants.AddressZero,
+      //         {
+      //           value: calculateEthRate(ethUSDPrice).mul(utils.parseUnits('400', decimals)),
+      //         },
+      //       )
+      //   })
+
+      //   it('fails to sell BKLN tokens when there is insufficient supply', async () => {
+      //     await expect(
+      //       allowanceCrowdsale
+      //         .connect(user1)
+      //         .buyTokens(
+      //           tokenSupply.add(utils.parseUnits('400', decimals)),
+      //           2,
+      //           treeExceedingSupply.getHexProof(user3.address),
+      //           true,
+      //           constants.AddressZero,
+      //           {
+      //             value: calculateEthRate(ethUSDPrice).mul(tokenSupply.add(utils.parseUnits('400', decimals))),
+      //           },
+      //         ),
+      //     ).to.be.revertedWith('ERC20: transfer amount exceeds balance')
+      //   })
+      // })
+
+      // describe('accepting payment with different currencies', () => {
+      //   it('accepts payments in USDC', async () => {
+      //     const quantity = utils.parseUnits('400', decimals)
+      //     await allowanceCrowdsale
+      //       .connect(user1)
+      //       .buyTokens(quantity, 0, treeSingle.getHexProof(user1.address), false, mockUSDC.address)
+      //     expect(await tokenVault.balanceOf(user1.address)).to.be.equal(quantity)
+      //     expect(await mockUSDC.balanceOf(treasuryWallet.address)).to.be.equal(quantity.mul(rate))
+      //   })
+
+      //   it('accepts payments in USDT', async () => {
+      //     const quantity = utils.parseUnits('400', decimals)
+      //     await allowanceCrowdsale
+      //       .connect(user1)
+      //       .buyTokens(quantity, 0, treeSingle.getHexProof(user1.address), false, mockUSDT.address)
+      //     expect(await tokenVault.balanceOf(user1.address)).to.be.equal(quantity)
+      //     expect(await mockUSDT.balanceOf(treasuryWallet.address)).to.be.equal(quantity.mul(rate))
+      //   })
+      // })
     })
   })
 
   describe('not whitelisted', () => {
-    describe('BKLN supply', () => {})
-    describe('payment with different currencies', () => {})
+    describe('Before sale', () => {
+      it('cannot buy $ART tokens with ETH', async () => {})
+      it('cannot buy $ART tokens with accepted stablecoin', async () => {})
+
+      it('cannot buy membership NFTs with ETH', async () => {})
+      it('cannot buy membership NFTs with accepted stablecoin', async () => {})
+    })
+
+    describe('After sale', () => {
+      it('cannot buy $ART tokens with ETH', async () => {})
+      it('cannot buy $ART tokens with accepted stablecoin', async () => {})
+
+      it('cannot buy membership NFTs with ETH', async () => {})
+      it('cannot buy membership NFTs with accepted stablecoin', async () => {})
+    })
+
+    describe('During sale', () => {
+      it('cannot buy $ART tokens with ETH', async () => {})
+      it('cannot buy $ART tokens with accepted stablecoin', async () => {})
+
+      it('cannot buy membership NFTs with ETH', async () => {})
+      it('cannot buy membership NFTs with accepted stablecoin', async () => {})
+    })
   })
 })

@@ -21,14 +21,14 @@ import "../membership/ERC721MembershipUpgradeable.sol";
 contract AllowanceCrowdsale is Ownable {
     using SafeERC20 for IERC20;
 
-    /// @dev The _claimed variable represents whether the user has claimed thier
+    /// @dev The _claimed variable represents whether the user has claimed their
     /// $ART tokens allocation fully or partially without regard to crowdsale
     /// rounds
     mapping(address => bool) private _claimed;
 
     /// @notice Struct represeting a single group of whitelisted users
-    /// determined by the merkle root of a list of addresses and their
-    /// allocations. Each address can only ever be whitelisted once across
+    /// determined by the merkle root of a list of addresses, their
+    /// allocations, and their tier. Each address can only ever be whitelisted once across
     /// rounds.
     /// @param tierCode The code associated with a partcular tier in the
     /// membership contract
@@ -52,7 +52,7 @@ contract AllowanceCrowdsale is Ownable {
     /// @return treasuryWallet Address of wallet receiving crowdsale funds
     address payable public treasuryWallet;
     /// @return tokenHoldingWallet Address holding the tokens, which has
-    /// approved allowance to the crowdsale
+    /// given allowance to the crowdsale
     address public tokenHoldingWallet;
     /// @return acceptedStablecoins An array of accepted stablecoin addresses
     address[] public acceptedStablecoins;
@@ -93,8 +93,7 @@ contract AllowanceCrowdsale is Ownable {
 
     /// @notice Sets the rate for the smallest unit of $ART token for
     /// stablecoins and ETH
-    /// @dev We assume that the stablecoin and the $ART token have the same
-    /// decimals
+    /// @dev We assume that stablecoin and $ART token have same decimals
     /// @param _stablecoinRate Price of smallest unit of $ART token in smallest
     /// unit of stablecoin assuming same number of decimals in stablecoin and
     /// $ART token
@@ -114,6 +113,7 @@ contract AllowanceCrowdsale is Ownable {
     /// @param allocations An array of address allocation expressed in $ART
     /// tokens (number of membershio NFTs is computed by dividing by NFT price)
     /// @param merkleRoots An array of merkle roots of a list of addresses
+    /// @dev There can be several batches of token sale, but the same whitelisted address cannot claim tokens/NFTs if they have claimed already
     function startSale(
         ERC721MembershipUpgradeable.TierCode[] calldata tierCodes,
         uint256[] calldata allocations,
@@ -137,7 +137,7 @@ contract AllowanceCrowdsale is Ownable {
 
     /// @notice Stops a sale for a batch of $ART tokens/associated NFTs for
     /// whitelisted addresses
-    /// @dev Whitelists array is cleared at the end of the batch.
+    /// @dev Whitelists array is cleared at end of batch.
     function stopSale() external onlyOwner {
         isActive = false;
         // TODO: test when whitelist is uninitialised
@@ -146,10 +146,10 @@ contract AllowanceCrowdsale is Ownable {
         }
     }
 
-    /// @notice Helps a whitelisted user buy $ART tokens based on thier
+    /// @notice Helps whitelisted user buy $ART tokens based on thier
     /// allocation
     /// @param quantity Number of $ART tokens a user wants to buy
-    /// @param whitelistIndex Index of the whitelist in the array of whitelists
+    /// @param whitelistIndex Index of whitelist in array of whitelists
     /// @dev There can be several whitelists in a batch of token sale with
     /// different allocations. WhiltelistIndex represents which which whitelist
     /// a user belongs to
