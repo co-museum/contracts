@@ -4,7 +4,8 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expect } from 'chai'
 import { settings } from 'cluster'
 import { ethers } from 'hardhat'
-import { ERC20Mock, Settings, TokenVault } from '../typechain'
+import { ERC20Mock, IERC20, Settings, TokenVault } from '../typechain'
+import { deployERC20Mock, deployERC721Mock, deployTokenVault, deployVaultFactory } from '../utils/deployment'
 
 describe('ERC721TokenVault', () => {
   let signer: SignerWithAddress
@@ -13,49 +14,21 @@ describe('ERC721TokenVault', () => {
   let tokenVault: TokenVault
   let supportRole: string
   let senderRole: string
-  let mockUSDC: ERC20Mock
+  let mockUSDC: IERC20
   const decimals = 6
-  const mockUSDCSupply = ethers.utils.parseUnits('50000000000', decimals)
   const nftPrice = ethers.utils.parseUnits('4000000', decimals)
-  const tokenSupply = nftPrice
-  let settings: Settings
 
   beforeEach(async () => {
     ;[signer, user, crowdsaleContract] = await ethers.getSigners()
 
-    const Settings = await ethers.getContractFactory('Settings')
-    settings = await Settings.deploy()
-    await settings.deployed()
+    mockUSDC = await deployERC20Mock(signer, 'Usdc', 'USDC')
+    const vaultFactory = await deployVaultFactory()
 
-    const MockUSDC = await ethers.getContractFactory('ERC20Mock')
-    mockUSDC = await MockUSDC.deploy('usdc', 'USDC', signer.address, mockUSDCSupply, decimals)
-    await mockUSDC.deployed()
-
-    const VaultFactory = await ethers.getContractFactory('ERC721VaultFactory')
-    const vaultFactory = await VaultFactory.deploy(settings.address)
-    await vaultFactory.deployed()
-
-    const DummyNFT = await ethers.getContractFactory('ERC721Mock')
-    const dummyNFT = await DummyNFT.deploy('Dummy', 'DMY')
-    await dummyNFT.deployed()
-
+    const dummyNFT = await deployERC721Mock()
     await dummyNFT.mint(signer.address, 0)
     await dummyNFT.approve(vaultFactory.address, 0)
-    const tx = await vaultFactory.mint(
-      'Dummy Frac', // name
-      'DMYF', // symbol
-      dummyNFT.address, // token
-      mockUSDC.address,
-      0, // tokenID
-      tokenSupply, // supply
-      nftPrice, // list price
-      0, // fee
-    )
 
-    const receipt = await tx.wait()
-    const [mintEvent] = receipt.events!.filter((event, i, arr) => event.event == 'Mint')
-    const vaultAddress = mintEvent.args!['vault']
-    tokenVault = await ethers.getContractAt('TokenVault', vaultAddress)
+    tokenVault = await deployTokenVault(mockUSDC, dummyNFT, 0, vaultFactory)
     supportRole = await tokenVault.SUPPORT_ROLE()
     senderRole = await tokenVault.SENDER_ROLE()
   })
