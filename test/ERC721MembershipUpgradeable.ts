@@ -47,8 +47,8 @@ describe('ERC721MembershipUpgradeable', () => {
     tokenVault = await deployTokenVault(mockUSDC, dummyNFT, 0, vaultFactory)
 
     membershipERC721 = await deployMembership(tokenVault)
-    tokenVault.approve(membershipERC721.address, ethers.constants.MaxUint256)
-    tokenVault.connect(user).approve(membershipERC721.address, ethers.constants.MaxUint256)
+    await tokenVault.approve(membershipERC721.address, ethers.constants.MaxUint256)
+    await tokenVault.connect(user).approve(membershipERC721.address, ethers.constants.MaxUint256)
     supportRole = await membershipERC721.SUPPORT_ROLE()
     senderRole = await membershipERC721.SENDER_ROLE()
   })
@@ -255,7 +255,6 @@ describe('ERC721MembershipUpgradeable', () => {
     })
   })
 
-  // TODO: reuse token vault from top-level describe
   describe('pausability', () => {
     describe('pausing access control', () => {
       it('signer is support', async () => {
@@ -301,17 +300,17 @@ describe('ERC721MembershipUpgradeable', () => {
 
     describe('pausing prevents transfers', () => {
       // FIXME: why can't we redeem?
-      // it('blocks non-senders from sending when paused', async () => {
-      //   await membershipERC721.pause()
-      //   await membershipERC721.addSender(membershipERC721.address)
-      //   await membershipERC721.addSender(ethers.constants.AddressZero)
-      //   await mockUSDC.approve(membershipERC721.address, ethers.utils.parseUnits('400', decimals))
-      //   await membershipERC721.redeem(friendsCode, signer.address, signer.address)
-      //   await expect(membershipERC721.transferFrom(signer.address, user.address, 0)).to.be.reverted
-      // })
+      it('blocks non-senders from sending when paused', async () => {
+        await membershipERC721.pause()
+        await membershipERC721.addSender(membershipERC721.address)
+        await mockUSDC.approve(membershipERC721.address, ethers.utils.parseUnits('400', decimals))
+        await membershipERC721.redeem(friendsCode, signer.address, signer.address)
+        await expect(membershipERC721.transferFrom(signer.address, user.address, 0)).to.be.reverted
+      })
 
       it('allows senders to send', async () => {
         await membershipERC721.pause()
+        await membershipERC721.addSender(membershipERC721.address)
         await membershipERC721.addSender(signer.address)
         await mockUSDC.approve(membershipERC721.address, ethers.utils.parseUnits('400', decimals))
         await membershipERC721.redeem(friendsCode, signer.address, signer.address)

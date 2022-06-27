@@ -205,7 +205,15 @@ contract ERC721MembershipUpgradeable is
         TierCode tierCode,
         address erc20From,
         address nftTo
-    ) public {
+    ) external {
+        this._redeem(tierCode, erc20From, nftTo);
+    }
+
+    function _redeem(
+        TierCode tierCode,
+        address erc20From,
+        address nftTo
+    ) external {
         uint256 id;
         Tier storage tier = _getTierByCode(tierCode);
 
