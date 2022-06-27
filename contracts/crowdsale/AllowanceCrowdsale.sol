@@ -264,8 +264,10 @@ contract AllowanceCrowdsale is Ownable {
         address _stablecoinAddress
     ) internal {
         if (!payWithEth) {
+            require(ethRate > 0, "crowdsale:stablecoinRate <= 0");
             getStablecoin(_stablecoinAddress).transferFrom(msg.sender, treasuryWallet, quantity * stablecoinRate);
         } else {
+            require(ethRate > 0, "crowdsale:ethRate <= 0");
             require(msg.value >= quantity * ethRate, "crowdsale:insufficient funds to buy tokens");
             _forwardFunds();
         }
