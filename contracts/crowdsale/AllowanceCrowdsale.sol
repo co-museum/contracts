@@ -165,7 +165,7 @@ contract AllowanceCrowdsale is Ownable {
         bytes32[] calldata proof,
         bool payWithEth,
         address _stablecoinAddress
-    ) external payable {
+    ) external payable onlyWhileOpen {
         require(!_claimed[msg.sender], "crowdsale:user has already claimed allocation");
         Whitelist storage whitelist = whitelists[whitelistIndex];
         uint256 allocation = whitelist.allocation;
@@ -195,7 +195,7 @@ contract AllowanceCrowdsale is Ownable {
         bytes32[] calldata proof,
         bool payWithEth,
         address _stablecoinAddress
-    ) external payable {
+    ) external payable onlyWhileOpen {
         require(!_claimed[msg.sender], "crowdsale:user has already claimed allocation");
         Whitelist storage whitelist = whitelists[whitelistIndex];
         uint256 allocation = whitelist.allocation;
