@@ -13,7 +13,6 @@ import {
   deployTokenVault,
   deployVaultFactory,
 } from '../utils/deployment'
-import { arrayify } from 'ethers/lib/utils'
 
 describe('AllowanceCrowdsale', () => {
   let tokenVault: TokenVault
@@ -367,24 +366,21 @@ describe('AllowanceCrowdsale', () => {
             })
 
             describe('with insufficient funds', () => {
-              // it.only('cannot buy full allocation of $ART tokens with ETH', async () => {
-              //   console.log('HEREE\n\n\n')
-              //   const prov = await ethers.getDefaultProvider()
-              //   console.log(await prov.getBalance(user1.address))
-              //   const balanceUser1ETH = await prov.getBalance(user1.address)
-              //   await user1.sendTransaction({
-              //     to: user4.address,
-              //     value: balanceUser1ETH,
-              //   })
-              //   console.log(await prov.getBalance(user1.address))
-              //   console.log(ethValueForFriendAmount)
-              //   await allowanceCrowdsale
-              //     .connect(user1)
-              //     .buyTokens(friendTokenAmount, 0, treeSingle.getHexProof(user1.address), true, constants.AddressZero, {
-              //       value: ethValueForFriendAmount,
-              //     }),
-              //     expect(await tokenVault.balanceOf(user1.address)).to.be.equal(0)
-              // })
+              it('cannot buy full allocation of $ART tokens with ETH', async () => {
+                await expect(
+                  allowanceCrowdsale
+                    .connect(user1)
+                    .buyTokens(
+                      friendTokenAmount,
+                      0,
+                      treeSingle.getHexProof(user1.address),
+                      true,
+                      constants.AddressZero,
+                      { value: ethValueForFriendAmount.sub(1) },
+                    ),
+                ).to.be.revertedWith('crowdsale:not enough eth')
+              })
+
               it('cannot buy full allocation of $ART tokens with accepted stablecoin', async () => {
                 await mockUSDC.connect(user1).transfer(user4.address, await mockUSDC.balanceOf(user1.address))
                 await expect(
