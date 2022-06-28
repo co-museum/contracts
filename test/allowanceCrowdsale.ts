@@ -5,6 +5,7 @@ import { utils, constants, BigNumber } from 'ethers'
 import { MerkleTree } from 'merkletreejs'
 import { AllowanceCrowdsale, ERC721MembershipUpgradeable, TokenVault, IERC20 } from '../typechain'
 import { calculateEthRate } from '../utils/crowdsale'
+
 import {
   deployAllowanceCrowdsale,
   deployERC20Mock,
@@ -13,6 +14,24 @@ import {
   deployTokenVault,
   deployVaultFactory,
 } from '../utils/deployment'
+import {
+  decimals,
+  ethUSDPrice,
+  ethValueForFriendAmount,
+  friendTokenAmount,
+  revertMessageCrowdsaleNotOpen,
+  revertMessageDiscrete,
+  revertMessageERC20Balance,
+  revertMessageEthRate,
+  revertMessageNotEnoughEth,
+  revertMessageStablecoinRate,
+  revertMessageTransferExceedsBalance,
+  revertMessageUserClaimedAllocation,
+  stablecoinTokenRate,
+  tokenSupply,
+  totalSupplyOfMockUSDC,
+  totalSupplyOfMockUSDT,
+} from './lib/constants'
 
 describe('AllowanceCrowdsale', () => {
   let tokenVault: TokenVault
@@ -28,16 +47,10 @@ describe('AllowanceCrowdsale', () => {
   let treasuryWallet: SignerWithAddress
   let allowanceCrowdsale: AllowanceCrowdsale
   let membershipContract: ERC721MembershipUpgradeable
-  const decimals = 6
-  const ethUSDPrice = 1000
-  const totalSupplyOfMockUSDC = utils.parseUnits('9000000', decimals)
-  const totalSupplyOfMockUSDT = utils.parseUnits('9000000', decimals)
-  const rate = 1
-  const tokenSupply = ethers.utils.parseUnits('4000000', decimals)
-  const friendTokenAmount = utils.parseUnits('400', decimals)
-  const ethValueForFriendAmount = calculateEthRate(ethUSDPrice).mul(friendTokenAmount)
-  const revertMessageERC20Balance = 'ERC20: transfer amount exceeds balance'
-  const revertMessageEth = 'crowdsale:not enough eth'
+  let rootSingle: string
+  let rootDouble: string
+  let rootExceedingSupply: string
+  let rootFoundation: string
   let whiteListOne: string[]
   let whiteListTwo: string[]
   let whiteListThree: string[]
@@ -47,10 +60,6 @@ describe('AllowanceCrowdsale', () => {
   let treeDouble: MerkleTree
   let treeExceedingSupply: MerkleTree
   let treeFoundation: MerkleTree
-  let rootSingle: string
-  let rootDouble: string
-  let rootExceedingSupply: string
-  let rootFoundation: string
 
   beforeEach(async () => {
     ;[signer, user1, user2, user3, user4, user5, tokenHoldingWallet, treasuryWallet] = await ethers.getSigners()
@@ -119,8 +128,7 @@ describe('AllowanceCrowdsale', () => {
   })
 
   describe('whitelisted', () => {
-    describe('Before sale', () => {
-      const revertMessage = 'crowdsale:not open'
+    describe('before sale', () => {
       it('cannot buy $ART tokens with ETH', async () => {
         const whiteListIdx = findWhiteListArrIdx(whiteListArr, user1.address)
         await testUnsuccessfulTokenSaleWithEth(
@@ -130,7 +138,7 @@ describe('AllowanceCrowdsale', () => {
           whiteListIdx,
           treeSingle,
           ethValueForFriendAmount,
-          revertMessage,
+          revertMessageCrowdsaleNotOpen,
         )
       })
       it('cannot buy $ART tokens with accepted stablecoin', async () => {
@@ -144,7 +152,7 @@ describe('AllowanceCrowdsale', () => {
           mockUSDC,
           tokenVault,
           treasuryWallet,
-          revertMessage,
+          revertMessageCrowdsaleNotOpen,
         )
       })
 
@@ -158,7 +166,7 @@ describe('AllowanceCrowdsale', () => {
           whiteListIdx,
           treeDouble,
           ethValueForFriendAmount,
-          revertMessage,
+          revertMessageCrowdsaleNotOpen,
         )
       })
       it('cannot buy membership NFTs with accepted stablecoin', async () => {
@@ -172,7 +180,7 @@ describe('AllowanceCrowdsale', () => {
           treeDouble,
           mockUSDC,
           treasuryWallet,
-          revertMessage,
+          revertMessageCrowdsaleNotOpen,
         )
       })
     })
@@ -195,7 +203,7 @@ describe('AllowanceCrowdsale', () => {
       const numNFTs = 2
       it('cannot buy $ART tokens with ETH', async () => {
         const whiteListIdx = findWhiteListArrIdx(whiteListArr, user1.address)
-        const revertMessage = 'crowdsale:not open'
+
         await testUnsuccessfulTokenSaleWithEth(
           allowanceCrowdsale,
           user1,
@@ -203,7 +211,7 @@ describe('AllowanceCrowdsale', () => {
           whiteListIdx,
           treeSingle,
           ethValueForFriendAmount,
-          revertMessage,
+          revertMessageCrowdsaleNotOpen,
         )
       })
       it('cannot buy $ART tokens with accepted stablecoin', async () => {
@@ -212,7 +220,7 @@ describe('AllowanceCrowdsale', () => {
           allowanceCrowdsale
             .connect(user1)
             .buyTokens(friendTokenAmount, whiteListIdx, treeSingle.getHexProof(user1.address), true, mockUSDC.address),
-        ).to.be.revertedWith('crowdsale:not open')
+        ).to.be.revertedWith(revertMessageCrowdsaleNotOpen)
       })
 
       it('cannot buy membership NFTs with ETH', async () => {
@@ -223,7 +231,7 @@ describe('AllowanceCrowdsale', () => {
             .buyNFTs(numNFTs, whiteListIdx, treeSingle.getHexProof(user1.address), true, constants.AddressZero, {
               value: ethValueForFriendAmount,
             }),
-        ).to.be.revertedWith('crowdsale:not open')
+        ).to.be.revertedWith(revertMessageCrowdsaleNotOpen)
       })
       it('cannot buy membership NFTs with accepted stablecoin', async () => {
         const whiteListIdx = findWhiteListArrIdx(whiteListArr, user1.address)
@@ -231,7 +239,7 @@ describe('AllowanceCrowdsale', () => {
           allowanceCrowdsale
             .connect(user1)
             .buyNFTs(numNFTs, whiteListIdx, treeSingle.getHexProof(user1.address), true, mockUSDC.address),
-        ).to.be.revertedWith('crowdsale:not open')
+        ).to.be.revertedWith(revertMessageCrowdsaleNotOpen)
       })
     })
 
@@ -249,8 +257,6 @@ describe('AllowanceCrowdsale', () => {
       })
       describe('before rates are set', () => {
         const numNFTs = 2
-        const revertMessageEth = 'crowdsale:ethRate <= 0'
-        const revertMessageStablecoin = 'crowdsale:stablecoinRate <= 0'
 
         it('cannot buy $ART tokens with ETH', async () => {
           const whiteListIdx = findWhiteListArrIdx(whiteListArr, user1.address)
@@ -262,7 +268,7 @@ describe('AllowanceCrowdsale', () => {
             whiteListIdx,
             treeSingle,
             ethValueForFriendAmount,
-            revertMessageEth,
+            revertMessageEthRate,
           )
         })
         it('cannot buy $ART tokens with accepted stablecoin', async () => {
@@ -276,7 +282,7 @@ describe('AllowanceCrowdsale', () => {
             mockUSDC,
             tokenVault,
             treasuryWallet,
-            revertMessageStablecoin,
+            revertMessageStablecoinRate,
           )
         })
 
@@ -290,7 +296,7 @@ describe('AllowanceCrowdsale', () => {
             whiteListIdx,
             treeSingle,
             ethValue,
-            revertMessageEth,
+            revertMessageEthRate,
           )
         })
         it('cannot buy membership NFTs with accepted stablecoin', async () => {
@@ -303,7 +309,7 @@ describe('AllowanceCrowdsale', () => {
             treeSingle,
             mockUSDC,
             treasuryWallet,
-            revertMessageStablecoin,
+            revertMessageStablecoinRate,
           )
         })
       })
@@ -316,7 +322,7 @@ describe('AllowanceCrowdsale', () => {
           it('cannot buy lower tier $ART tokens', async () => {
             // user4 is allocated Foundation tier but tries to buy Friends tier
             const whiteListIdx = findWhiteListArrIdx(whiteListArr, user4.address)
-            const revertMessageDiscrete = 'crowdsale:must purchase tokens in discrete quantities based on allocation'
+
             mockUSDC.connect(user1).transfer(user4.address, friendTokenAmount)
 
             await testUnsuccessfulTokenSaleWithStableCoin(
@@ -333,7 +339,7 @@ describe('AllowanceCrowdsale', () => {
           })
           it('cannot buy invalid fractional allocation of $ART tokens', async () => {
             const whiteListIdx = findWhiteListArrIdx(whiteListArr, user2.address)
-            const revertMessageDiscrete = 'crowdsale:must purchase tokens in discrete quantities based on allocation'
+
             const invalidAmount = friendTokenAmount.add(friendTokenAmount.div(2))
 
             await testUnsuccessfulTokenSaleWithStableCoin(
@@ -371,7 +377,7 @@ describe('AllowanceCrowdsale', () => {
                   mockUSDC,
                   tokenVault,
                   treasuryWallet,
-                  rate,
+                  stablecoinTokenRate,
                 )
               })
 
@@ -380,13 +386,15 @@ describe('AllowanceCrowdsale', () => {
                   .connect(user1)
                   .buyTokens(friendTokenAmount, 0, treeSingle.getHexProof(user1.address), false, mockUSDC.address)
                 expect(await tokenVault.balanceOf(user1.address)).to.be.equal(friendTokenAmount)
-                expect(await mockUSDC.balanceOf(treasuryWallet.address)).to.be.equal(friendTokenAmount.mul(rate))
+                expect(await mockUSDC.balanceOf(treasuryWallet.address)).to.be.equal(
+                  friendTokenAmount.mul(stablecoinTokenRate),
+                )
 
                 await expect(
                   allowanceCrowdsale
                     .connect(user1)
                     .buyTokens(friendTokenAmount, 0, treeSingle.getHexProof(user1.address), false, mockUSDT.address),
-                ).to.be.revertedWith('crowdsale:user has already claimed allocation')
+                ).to.be.revertedWith(revertMessageUserClaimedAllocation)
                 expect(await tokenVault.balanceOf(user1.address)).to.be.equal(friendTokenAmount)
                 expect(await mockUSDT.balanceOf(treasuryWallet.address)).to.be.equal(0)
               })
@@ -397,7 +405,6 @@ describe('AllowanceCrowdsale', () => {
                 const hexProof = treeExceedingSupply.getHexProof(user3.address)
                 const buyWithEth = true
                 const ethValue = calculateEthRate(ethUSDPrice).mul(tokenAmountExceedingSupply)
-                const revertMessage = 'ERC20: transfer amount exceeds balance'
 
                 await testUnsuccessfulTokenSaleWithEth(
                   allowanceCrowdsale,
@@ -406,7 +413,7 @@ describe('AllowanceCrowdsale', () => {
                   whiteListIdx,
                   treeExceedingSupply,
                   ethValue,
-                  revertMessage,
+                  revertMessageTransferExceedsBalance,
                 )
               })
             })
@@ -421,7 +428,7 @@ describe('AllowanceCrowdsale', () => {
                   whiteListIdx,
                   treeSingle,
                   ethValueForFriendAmount.sub(1),
-                  revertMessageEth,
+                  revertMessageNotEnoughEth,
                 )
               })
 
@@ -462,7 +469,7 @@ describe('AllowanceCrowdsale', () => {
                   mockUSDC,
                   tokenVault,
                   treasuryWallet,
-                  rate,
+                  stablecoinTokenRate,
                 )
               })
             })
@@ -477,7 +484,7 @@ describe('AllowanceCrowdsale', () => {
                   whiteListIdx,
                   treeDouble,
                   ethValueForFriendAmount.sub(1),
-                  revertMessageEth,
+                  revertMessageNotEnoughEth,
                 )
               })
               it('cannot buy valid partial allocation of $ART tokens with accepted stablecoin', async () => {
@@ -504,7 +511,6 @@ describe('AllowanceCrowdsale', () => {
 
   describe('not whitelisted', () => {
     describe('Before sale', () => {
-      const revertMessage = 'crowdsale:not open'
       it('cannot buy $ART tokens with ETH', async () => {
         var whiteListIdx = findWhiteListArrIdx(whiteListArr, user5.address)
         expect(whiteListIdx).to.be.equal(-1)
@@ -517,7 +523,7 @@ describe('AllowanceCrowdsale', () => {
           whiteListIdx,
           treeSingle,
           ethValueForFriendAmount,
-          revertMessage,
+          revertMessageCrowdsaleNotOpen,
         )
       })
       it('cannot buy $ART tokens with accepted stablecoin', async () => {
@@ -534,7 +540,7 @@ describe('AllowanceCrowdsale', () => {
           mockUSDC,
           tokenVault,
           treasuryWallet,
-          revertMessage,
+          revertMessageCrowdsaleNotOpen,
         )
       })
 
@@ -551,7 +557,7 @@ describe('AllowanceCrowdsale', () => {
           whiteListIdx,
           treeDouble,
           ethValueForFriendAmount,
-          revertMessage,
+          revertMessageCrowdsaleNotOpen,
         )
       })
       it('cannot buy membership NFTs with accepted stablecoin', async () => {
@@ -568,7 +574,7 @@ describe('AllowanceCrowdsale', () => {
           treeDouble,
           mockUSDC,
           treasuryWallet,
-          revertMessage,
+          revertMessageCrowdsaleNotOpen,
         )
       })
     })
@@ -587,7 +593,7 @@ describe('AllowanceCrowdsale', () => {
         )
         await allowanceCrowdsale.stopSale()
       })
-      const revertMessage = 'crowdsale:not open'
+
       it('cannot buy $ART tokens with ETH', async () => {
         var whiteListIdx = findWhiteListArrIdx(whiteListArr, user5.address)
         expect(whiteListIdx).to.be.equal(-1)
@@ -600,7 +606,7 @@ describe('AllowanceCrowdsale', () => {
           whiteListIdx,
           treeSingle,
           ethValueForFriendAmount,
-          revertMessage,
+          revertMessageCrowdsaleNotOpen,
         )
       })
       it('cannot buy $ART tokens with accepted stablecoin', async () => {
@@ -617,7 +623,7 @@ describe('AllowanceCrowdsale', () => {
           mockUSDC,
           tokenVault,
           treasuryWallet,
-          revertMessage,
+          revertMessageCrowdsaleNotOpen,
         )
       })
 
@@ -634,7 +640,7 @@ describe('AllowanceCrowdsale', () => {
           whiteListIdx,
           treeDouble,
           ethValueForFriendAmount,
-          revertMessage,
+          revertMessageCrowdsaleNotOpen,
         )
       })
       it('cannot buy membership NFTs with accepted stablecoin', async () => {
@@ -651,7 +657,7 @@ describe('AllowanceCrowdsale', () => {
           treeDouble,
           mockUSDC,
           treasuryWallet,
-          revertMessage,
+          revertMessageCrowdsaleNotOpen,
         )
       })
     })
