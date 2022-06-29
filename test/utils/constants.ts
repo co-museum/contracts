@@ -2,6 +2,8 @@ import { ethers } from 'hardhat'
 import { utils, constants, BigNumber } from 'ethers'
 import { calculateEthRate } from '../../utils/crowdsale'
 
+// TODO: Remove dynamic constants
+// TODO: Use throughout tests
 export const stablecoinTokenRate = 1
 export const decimals = 6
 export const ethUSDPrice = 1000

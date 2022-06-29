@@ -22,11 +22,11 @@ describe('AllowanceCrowdsale', () => {
   let mockUSDC: IERC20
   let mockUSDT: IERC20
   let signer: SignerWithAddress
-  let userAllocatedOneFriend: SignerWithAddress
-  let userAllocatedTwoFriends: SignerWithAddress
-  let userAllocatedExceedingSupply: SignerWithAddress
-  let userAllocatedOneFoundation: SignerWithAddress
-  let user5: SignerWithAddress
+  let userOneFriend: SignerWithAddress
+  let userTwoFriends: SignerWithAddress
+  let userExceedingSupply: SignerWithAddress
+  let userOneFoundation: SignerWithAddress
+  let userNotWhitelisted: SignerWithAddress
   let tokenHoldingWallet: SignerWithAddress
   let treasuryWallet: SignerWithAddress
   let allowanceCrowdsale: AllowanceCrowdsale
@@ -35,46 +35,41 @@ describe('AllowanceCrowdsale', () => {
   let rootDouble: string
   let rootExceedingSupply: string
   let rootFoundation: string
-  let whitelistAllocatedOneFriend: string[]
-  let whitelistAllocatedTwoFriends: string[]
-  let whitelistAllocatedExceedingSupply: string[]
-  let whitelistAllocatedOneFoundation: string[]
+  let whitelistOneFriend: string[]
+  let whitelistTwoFriends: string[]
+  let whitelistExceedingSupply: string[]
+  let whitelistOneFoundation: string[]
   let whitelistArr: string[][]
-  let treeSingle: MerkleTree
-  let treeDouble: MerkleTree
+  let treeOneFriend: MerkleTree
+  let treeTwoFriends: MerkleTree
   let treeExceedingSupply: MerkleTree
-  let treeFoundation: MerkleTree
-  let whitelistIdxUserOne: number
-  let whitelistIdxUserTwo: number
-  let whitelistIdxUserThree: number
-  let whitelistIdxUserFour: number
-  let whitelistIdxUserFive: number
+  let treeOneFoundation: MerkleTree
+  let whitelistIdxOneFriend: number
+  let whitelistIdxTwoFriends: number
+  let whitelistIdxExceedingSupply: number
+  let whitelistIdxFoundation: number
+  let whitelistIdxNonWhitelisted: number
 
   beforeEach(async () => {
     ;[
       signer,
-      userAllocatedOneFriend,
-      userAllocatedTwoFriends,
-      userAllocatedExceedingSupply,
-      userAllocatedOneFoundation,
-      user5,
+      userOneFriend,
+      userTwoFriends,
+      userExceedingSupply,
+      userOneFoundation,
+      userNotWhitelisted,
       tokenHoldingWallet,
       treasuryWallet,
     ] = await ethers.getSigners()
-    whitelistAllocatedOneFriend = [userAllocatedOneFriend.address]
-    whitelistAllocatedTwoFriends = [userAllocatedTwoFriends.address]
-    whitelistAllocatedExceedingSupply = [userAllocatedExceedingSupply.address]
-    whitelistAllocatedOneFoundation = [userAllocatedOneFoundation.address]
-    whitelistArr = [
-      whitelistAllocatedOneFriend,
-      whitelistAllocatedTwoFriends,
-      whitelistAllocatedExceedingSupply,
-      whitelistAllocatedOneFoundation,
-    ]
+    whitelistOneFriend = [userOneFriend.address]
+    whitelistTwoFriends = [userTwoFriends.address]
+    whitelistExceedingSupply = [userExceedingSupply.address]
+    whitelistOneFoundation = [userOneFoundation.address]
+    whitelistArr = [whitelistOneFriend, whitelistTwoFriends, whitelistExceedingSupply, whitelistOneFoundation]
 
     mockUSDC = await deployERC20Mock(signer, 'Usdc', 'USDC', utilConstants.totalSupplyOfMockUSDC)
     mockUSDT = await deployERC20Mock(signer, 'Usdt', 'USDT', utilConstants.totalSupplyOfMockUSDT)
-    for (let user of [userAllocatedOneFriend, userAllocatedTwoFriends, userAllocatedExceedingSupply]) {
+    for (let user of [userOneFriend, userTwoFriends, userExceedingSupply]) {
       mockUSDC.transfer(user.address, utilConstants.totalSupplyOfMockUSDC.div(3))
       mockUSDT.transfer(user.address, utilConstants.totalSupplyOfMockUSDT.div(3))
     }
@@ -99,42 +94,42 @@ describe('AllowanceCrowdsale', () => {
       [mockUSDC, mockUSDT],
     )
     tokenVault.connect(tokenHoldingWallet).approve(allowanceCrowdsale.address, ethers.constants.MaxUint256)
-    for (let user of [userAllocatedOneFriend, userAllocatedTwoFriends, userAllocatedExceedingSupply]) {
+    for (let user of [userOneFriend, userTwoFriends, userExceedingSupply]) {
       mockUSDC.connect(user).approve(allowanceCrowdsale.address, ethers.constants.MaxUint256)
       mockUSDT.connect(user).approve(allowanceCrowdsale.address, ethers.constants.MaxUint256)
     }
 
     // one NFT allocated for user 1
-    const leavesSingle = whitelistAllocatedOneFriend.map((address) => utils.keccak256(address))
-    treeSingle = new MerkleTree(leavesSingle, utils.keccak256, {
+    const leavesSingle = whitelistOneFriend.map((address) => utils.keccak256(address))
+    treeOneFriend = new MerkleTree(leavesSingle, utils.keccak256, {
       sort: true,
     })
-    rootSingle = treeSingle.getHexRoot()
+    rootSingle = treeOneFriend.getHexRoot()
 
     // two NFTs allocated for user 2
-    const leavesDouble = whitelistAllocatedTwoFriends.map((address) => utils.keccak256(address))
-    treeDouble = new MerkleTree(leavesDouble, utils.keccak256, {
+    const leavesDouble = whitelistTwoFriends.map((address) => utils.keccak256(address))
+    treeTwoFriends = new MerkleTree(leavesDouble, utils.keccak256, {
       sort: true,
     })
-    rootDouble = treeDouble.getHexRoot()
+    rootDouble = treeTwoFriends.getHexRoot()
 
-    const leavesExceedingSupply = whitelistAllocatedExceedingSupply.map((address) => utils.keccak256(address))
+    const leavesExceedingSupply = whitelistExceedingSupply.map((address) => utils.keccak256(address))
     treeExceedingSupply = new MerkleTree(leavesExceedingSupply, utils.keccak256, {
       sort: true,
     })
     rootExceedingSupply = treeExceedingSupply.getHexRoot()
 
-    const leavesFoundation = whitelistAllocatedOneFoundation.map((address) => utils.keccak256(address))
-    treeFoundation = new MerkleTree(leavesFoundation, utils.keccak256, {
+    const leavesFoundation = whitelistOneFoundation.map((address) => utils.keccak256(address))
+    treeOneFoundation = new MerkleTree(leavesFoundation, utils.keccak256, {
       sort: true,
     })
-    rootFoundation = treeFoundation.getHexRoot()
+    rootFoundation = treeOneFoundation.getHexRoot()
 
-    whitelistIdxUserOne = helpers.findWhiteListArrIdx(whitelistArr, userAllocatedOneFriend.address)
-    whitelistIdxUserTwo = helpers.findWhiteListArrIdx(whitelistArr, userAllocatedTwoFriends.address)
-    whitelistIdxUserThree = helpers.findWhiteListArrIdx(whitelistArr, userAllocatedExceedingSupply.address)
-    whitelistIdxUserFour = helpers.findWhiteListArrIdx(whitelistArr, userAllocatedOneFoundation.address)
-    whitelistIdxUserFive = helpers.findWhiteListArrIdx(whitelistArr, user5.address)
+    whitelistIdxOneFriend = helpers.findWhiteListArrIdx(whitelistArr, userOneFriend.address)
+    whitelistIdxTwoFriends = helpers.findWhiteListArrIdx(whitelistArr, userTwoFriends.address)
+    whitelistIdxExceedingSupply = helpers.findWhiteListArrIdx(whitelistArr, userExceedingSupply.address)
+    whitelistIdxFoundation = helpers.findWhiteListArrIdx(whitelistArr, userOneFoundation.address)
+    whitelistIdxNonWhitelisted = helpers.findWhiteListArrIdx(whitelistArr, userNotWhitelisted.address)
   })
 
   describe('whitelisted', () => {
@@ -142,10 +137,10 @@ describe('AllowanceCrowdsale', () => {
       it('cannot buy $ART tokens with ETH', async () => {
         await helpers.testUnsuccessfulTokenSaleWithEth(
           allowanceCrowdsale,
-          userAllocatedOneFriend,
+          userOneFriend,
           utilConstants.friendTokenAmount,
-          whitelistIdxUserOne,
-          treeSingle,
+          whitelistIdxOneFriend,
+          treeOneFriend,
           utilConstants.ethValueForFriendAmount,
           tokenVault,
           treasuryWallet,
@@ -156,9 +151,9 @@ describe('AllowanceCrowdsale', () => {
         await helpers.testUnsuccessfulTokenSaleWithStableCoin(
           allowanceCrowdsale,
           utilConstants.friendTokenAmount,
-          whitelistIdxUserOne,
-          userAllocatedOneFriend,
-          treeDouble,
+          whitelistIdxOneFriend,
+          userOneFriend,
+          treeTwoFriends,
           mockUSDC,
           tokenVault,
           treasuryWallet,
@@ -169,10 +164,10 @@ describe('AllowanceCrowdsale', () => {
       it('cannot buy membership NFTs with ETH', async () => {
         await helpers.testUnsuccessfulNFTSaleWithEth(
           allowanceCrowdsale,
-          userAllocatedOneFriend,
+          userOneFriend,
           utilConstants.numNFTsOne,
-          whitelistIdxUserOne,
-          treeDouble,
+          whitelistIdxOneFriend,
+          treeTwoFriends,
           utilConstants.ethValueForFriendAmount,
           membershipContract,
           treasuryWallet,
@@ -182,10 +177,10 @@ describe('AllowanceCrowdsale', () => {
       it('cannot buy membership NFTs with accepted stablecoin', async () => {
         await helpers.testUnsuccessfulNFTSaleWithStableCoin(
           allowanceCrowdsale,
-          userAllocatedOneFriend,
+          userOneFriend,
           utilConstants.numNFTsOne,
-          whitelistIdxUserOne,
-          treeDouble,
+          whitelistIdxOneFriend,
+          treeTwoFriends,
           mockUSDC,
           treasuryWallet,
           membershipContract,
@@ -213,10 +208,10 @@ describe('AllowanceCrowdsale', () => {
       it('cannot buy $ART tokens with ETH', async () => {
         await helpers.testUnsuccessfulTokenSaleWithEth(
           allowanceCrowdsale,
-          userAllocatedOneFriend,
+          userOneFriend,
           utilConstants.friendTokenAmount,
-          whitelistIdxUserOne,
-          treeSingle,
+          whitelistIdxOneFriend,
+          treeOneFriend,
           utilConstants.ethValueForFriendAmount,
           tokenVault,
           treasuryWallet,
@@ -227,9 +222,9 @@ describe('AllowanceCrowdsale', () => {
         await helpers.testUnsuccessfulTokenSaleWithStableCoin(
           allowanceCrowdsale,
           utilConstants.friendTokenAmount,
-          whitelistIdxUserOne,
-          userAllocatedOneFriend,
-          treeSingle,
+          whitelistIdxOneFriend,
+          userOneFriend,
+          treeOneFriend,
           mockUSDC,
           tokenVault,
           treasuryWallet,
@@ -240,10 +235,10 @@ describe('AllowanceCrowdsale', () => {
       it('cannot buy membership NFTs with ETH', async () => {
         await helpers.testUnsuccessfulNFTSaleWithEth(
           allowanceCrowdsale,
-          userAllocatedOneFriend,
+          userOneFriend,
           doubleNFTnum,
-          whitelistIdxUserOne,
-          treeSingle,
+          whitelistIdxOneFriend,
+          treeOneFriend,
           utilConstants.ethValueForFriendAmount,
           membershipContract,
           treasuryWallet,
@@ -253,10 +248,10 @@ describe('AllowanceCrowdsale', () => {
       it('cannot buy membership NFTs with accepted stablecoin', async () => {
         await helpers.testUnsuccessfulNFTSaleWithStableCoin(
           allowanceCrowdsale,
-          userAllocatedOneFriend,
+          userOneFriend,
           doubleNFTnum,
-          whitelistIdxUserOne,
-          treeSingle,
+          whitelistIdxOneFriend,
+          treeOneFriend,
           mockUSDC,
           treasuryWallet,
           membershipContract,
@@ -281,10 +276,10 @@ describe('AllowanceCrowdsale', () => {
         it('cannot buy $ART tokens with ETH', async () => {
           await helpers.testUnsuccessfulTokenSaleWithEth(
             allowanceCrowdsale,
-            userAllocatedOneFriend,
+            userOneFriend,
             utilConstants.friendTokenAmount,
-            whitelistIdxUserOne,
-            treeSingle,
+            whitelistIdxOneFriend,
+            treeOneFriend,
             utilConstants.ethValueForFriendAmount,
             tokenVault,
             treasuryWallet,
@@ -295,9 +290,9 @@ describe('AllowanceCrowdsale', () => {
           await helpers.testUnsuccessfulTokenSaleWithStableCoin(
             allowanceCrowdsale,
             utilConstants.friendTokenAmount,
-            whitelistIdxUserOne,
-            userAllocatedOneFriend,
-            treeSingle,
+            whitelistIdxOneFriend,
+            userOneFriend,
+            treeOneFriend,
             mockUSDC,
             tokenVault,
             treasuryWallet,
@@ -308,10 +303,10 @@ describe('AllowanceCrowdsale', () => {
         it('cannot buy membership NFTs with ETH', async () => {
           await helpers.testUnsuccessfulNFTSaleWithEth(
             allowanceCrowdsale,
-            userAllocatedOneFriend,
+            userOneFriend,
             utilConstants.numNFTsOne,
-            whitelistIdxUserOne,
-            treeSingle,
+            whitelistIdxOneFriend,
+            treeOneFriend,
             utilConstants.ethValueForFriendAmount,
             membershipContract,
             treasuryWallet,
@@ -321,10 +316,10 @@ describe('AllowanceCrowdsale', () => {
         it('cannot buy membership NFTs with accepted stablecoin', async () => {
           await helpers.testUnsuccessfulNFTSaleWithStableCoin(
             allowanceCrowdsale,
-            userAllocatedOneFriend,
+            userOneFriend,
             utilConstants.numNFTsOne,
-            whitelistIdxUserOne,
-            treeSingle,
+            whitelistIdxOneFriend,
+            treeOneFriend,
             mockUSDC,
             treasuryWallet,
             membershipContract,
@@ -340,15 +335,13 @@ describe('AllowanceCrowdsale', () => {
         describe('indiscrete purchases', () => {
           it('cannot buy lower tier $ART tokens', async () => {
             // user4 is allocated Foundation tier but tries to buy Friends tier
-            mockUSDC
-              .connect(userAllocatedOneFriend)
-              .transfer(userAllocatedOneFoundation.address, utilConstants.friendTokenAmount)
+            mockUSDC.connect(userOneFriend).transfer(userOneFoundation.address, utilConstants.friendTokenAmount)
             await helpers.testUnsuccessfulTokenSaleWithStableCoin(
               allowanceCrowdsale,
               utilConstants.friendTokenAmount,
-              whitelistIdxUserFour,
-              userAllocatedOneFoundation,
-              treeFoundation,
+              whitelistIdxFoundation,
+              userOneFoundation,
+              treeOneFoundation,
               mockUSDC,
               tokenVault,
               treasuryWallet,
@@ -360,9 +353,9 @@ describe('AllowanceCrowdsale', () => {
             await helpers.testUnsuccessfulTokenSaleWithStableCoin(
               allowanceCrowdsale,
               invalidAmount,
-              whitelistIdxUserTwo,
-              userAllocatedOneFoundation,
-              treeFoundation,
+              whitelistIdxTwoFriends,
+              userOneFoundation,
+              treeOneFoundation,
               mockUSDC,
               tokenVault,
               treasuryWallet,
@@ -372,15 +365,13 @@ describe('AllowanceCrowdsale', () => {
 
           it('cannot buy lower tier membership NFTs', async () => {
             // user4 is allocated Foundation tier but tries to buy Friends tier
-            mockUSDC
-              .connect(userAllocatedOneFriend)
-              .transfer(userAllocatedOneFoundation.address, utilConstants.friendTokenAmount)
+            mockUSDC.connect(userOneFriend).transfer(userOneFoundation.address, utilConstants.friendTokenAmount)
             await helpers.testUnsuccessfulNFTSaleWithStableCoin(
               allowanceCrowdsale,
-              userAllocatedOneFoundation,
+              userOneFoundation,
               utilConstants.numNFTsTwo,
-              whitelistIdxUserFour,
-              treeFoundation,
+              whitelistIdxFoundation,
+              treeOneFoundation,
               mockUSDC,
               treasuryWallet,
               membershipContract,
@@ -391,10 +382,10 @@ describe('AllowanceCrowdsale', () => {
             const invalidNFTNum = 3
             await helpers.testUnsuccessfulNFTSaleWithStableCoin(
               allowanceCrowdsale,
-              userAllocatedOneFoundation,
+              userOneFoundation,
               invalidNFTNum,
-              whitelistIdxUserFour,
-              treeFoundation,
+              whitelistIdxFoundation,
+              treeOneFoundation,
               mockUSDC,
               treasuryWallet,
               membershipContract,
@@ -409,10 +400,10 @@ describe('AllowanceCrowdsale', () => {
               it('can buy full allocation of $ART tokens with ETH', async () => {
                 await helpers.testSuccessfulTokenSaleWithEth(
                   allowanceCrowdsale,
-                  userAllocatedOneFriend,
+                  userOneFriend,
                   utilConstants.friendTokenAmount,
-                  whitelistIdxUserOne,
-                  treeSingle,
+                  whitelistIdxOneFriend,
+                  treeOneFriend,
                   utilConstants.ethValueForFriendAmount,
                   tokenVault,
                   treasuryWallet,
@@ -423,9 +414,9 @@ describe('AllowanceCrowdsale', () => {
                 await helpers.testSuccessfulTokenSaleWithStableCoin(
                   allowanceCrowdsale,
                   utilConstants.friendTokenAmount.mul(2),
-                  whitelistIdxUserTwo,
-                  userAllocatedTwoFriends,
-                  treeDouble,
+                  whitelistIdxTwoFriends,
+                  userTwoFriends,
+                  treeTwoFriends,
                   mockUSDC,
                   tokenVault,
                   treasuryWallet,
@@ -435,35 +426,31 @@ describe('AllowanceCrowdsale', () => {
 
               it('same user cannot buy tokens twice', async () => {
                 await allowanceCrowdsale
-                  .connect(userAllocatedOneFriend)
+                  .connect(userOneFriend)
                   .buyTokens(
                     utilConstants.friendTokenAmount,
-                    whitelistIdxUserOne,
-                    treeSingle.getHexProof(userAllocatedOneFriend.address),
+                    whitelistIdxOneFriend,
+                    treeOneFriend.getHexProof(userOneFriend.address),
                     false,
                     mockUSDC.address,
                   )
-                expect(await tokenVault.balanceOf(userAllocatedOneFriend.address)).to.be.equal(
-                  utilConstants.friendTokenAmount,
-                )
+                expect(await tokenVault.balanceOf(userOneFriend.address)).to.be.equal(utilConstants.friendTokenAmount)
                 expect(await mockUSDC.balanceOf(treasuryWallet.address)).to.be.equal(
                   utilConstants.friendTokenAmount.mul(utilConstants.stablecoinTokenRate),
                 )
 
                 await expect(
                   allowanceCrowdsale
-                    .connect(userAllocatedOneFriend)
+                    .connect(userOneFriend)
                     .buyTokens(
                       utilConstants.friendTokenAmount,
-                      whitelistIdxUserOne,
-                      treeSingle.getHexProof(userAllocatedOneFriend.address),
+                      whitelistIdxOneFriend,
+                      treeOneFriend.getHexProof(userOneFriend.address),
                       false,
                       mockUSDT.address,
                     ),
                 ).to.be.revertedWith(utilConstants.revertMessageUserClaimedAllocation)
-                expect(await tokenVault.balanceOf(userAllocatedOneFriend.address)).to.be.equal(
-                  utilConstants.friendTokenAmount,
-                )
+                expect(await tokenVault.balanceOf(userOneFriend.address)).to.be.equal(utilConstants.friendTokenAmount)
                 expect(await mockUSDT.balanceOf(treasuryWallet.address)).to.be.equal(0)
               })
 
@@ -471,9 +458,9 @@ describe('AllowanceCrowdsale', () => {
                 await helpers.testUnsuccessfulTokenSaleWithStableCoin(
                   allowanceCrowdsale,
                   utilConstants.friendTokenAmount.mul(2),
-                  whitelistIdxUserOne,
-                  userAllocatedOneFriend,
-                  treeSingle,
+                  whitelistIdxOneFriend,
+                  userOneFriend,
+                  treeOneFriend,
                   mockUSDC,
                   tokenVault,
                   treasuryWallet,
@@ -485,15 +472,15 @@ describe('AllowanceCrowdsale', () => {
                 const tokenAmountExceedingSupply = utilConstants.tokenSupply.add(
                   utils.parseUnits('400', utilConstants.decimals),
                 )
-                const hexProof = treeExceedingSupply.getHexProof(userAllocatedExceedingSupply.address)
+                const hexProof = treeExceedingSupply.getHexProof(userExceedingSupply.address)
                 const buyWithEth = true
                 const ethValue = calculateEthRate(utilConstants.ethUSDPrice).mul(tokenAmountExceedingSupply)
 
                 await helpers.testUnsuccessfulTokenSaleWithEth(
                   allowanceCrowdsale,
-                  userAllocatedExceedingSupply,
+                  userExceedingSupply,
                   tokenAmountExceedingSupply,
-                  whitelistIdxUserThree,
+                  whitelistIdxExceedingSupply,
                   treeExceedingSupply,
                   ethValue,
                   tokenVault,
@@ -505,10 +492,10 @@ describe('AllowanceCrowdsale', () => {
               it('can buy full allocation of membership NFTs with ETH', async () => {
                 await helpers.testSuccessfulNFTSaleWithEth(
                   allowanceCrowdsale,
-                  userAllocatedTwoFriends,
+                  userTwoFriends,
                   utilConstants.numNFTsTwo,
-                  whitelistIdxUserTwo,
-                  treeDouble,
+                  whitelistIdxTwoFriends,
+                  treeTwoFriends,
                   utilConstants.ethValueForFriendAmount.mul(2),
                   treasuryWallet,
                   membershipContract,
@@ -517,10 +504,10 @@ describe('AllowanceCrowdsale', () => {
               it('can buy full allocation of membership NFTs with accepted stablecoin', async () => {
                 await helpers.testSuccessfulNFTSaleWithStableCoin(
                   allowanceCrowdsale,
-                  userAllocatedTwoFriends,
+                  userTwoFriends,
                   utilConstants.numNFTsTwo,
-                  whitelistIdxUserTwo,
-                  treeDouble,
+                  whitelistIdxTwoFriends,
+                  treeTwoFriends,
                   mockUSDC,
                   treasuryWallet,
                   membershipContract,
@@ -530,10 +517,10 @@ describe('AllowanceCrowdsale', () => {
               it('same user cannot buy membership NFTs twice', async () => {
                 await helpers.testSuccessfulNFTSaleWithStableCoin(
                   allowanceCrowdsale,
-                  userAllocatedTwoFriends,
+                  userTwoFriends,
                   utilConstants.numNFTsOne,
-                  whitelistIdxUserTwo,
-                  treeDouble,
+                  whitelistIdxTwoFriends,
+                  treeTwoFriends,
                   mockUSDC,
                   treasuryWallet,
                   membershipContract,
@@ -542,10 +529,10 @@ describe('AllowanceCrowdsale', () => {
 
                 await helpers.testUnsuccessfulNFTSaleWithStableCoin(
                   allowanceCrowdsale,
-                  userAllocatedTwoFriends,
+                  userTwoFriends,
                   utilConstants.numNFTsOne,
-                  whitelistIdxUserTwo,
-                  treeDouble,
+                  whitelistIdxTwoFriends,
+                  treeTwoFriends,
                   mockUSDC,
                   treasuryWallet,
                   membershipContract,
@@ -555,10 +542,10 @@ describe('AllowanceCrowdsale', () => {
               it('cannot buy more than full allocation of membership NFTs with accepted stablecoin', async () => {
                 await helpers.testUnsuccessfulNFTSaleWithStableCoin(
                   allowanceCrowdsale,
-                  userAllocatedOneFriend,
+                  userOneFriend,
                   utilConstants.numNFTsTwo,
-                  whitelistIdxUserOne,
-                  treeSingle,
+                  whitelistIdxOneFriend,
+                  treeOneFriend,
                   mockUSDC,
                   treasuryWallet,
                   membershipContract,
@@ -569,10 +556,10 @@ describe('AllowanceCrowdsale', () => {
               it('cannot buy when there is insufficient supply of membership NFTs', async () => {
                 await helpers.testSuccessfulNFTSaleWithStableCoin(
                   allowanceCrowdsale,
-                  userAllocatedTwoFriends,
+                  userTwoFriends,
                   utilConstants.numNFTsTwo,
-                  whitelistIdxUserTwo,
-                  treeDouble,
+                  whitelistIdxTwoFriends,
+                  treeTwoFriends,
                   mockUSDC,
                   treasuryWallet,
                   membershipContract,
@@ -581,10 +568,10 @@ describe('AllowanceCrowdsale', () => {
 
                 await helpers.testUnsuccessfulNFTSaleWithStableCoin(
                   allowanceCrowdsale,
-                  userAllocatedOneFriend,
+                  userOneFriend,
                   utilConstants.numNFTsOne,
-                  whitelistIdxUserOne,
-                  treeSingle,
+                  whitelistIdxOneFriend,
+                  treeOneFriend,
                   mockUSDC,
                   treasuryWallet,
                   membershipContract,
@@ -597,10 +584,10 @@ describe('AllowanceCrowdsale', () => {
               it('cannot buy full allocation of $ART tokens with ETH', async () => {
                 await helpers.testUnsuccessfulTokenSaleWithEth(
                   allowanceCrowdsale,
-                  userAllocatedOneFriend,
+                  userOneFriend,
                   utilConstants.friendTokenAmount,
-                  whitelistIdxUserOne,
-                  treeSingle,
+                  whitelistIdxOneFriend,
+                  treeOneFriend,
                   utilConstants.ethValueForFriendAmount.sub(1),
                   tokenVault,
                   treasuryWallet,
@@ -610,33 +597,30 @@ describe('AllowanceCrowdsale', () => {
 
               it('cannot buy full allocation of $ART tokens with accepted stablecoin', async () => {
                 await mockUSDC
-                  .connect(userAllocatedOneFriend)
-                  .transfer(
-                    userAllocatedOneFoundation.address,
-                    await mockUSDC.balanceOf(userAllocatedOneFriend.address),
-                  )
+                  .connect(userOneFriend)
+                  .transfer(userOneFoundation.address, await mockUSDC.balanceOf(userOneFriend.address))
                 await expect(
                   allowanceCrowdsale
-                    .connect(userAllocatedOneFriend)
+                    .connect(userOneFriend)
                     .buyTokens(
                       utilConstants.friendTokenAmount,
                       0,
-                      treeSingle.getHexProof(userAllocatedOneFriend.address),
+                      treeOneFriend.getHexProof(userOneFriend.address),
                       false,
                       mockUSDC.address,
                     ),
                 ).to.be.revertedWith('ERC20: transfer amount exceeds balance')
-                expect(await tokenVault.balanceOf(userAllocatedOneFriend.address)).to.be.equal(0)
+                expect(await tokenVault.balanceOf(userOneFriend.address)).to.be.equal(0)
                 expect(await mockUSDC.balanceOf(treasuryWallet.address)).to.be.equal(0)
               })
 
               it('cannot buy full allocation of membership NFTs with ETH', async () => {
                 await helpers.testUnsuccessfulNFTSaleWithEth(
                   allowanceCrowdsale,
-                  userAllocatedOneFriend,
+                  userOneFriend,
                   utilConstants.numNFTsOne,
-                  whitelistIdxUserOne,
-                  treeSingle,
+                  whitelistIdxOneFriend,
+                  treeOneFriend,
                   utilConstants.ethValueForFriendAmount.sub(1),
                   membershipContract,
                   treasuryWallet,
@@ -645,17 +629,14 @@ describe('AllowanceCrowdsale', () => {
               })
               it('cannot buy full allocation of membership NFTs with accepted stablecoin', async () => {
                 await mockUSDC
-                  .connect(userAllocatedOneFriend)
-                  .transfer(
-                    userAllocatedOneFoundation.address,
-                    await mockUSDC.balanceOf(userAllocatedTwoFriends.address),
-                  )
+                  .connect(userOneFriend)
+                  .transfer(userOneFoundation.address, await mockUSDC.balanceOf(userTwoFriends.address))
                 await helpers.testUnsuccessfulNFTSaleWithStableCoin(
                   allowanceCrowdsale,
-                  userAllocatedOneFriend,
+                  userOneFriend,
                   utilConstants.numNFTsOne,
-                  whitelistIdxUserOne,
-                  treeDouble,
+                  whitelistIdxOneFriend,
+                  treeTwoFriends,
                   mockUSDC,
                   treasuryWallet,
                   membershipContract,
@@ -669,10 +650,10 @@ describe('AllowanceCrowdsale', () => {
               it('can buy valid partial allocation of $ART tokens with ETH', async () => {
                 await helpers.testSuccessfulTokenSaleWithEth(
                   allowanceCrowdsale,
-                  userAllocatedTwoFriends,
+                  userTwoFriends,
                   utilConstants.friendTokenAmount,
-                  whitelistIdxUserTwo,
-                  treeDouble,
+                  whitelistIdxTwoFriends,
+                  treeTwoFriends,
                   utilConstants.ethValueForFriendAmount,
                   tokenVault,
                   treasuryWallet,
@@ -682,9 +663,9 @@ describe('AllowanceCrowdsale', () => {
                 await helpers.testSuccessfulTokenSaleWithStableCoin(
                   allowanceCrowdsale,
                   utilConstants.friendTokenAmount,
-                  whitelistIdxUserOne,
-                  userAllocatedOneFriend,
-                  treeDouble,
+                  whitelistIdxOneFriend,
+                  userOneFriend,
+                  treeTwoFriends,
                   mockUSDC,
                   tokenVault,
                   treasuryWallet,
@@ -694,10 +675,10 @@ describe('AllowanceCrowdsale', () => {
               it('can buy valid partial allocation of membership NFTs with ETH', async () => {
                 await helpers.testSuccessfulNFTSaleWithEth(
                   allowanceCrowdsale,
-                  userAllocatedTwoFriends,
+                  userTwoFriends,
                   utilConstants.numNFTsOne,
-                  whitelistIdxUserTwo,
-                  treeDouble,
+                  whitelistIdxTwoFriends,
+                  treeTwoFriends,
                   utilConstants.ethValueForFriendAmount,
                   treasuryWallet,
                   membershipContract,
@@ -706,10 +687,10 @@ describe('AllowanceCrowdsale', () => {
               it('can buy valid partial allocation of membership NFTs with stablecoin', async () => {
                 await helpers.testSuccessfulNFTSaleWithStableCoin(
                   allowanceCrowdsale,
-                  userAllocatedTwoFriends,
+                  userTwoFriends,
                   utilConstants.numNFTsOne,
-                  whitelistIdxUserTwo,
-                  treeDouble,
+                  whitelistIdxTwoFriends,
+                  treeTwoFriends,
                   mockUSDC,
                   treasuryWallet,
                   membershipContract,
@@ -722,10 +703,10 @@ describe('AllowanceCrowdsale', () => {
               it('cannot buy valid partial allocation of $ART tokens with ETH', async () => {
                 await helpers.testUnsuccessfulTokenSaleWithEth(
                   allowanceCrowdsale,
-                  userAllocatedTwoFriends,
+                  userTwoFriends,
                   utilConstants.friendTokenAmount,
-                  whitelistIdxUserTwo,
-                  treeDouble,
+                  whitelistIdxTwoFriends,
+                  treeTwoFriends,
                   utilConstants.ethValueForFriendAmount.sub(1),
                   tokenVault,
                   treasuryWallet,
@@ -734,17 +715,14 @@ describe('AllowanceCrowdsale', () => {
               })
               it('cannot buy valid partial allocation of $ART tokens with accepted stablecoin', async () => {
                 await mockUSDC
-                  .connect(userAllocatedTwoFriends)
-                  .transfer(
-                    userAllocatedOneFoundation.address,
-                    await mockUSDC.balanceOf(userAllocatedTwoFriends.address),
-                  )
+                  .connect(userTwoFriends)
+                  .transfer(userOneFoundation.address, await mockUSDC.balanceOf(userTwoFriends.address))
                 await helpers.testUnsuccessfulTokenSaleWithStableCoin(
                   allowanceCrowdsale,
                   utilConstants.friendTokenAmount,
-                  whitelistIdxUserTwo,
-                  userAllocatedTwoFriends,
-                  treeDouble,
+                  whitelistIdxTwoFriends,
+                  userTwoFriends,
+                  treeTwoFriends,
                   mockUSDC,
                   tokenVault,
                   treasuryWallet,
@@ -755,10 +733,10 @@ describe('AllowanceCrowdsale', () => {
               it('cannot buy valid partial allocation of membership NFTs with ETH', async () => {
                 await helpers.testUnsuccessfulNFTSaleWithEth(
                   allowanceCrowdsale,
-                  userAllocatedTwoFriends,
+                  userTwoFriends,
                   utilConstants.numNFTsOne,
-                  whitelistIdxUserTwo,
-                  treeDouble,
+                  whitelistIdxTwoFriends,
+                  treeTwoFriends,
                   utilConstants.ethValueForFriendAmount.div(2),
                   membershipContract,
                   treasuryWallet,
@@ -767,15 +745,15 @@ describe('AllowanceCrowdsale', () => {
               })
               it('cannot buy valid partial allocation of membership NFTs with stablecoin', async () => {
                 mockUSDC
-                  .connect(userAllocatedTwoFriends)
-                  .transfer(user5.address, await mockUSDC.balanceOf(userAllocatedTwoFriends.address))
+                  .connect(userTwoFriends)
+                  .transfer(userNotWhitelisted.address, await mockUSDC.balanceOf(userTwoFriends.address))
 
                 await helpers.testUnsuccessfulNFTSaleWithStableCoin(
                   allowanceCrowdsale,
-                  userAllocatedTwoFriends,
+                  userTwoFriends,
                   utilConstants.numNFTsOne,
-                  whitelistIdxUserTwo,
-                  treeDouble,
+                  whitelistIdxTwoFriends,
+                  treeTwoFriends,
                   mockUSDC,
                   treasuryWallet,
                   membershipContract,
@@ -792,7 +770,7 @@ describe('AllowanceCrowdsale', () => {
   describe('not whitelisted', () => {
     var whitelistIdx: number
     beforeEach(async () => {
-      whitelistIdx = whitelistIdxUserFive
+      whitelistIdx = whitelistIdxNonWhitelisted
       expect(whitelistIdx).to.be.equal(-1)
       // forcing an incorrect whiteListIdx to interact with the contract
       whitelistIdx = 1
@@ -801,10 +779,10 @@ describe('AllowanceCrowdsale', () => {
       it('cannot buy $ART tokens with ETH', async () => {
         await helpers.testUnsuccessfulTokenSaleWithEth(
           allowanceCrowdsale,
-          user5,
+          userNotWhitelisted,
           utilConstants.friendTokenAmount,
           whitelistIdx,
-          treeSingle,
+          treeOneFriend,
           utilConstants.ethValueForFriendAmount,
           tokenVault,
           treasuryWallet,
@@ -816,8 +794,8 @@ describe('AllowanceCrowdsale', () => {
           allowanceCrowdsale,
           utilConstants.friendTokenAmount,
           whitelistIdx,
-          user5,
-          treeDouble,
+          userNotWhitelisted,
+          treeTwoFriends,
           mockUSDC,
           tokenVault,
           treasuryWallet,
@@ -828,10 +806,10 @@ describe('AllowanceCrowdsale', () => {
       it('cannot buy membership NFTs with ETH', async () => {
         await helpers.testUnsuccessfulNFTSaleWithEth(
           allowanceCrowdsale,
-          user5,
+          userNotWhitelisted,
           utilConstants.numNFTsOne,
           whitelistIdx,
-          treeDouble,
+          treeTwoFriends,
           utilConstants.ethValueForFriendAmount,
           membershipContract,
           treasuryWallet,
@@ -841,10 +819,10 @@ describe('AllowanceCrowdsale', () => {
       it('cannot buy membership NFTs with accepted stablecoin', async () => {
         await helpers.testUnsuccessfulNFTSaleWithStableCoin(
           allowanceCrowdsale,
-          user5,
+          userNotWhitelisted,
           utilConstants.numNFTsOne,
           whitelistIdx,
-          treeDouble,
+          treeTwoFriends,
           mockUSDC,
           treasuryWallet,
           membershipContract,
@@ -871,10 +849,10 @@ describe('AllowanceCrowdsale', () => {
       it('cannot buy $ART tokens with ETH', async () => {
         await helpers.testUnsuccessfulTokenSaleWithEth(
           allowanceCrowdsale,
-          user5,
+          userNotWhitelisted,
           utilConstants.friendTokenAmount,
           whitelistIdx,
-          treeSingle,
+          treeOneFriend,
           utilConstants.ethValueForFriendAmount,
           tokenVault,
           treasuryWallet,
@@ -886,8 +864,8 @@ describe('AllowanceCrowdsale', () => {
           allowanceCrowdsale,
           utilConstants.friendTokenAmount,
           whitelistIdx,
-          user5,
-          treeDouble,
+          userNotWhitelisted,
+          treeTwoFriends,
           mockUSDC,
           tokenVault,
           treasuryWallet,
@@ -898,10 +876,10 @@ describe('AllowanceCrowdsale', () => {
       it('cannot buy membership NFTs with ETH', async () => {
         await helpers.testUnsuccessfulNFTSaleWithEth(
           allowanceCrowdsale,
-          user5,
+          userNotWhitelisted,
           utilConstants.numNFTsOne,
           whitelistIdx,
-          treeDouble,
+          treeTwoFriends,
           utilConstants.ethValueForFriendAmount,
           membershipContract,
           treasuryWallet,
@@ -911,10 +889,10 @@ describe('AllowanceCrowdsale', () => {
       it('cannot buy membership NFTs with accepted stablecoin', async () => {
         await helpers.testUnsuccessfulNFTSaleWithStableCoin(
           allowanceCrowdsale,
-          user5,
+          userNotWhitelisted,
           utilConstants.numNFTsOne,
           whitelistIdx,
-          treeDouble,
+          treeTwoFriends,
           mockUSDC,
           treasuryWallet,
           membershipContract,
@@ -940,10 +918,10 @@ describe('AllowanceCrowdsale', () => {
       it('cannot buy $ART tokens with ETH', async () => {
         await helpers.testUnsuccessfulTokenSaleWithEth(
           allowanceCrowdsale,
-          user5,
+          userNotWhitelisted,
           utilConstants.friendTokenAmount,
           whitelistIdx,
-          treeSingle,
+          treeOneFriend,
           utilConstants.ethValueForFriendAmount,
           tokenVault,
           treasuryWallet,
@@ -955,8 +933,8 @@ describe('AllowanceCrowdsale', () => {
           allowanceCrowdsale,
           utilConstants.friendTokenAmount,
           whitelistIdx,
-          user5,
-          treeDouble,
+          userNotWhitelisted,
+          treeTwoFriends,
           mockUSDC,
           tokenVault,
           treasuryWallet,
@@ -967,10 +945,10 @@ describe('AllowanceCrowdsale', () => {
       it('cannot buy membership NFTs with ETH', async () => {
         await helpers.testUnsuccessfulNFTSaleWithEth(
           allowanceCrowdsale,
-          user5,
+          userNotWhitelisted,
           utilConstants.numNFTsOne,
           whitelistIdx,
-          treeDouble,
+          treeTwoFriends,
           utilConstants.ethValueForFriendAmount,
           membershipContract,
           treasuryWallet,
@@ -980,10 +958,10 @@ describe('AllowanceCrowdsale', () => {
       it('cannot buy membership NFTs with accepted stablecoin', async () => {
         await helpers.testUnsuccessfulNFTSaleWithStableCoin(
           allowanceCrowdsale,
-          user5,
+          userNotWhitelisted,
           utilConstants.numNFTsOne,
           whitelistIdx,
-          treeDouble,
+          treeTwoFriends,
           mockUSDC,
           treasuryWallet,
           membershipContract,
@@ -1013,16 +991,16 @@ describe('AllowanceCrowdsale', () => {
       tokenVault.connect(tokenHoldingWallet).approve(membershipContract.address, ethers.constants.MaxInt256)
       tokenVault.pause()
       membershipContract.pause()
-      whitelistIdx = helpers.findWhiteListArrIdx(whitelistArr, userAllocatedOneFriend.address)
+      whitelistIdx = helpers.findWhiteListArrIdx(whitelistArr, userOneFriend.address)
     })
     describe('tokens for whitelisted address', () => {
       it('can buy $ART with ETH', async () => {
         await helpers.testSuccessfulTokenSaleWithEth(
           allowanceCrowdsale,
-          userAllocatedOneFriend,
+          userOneFriend,
           utilConstants.friendTokenAmount,
-          whitelistIdxUserOne,
-          treeSingle,
+          whitelistIdxOneFriend,
+          treeOneFriend,
           utilConstants.ethValueForFriendAmount,
           tokenVault,
           treasuryWallet,
@@ -1032,9 +1010,9 @@ describe('AllowanceCrowdsale', () => {
         await helpers.testSuccessfulTokenSaleWithStableCoin(
           allowanceCrowdsale,
           utilConstants.friendTokenAmount,
-          whitelistIdxUserOne,
-          userAllocatedOneFriend,
-          treeSingle,
+          whitelistIdxOneFriend,
+          userOneFriend,
+          treeOneFriend,
           mockUSDT,
           tokenVault,
           treasuryWallet,
@@ -1044,34 +1022,29 @@ describe('AllowanceCrowdsale', () => {
       it('can redeem membership NFT with $ART', async () => {
         await helpers.testSuccessfulTokenSaleWithEth(
           allowanceCrowdsale,
-          userAllocatedOneFriend,
+          userOneFriend,
           utilConstants.friendTokenAmount,
-          whitelistIdxUserOne,
-          treeSingle,
+          whitelistIdxOneFriend,
+          treeOneFriend,
           utilConstants.ethValueForFriendAmount,
           tokenVault,
           treasuryWallet,
         )
-        await tokenVault
-          .connect(userAllocatedOneFriend)
-          .approve(membershipContract.address, ethers.constants.MaxUint256)
-        await expect(
-          membershipContract
-            .connect(userAllocatedOneFriend)
-            .redeem(2, userAllocatedOneFriend.address, userAllocatedOneFriend.address),
-        ).to.not.be.reverted
+        await tokenVault.connect(userOneFriend).approve(membershipContract.address, ethers.constants.MaxUint256)
+        await expect(membershipContract.connect(userOneFriend).redeem(2, userOneFriend.address, userOneFriend.address))
+          .to.not.be.reverted
         var [, start, ,] = await membershipContract.friendTier()
-        expect(await membershipContract.ownerOf(start)).to.be.equal(userAllocatedOneFriend.address)
+        expect(await membershipContract.ownerOf(start)).to.be.equal(userOneFriend.address)
       })
     })
     describe('NFTs for whitelisted address', () => {
       it('can buy NFTs with ETH', async () => {
         await helpers.testSuccessfulNFTSaleWithEth(
           allowanceCrowdsale,
-          userAllocatedOneFriend,
+          userOneFriend,
           utilConstants.numNFTsOne,
-          whitelistIdxUserOne,
-          treeSingle,
+          whitelistIdxOneFriend,
+          treeOneFriend,
           utilConstants.ethValueForFriendAmount,
           treasuryWallet,
           membershipContract,
@@ -1080,10 +1053,10 @@ describe('AllowanceCrowdsale', () => {
       it('can buy NFTs with stablecoin', async () => {
         await helpers.testSuccessfulNFTSaleWithStableCoin(
           allowanceCrowdsale,
-          userAllocatedOneFriend,
+          userOneFriend,
           utilConstants.numNFTsOne,
-          whitelistIdxUserOne,
-          treeSingle,
+          whitelistIdxOneFriend,
+          treeOneFriend,
           mockUSDC,
           treasuryWallet,
           membershipContract,
@@ -1093,18 +1066,18 @@ describe('AllowanceCrowdsale', () => {
       it('cannot release NFT for $ART', async () => {
         await helpers.testSuccessfulNFTSaleWithStableCoin(
           allowanceCrowdsale,
-          userAllocatedOneFriend,
+          userOneFriend,
           utilConstants.numNFTsOne,
-          whitelistIdxUserOne,
-          treeSingle,
+          whitelistIdxOneFriend,
+          treeOneFriend,
           mockUSDC,
           treasuryWallet,
           membershipContract,
           utilConstants.friendTokenAmount.mul(utilConstants.stablecoinTokenRate),
         )
         var [, start, ,] = await membershipContract.friendTier()
-        await membershipContract.connect(userAllocatedOneFriend).approve(membershipContract.address, start)
-        await expect(membershipContract.connect(userAllocatedOneFriend).release(start)).to.be.revertedWith(
+        await membershipContract.connect(userOneFriend).approve(membershipContract.address, start)
+        await expect(membershipContract.connect(userOneFriend).release(start)).to.be.revertedWith(
           utilConstants.revertMessageNoPermissionToSend,
         )
       })
