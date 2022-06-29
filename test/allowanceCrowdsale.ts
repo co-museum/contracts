@@ -565,7 +565,8 @@ describe('AllowanceCrowdsale', () => {
                   utilConstants.revertMessageDiscrete,
                 )
               })
-              it.only('cannot buy when there is insufficient supply of membership NFTs', async () => {
+
+              it('cannot buy when there is insufficient supply of membership NFTs', async () => {
                 await helpers.testSuccessfulNFTSaleWithStableCoin(
                   allowanceCrowdsale,
                   userAllocatedTwoFriends,
