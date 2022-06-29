@@ -61,30 +61,6 @@ export async function testUnsuccessfulTokenSaleWithEth(
 }
 
 // 2. NFT sale with ETH
-export async function testUnsuccessfulNFTSaleWithEth(
-  allowanceCrowdsale: AllowanceCrowdsale,
-  user: SignerWithAddress,
-  nftNum: number,
-  whitelistIdx: number,
-  tree: MerkleTree,
-  ethValue: BigNumber,
-  membershipContract: ERC721MembershipUpgradeable,
-  treasuryWallet: SignerWithAddress,
-  revertMessage: string,
-) {
-  const treasuryWalletBalance = await treasuryWallet.getBalance()
-  await expect(
-    allowanceCrowdsale
-      .connect(user)
-      .buyNFTs(nftNum, whitelistIdx, tree.getHexProof(user.address), true, constants.AddressZero, {
-        value: ethValue,
-      }),
-  ).to.be.revertedWith(revertMessage)
-  const newTreasuryWalletBalance = await treasuryWallet.getBalance()
-  expect(treasuryWalletBalance).to.be.equal(newTreasuryWalletBalance)
-  expect(await membershipContract.balanceOf(user.address)).to.be.equal(0)
-}
-
 export async function testSuccessfulNFTSaleWithEth(
   allowanceCrowdsale: AllowanceCrowdsale,
   user: SignerWithAddress,
@@ -108,6 +84,30 @@ export async function testSuccessfulNFTSaleWithEth(
   const newUserBalance = await user.getBalance()
   expect(newUserBalance.lt(priorUserBalance)).to.be.true
   expect((await treasuryWallet.getBalance()).eq(treasuryWalletBalance.add(ethValue))).to.be.true
+}
+
+export async function testUnsuccessfulNFTSaleWithEth(
+  allowanceCrowdsale: AllowanceCrowdsale,
+  user: SignerWithAddress,
+  nftNum: number,
+  whitelistIdx: number,
+  tree: MerkleTree,
+  ethValue: BigNumber,
+  membershipContract: ERC721MembershipUpgradeable,
+  treasuryWallet: SignerWithAddress,
+  revertMessage: string,
+) {
+  const treasuryWalletBalance = await treasuryWallet.getBalance()
+  await expect(
+    allowanceCrowdsale
+      .connect(user)
+      .buyNFTs(nftNum, whitelistIdx, tree.getHexProof(user.address), true, constants.AddressZero, {
+        value: ethValue,
+      }),
+  ).to.be.revertedWith(revertMessage)
+  const newTreasuryWalletBalance = await treasuryWallet.getBalance()
+  expect(treasuryWalletBalance).to.be.equal(newTreasuryWalletBalance)
+  expect(await membershipContract.balanceOf(user.address)).to.be.equal(0)
 }
 
 // 3. Token sale with stablecoin
@@ -150,26 +150,6 @@ export async function testUnsuccessfulTokenSaleWithStableCoin(
 }
 
 // 4. NFT sale with stablecoin
-export async function testUnsuccessfulNFTSaleWithStableCoin(
-  allowanceCrowdsale: AllowanceCrowdsale,
-  user: SignerWithAddress,
-  nftNum: number,
-  whitelistIdx: number,
-  tree: MerkleTree,
-  stablecoin: IERC20,
-  treasuryWallet: SignerWithAddress,
-  tokenVault: TokenVault,
-  revertMessage: string,
-) {
-  await expect(
-    allowanceCrowdsale
-      .connect(user)
-      .buyNFTs(nftNum, whitelistIdx, tree.getHexProof(user.address), false, stablecoin.address),
-  ).to.be.revertedWith(revertMessage)
-
-  expect(await stablecoin.balanceOf(treasuryWallet.address)).to.be.equal(0)
-  expect(await tokenVault.balanceOf(user.address)).to.be.equal(0)
-}
 
 export async function testSuccessfulNFTSaleWithStableCoin(
   allowanceCrowdsale: AllowanceCrowdsale,
@@ -179,7 +159,7 @@ export async function testSuccessfulNFTSaleWithStableCoin(
   tree: MerkleTree,
   stablecoin: IERC20,
   treasuryWallet: SignerWithAddress,
-  tokenVault: TokenVault,
+  membershipContract: ERC721MembershipUpgradeable,
   priceInStablecoin: BigNumber,
 ) {
   await expect(
@@ -188,10 +168,34 @@ export async function testSuccessfulNFTSaleWithStableCoin(
       .buyNFTs(nftNum, whitelistIdx, tree.getHexProof(user.address), false, stablecoin.address),
   ).to.not.be.reverted
 
-  expect(await stablecoin.balanceOf(treasuryWallet.address)).to.be.equal(priceInStablecoin)
-  expect(await tokenVault.balanceOf(user.address)).to.be.equal(0)
+  // expect(await stablecoin.balanceOf(treasuryWallet.address)).to.be.equal(priceInStablecoin)
+  expect(await membershipContract.balanceOf(user.address)).to.be.equal(1)
 }
 
+export async function testUnsuccessfulNFTSaleWithStableCoin(
+  allowanceCrowdsale: AllowanceCrowdsale,
+  user: SignerWithAddress,
+  nftNum: number,
+  whitelistIdx: number,
+  tree: MerkleTree,
+  stablecoin: IERC20,
+  treasuryWallet: SignerWithAddress,
+  membershipContract: ERC721MembershipUpgradeable,
+  revertMessage: string,
+) {
+  const previousNFTBalance = await membershipContract.balanceOf(user.address)
+  const previousStablecoinBalance = await stablecoin.balanceOf(treasuryWallet.address)
+  await expect(
+    allowanceCrowdsale
+      .connect(user)
+      .buyNFTs(nftNum, whitelistIdx, tree.getHexProof(user.address), false, stablecoin.address),
+  ).to.be.revertedWith(revertMessage)
+
+  expect(await membershipContract.balanceOf(user.address)).to.be.equal(previousNFTBalance)
+  expect(await stablecoin.balanceOf(treasuryWallet.address)).to.be.equal(previousStablecoinBalance)
+}
+
+// 5. Start sale and set rates
 export async function startSaleAndSetRate(
   allowanceCrowdsale: AllowanceCrowdsale,
   ethUSDPrice: number,
@@ -235,6 +239,7 @@ export async function startSale(
   )
 }
 
+// 6. Find idx of array where address belongs to in whiteListArr
 export function findWhiteListArrIdx(whiteListArr: string[][], address: string): number {
   for (var counter: number = 0; counter < whiteListArr.length; counter++) {
     if (whiteListArr[counter].includes(address)) {

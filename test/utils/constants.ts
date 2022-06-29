@@ -19,5 +19,6 @@ export const revertMessageTransferExceedsBalance = 'ERC20: transfer amount excee
 export const revertMessageDiscrete = 'crowdsale:must purchase tokens in discrete quantities based on allocation'
 export const revertMessageUserClaimedAllocation = 'crowdsale:user has already claimed allocation'
 export const revertMessageNoPermissionToSend = 'No permission to send'
+export const revertMessageRunsOutOfNFTs = 'membership:cannot mint more tokens at tier'
 export const numNFTsOne = 1
 export const numNFTsTwo = 2
