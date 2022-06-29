@@ -5,12 +5,18 @@ import { AllowanceCrowdsale, ERC721MembershipUpgradeable, TokenVault, IERC20 } f
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { MerkleTree } from 'merkletreejs'
 
+enum Tier {
+  Genesis = 0,
+  Foundation = 1,
+  Friend = 2,
+}
+
 // 1. Token sale with ETH
 export async function testSuccessfulTokenSaleWithEth(
   allowanceCrowdsale: AllowanceCrowdsale,
   user: SignerWithAddress,
   tokenAmount: BigNumber,
-  whiteListIdx: number,
+  whitelistIdx: number,
   tree: MerkleTree,
   ethValue: BigNumber,
   tokenVault: TokenVault,
@@ -21,7 +27,7 @@ export async function testSuccessfulTokenSaleWithEth(
   await expect(
     allowanceCrowdsale
       .connect(user)
-      .buyTokens(tokenAmount, whiteListIdx, tree.getHexProof(user.address), true, constants.AddressZero, {
+      .buyTokens(tokenAmount, whitelistIdx, tree.getHexProof(user.address), true, constants.AddressZero, {
         value: ethValue,
       }),
   ).to.not.be.reverted
@@ -35,7 +41,7 @@ export async function testUnsuccessfulTokenSaleWithEth(
   allowanceCrowdsale: AllowanceCrowdsale,
   user: SignerWithAddress,
   tokenAmount: BigNumber,
-  whiteListIdx: number,
+  whitelistIdx: number,
   tree: MerkleTree,
   ethValue: BigNumber,
   tokenVault: TokenVault,
@@ -46,7 +52,7 @@ export async function testUnsuccessfulTokenSaleWithEth(
   await expect(
     allowanceCrowdsale
       .connect(user)
-      .buyTokens(tokenAmount, whiteListIdx, tree.getHexProof(user.address), true, constants.AddressZero, {
+      .buyTokens(tokenAmount, whitelistIdx, tree.getHexProof(user.address), true, constants.AddressZero, {
         value: ethValue,
       }),
   ).to.be.revertedWith(revertMessage)
@@ -59,35 +65,49 @@ export async function testUnsuccessfulNFTSaleWithEth(
   allowanceCrowdsale: AllowanceCrowdsale,
   user: SignerWithAddress,
   nftNum: number,
-  whiteListIdx: number,
+  whitelistIdx: number,
   tree: MerkleTree,
   ethValue: BigNumber,
+  membershipContract: ERC721MembershipUpgradeable,
+  treasuryWallet: SignerWithAddress,
   revertMessage: string,
 ) {
+  const treasuryWalletBalance = await treasuryWallet.getBalance()
   await expect(
     allowanceCrowdsale
       .connect(user)
-      .buyNFTs(nftNum, whiteListIdx, tree.getHexProof(user.address), true, constants.AddressZero, {
+      .buyNFTs(nftNum, whitelistIdx, tree.getHexProof(user.address), true, constants.AddressZero, {
         value: ethValue,
       }),
   ).to.be.revertedWith(revertMessage)
+  const newTreasuryWalletBalance = await treasuryWallet.getBalance()
+  expect(treasuryWalletBalance).to.be.equal(newTreasuryWalletBalance)
+  expect(await membershipContract.balanceOf(user.address)).to.be.equal(0)
 }
 
 export async function testSuccessfulNFTSaleWithEth(
   allowanceCrowdsale: AllowanceCrowdsale,
   user: SignerWithAddress,
   nftNum: number,
-  whiteListIdx: number,
+  whitelistIdx: number,
   tree: MerkleTree,
   ethValue: BigNumber,
+  treasuryWallet: SignerWithAddress,
+  membershipContract: ERC721MembershipUpgradeable,
 ) {
+  const priorUserBalance = await user.getBalance()
+  const treasuryWalletBalance = await treasuryWallet.getBalance()
   await expect(
     allowanceCrowdsale
       .connect(user)
-      .buyNFTs(nftNum, whiteListIdx, tree.getHexProof(user.address), true, constants.AddressZero, {
+      .buyNFTs(nftNum, whitelistIdx, tree.getHexProof(user.address), true, constants.AddressZero, {
         value: ethValue,
       }),
   ).to.not.be.reverted
+  expect(await membershipContract.balanceOf(user.address)).to.be.equal(1)
+  const newUserBalance = await user.getBalance()
+  expect(newUserBalance.lt(priorUserBalance)).to.be.true
+  expect((await treasuryWallet.getBalance()).eq(treasuryWalletBalance.add(ethValue))).to.be.true
 }
 
 // 3. Token sale with stablecoin
@@ -134,7 +154,7 @@ export async function testUnsuccessfulNFTSaleWithStableCoin(
   allowanceCrowdsale: AllowanceCrowdsale,
   user: SignerWithAddress,
   nftNum: number,
-  whiteListIdx: number,
+  whitelistIdx: number,
   tree: MerkleTree,
   stablecoin: IERC20,
   treasuryWallet: SignerWithAddress,
@@ -144,7 +164,7 @@ export async function testUnsuccessfulNFTSaleWithStableCoin(
   await expect(
     allowanceCrowdsale
       .connect(user)
-      .buyNFTs(nftNum, whiteListIdx, tree.getHexProof(user.address), false, stablecoin.address),
+      .buyNFTs(nftNum, whitelistIdx, tree.getHexProof(user.address), false, stablecoin.address),
   ).to.be.revertedWith(revertMessage)
 
   expect(await stablecoin.balanceOf(treasuryWallet.address)).to.be.equal(0)
@@ -155,7 +175,7 @@ export async function testSuccessfulNFTSaleWithStableCoin(
   allowanceCrowdsale: AllowanceCrowdsale,
   user: SignerWithAddress,
   nftNum: number,
-  whiteListIdx: number,
+  whitelistIdx: number,
   tree: MerkleTree,
   stablecoin: IERC20,
   treasuryWallet: SignerWithAddress,
@@ -165,7 +185,7 @@ export async function testSuccessfulNFTSaleWithStableCoin(
   await expect(
     allowanceCrowdsale
       .connect(user)
-      .buyNFTs(nftNum, whiteListIdx, tree.getHexProof(user.address), false, stablecoin.address),
+      .buyNFTs(nftNum, whitelistIdx, tree.getHexProof(user.address), false, stablecoin.address),
   ).to.not.be.reverted
 
   expect(await stablecoin.balanceOf(treasuryWallet.address)).to.be.equal(priceInStablecoin)
@@ -204,7 +224,7 @@ export async function startSale(
   rootFoundation: string,
 ) {
   await allowanceCrowdsale.startSale(
-    [2, 2, 2, 1],
+    [Tier.Friend, Tier.Friend, Tier.Friend, Tier.Foundation],
     [
       utils.parseUnits('400', decimals),
       utils.parseUnits('800', decimals),
