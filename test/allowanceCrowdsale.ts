@@ -404,7 +404,7 @@ describe('AllowanceCrowdsale', () => {
         })
 
         describe('discrete purchases', () => {
-          describe('full allocation of $ART tokens', () => {
+          describe('full allocation of $ART tokens and membership NFTs', () => {
             describe('with sufficient funds', () => {
               it('can buy full allocation of $ART tokens with ETH', async () => {
                 await helpers.testSuccessfulTokenSaleWithEth(
@@ -433,7 +433,7 @@ describe('AllowanceCrowdsale', () => {
                 )
               })
 
-              it('same user cannot buy twice', async () => {
+              it('same user cannot buy tokens twice', async () => {
                 await allowanceCrowdsale
                   .connect(userAllocatedOneFriend)
                   .buyTokens(
@@ -629,6 +629,39 @@ describe('AllowanceCrowdsale', () => {
                 expect(await tokenVault.balanceOf(userAllocatedOneFriend.address)).to.be.equal(0)
                 expect(await mockUSDC.balanceOf(treasuryWallet.address)).to.be.equal(0)
               })
+
+              it('cannot buy full allocation of membership NFTs with ETH', async () => {
+                await helpers.testUnsuccessfulNFTSaleWithEth(
+                  allowanceCrowdsale,
+                  userAllocatedOneFriend,
+                  utilConstants.numNFTsOne,
+                  whitelistIdxUserOne,
+                  treeSingle,
+                  utilConstants.ethValueForFriendAmount.sub(1),
+                  membershipContract,
+                  treasuryWallet,
+                  utilConstants.revertMessageNotEnoughEth,
+                )
+              })
+              it('cannot buy full allocation of membership NFTs with accepted stablecoin', async () => {
+                await mockUSDC
+                  .connect(userAllocatedOneFriend)
+                  .transfer(
+                    userAllocatedOneFoundation.address,
+                    await mockUSDC.balanceOf(userAllocatedTwoFriends.address),
+                  )
+                await helpers.testUnsuccessfulNFTSaleWithStableCoin(
+                  allowanceCrowdsale,
+                  userAllocatedOneFriend,
+                  utilConstants.numNFTsOne,
+                  whitelistIdxUserOne,
+                  treeDouble,
+                  mockUSDC,
+                  treasuryWallet,
+                  membershipContract,
+                  utilConstants.revertMessageERC20Balance,
+                )
+              })
             })
           })
           describe('partial allocation of $ART tokens', () => {
@@ -658,8 +691,31 @@ describe('AllowanceCrowdsale', () => {
                   utilConstants.stablecoinTokenRate,
                 )
               })
-              it('can buy valid partial allocation of membership NFTs with ETH', async () => {})
-              it('can buy valid partial allocation of membership NFTs with stablecoin', async () => {})
+              it('can buy valid partial allocation of membership NFTs with ETH', async () => {
+                await helpers.testSuccessfulNFTSaleWithEth(
+                  allowanceCrowdsale,
+                  userAllocatedTwoFriends,
+                  utilConstants.numNFTsOne,
+                  whitelistIdxUserTwo,
+                  treeDouble,
+                  utilConstants.ethValueForFriendAmount,
+                  treasuryWallet,
+                  membershipContract,
+                )
+              })
+              it('can buy valid partial allocation of membership NFTs with stablecoin', async () => {
+                await helpers.testSuccessfulNFTSaleWithStableCoin(
+                  allowanceCrowdsale,
+                  userAllocatedTwoFriends,
+                  utilConstants.numNFTsOne,
+                  whitelistIdxUserTwo,
+                  treeDouble,
+                  mockUSDC,
+                  treasuryWallet,
+                  membershipContract,
+                  utilConstants.friendTokenAmount.mul(utilConstants.stablecoinTokenRate).mul(utilConstants.numNFTsOne),
+                )
+              })
             })
 
             describe('with insufficient funds', () => {

@@ -4,6 +4,7 @@ import { expect } from 'chai'
 import { AllowanceCrowdsale, ERC721MembershipUpgradeable, TokenVault, IERC20 } from '../../typechain'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { MerkleTree } from 'merkletreejs'
+import { Console } from 'console'
 
 enum Tier {
   Genesis = 0,
@@ -140,13 +141,15 @@ export async function testUnsuccessfulTokenSaleWithStableCoin(
   treasuryWallet: SignerWithAddress,
   revertMessage: string,
 ) {
+  const previousTreasuryBalance = await stablecoin.balanceOf(treasuryWallet.address)
+  const previousUserTokenBalance = await tokenVault.balanceOf(user.address)
   await expect(
     allowanceCrowdsale
       .connect(user)
       .buyTokens(tokenAmount, whitelistIdx, tree.getHexProof(user.address), false, stablecoin.address),
   ).to.be.revertedWith(revertMessage)
-  expect(await tokenVault.balanceOf(user.address)).to.be.equal(0)
-  expect(await stablecoin.balanceOf(treasuryWallet.address)).to.be.equal(0)
+  expect(await tokenVault.balanceOf(user.address)).to.be.equal(previousUserTokenBalance)
+  expect(await stablecoin.balanceOf(treasuryWallet.address)).to.be.equal(previousTreasuryBalance)
 }
 
 // 4. NFT sale with stablecoin
@@ -163,13 +166,14 @@ export async function testSuccessfulNFTSaleWithStableCoin(
   priceInStablecoin: BigNumber,
 ) {
   const previousNFTBalance = await membershipContract.balanceOf(user.address)
+  const previousTreasuryBalance = await stablecoin.balanceOf(treasuryWallet.address)
   await expect(
     allowanceCrowdsale
       .connect(user)
       .buyNFTs(nftNum, whitelistIdx, tree.getHexProof(user.address), false, stablecoin.address),
   ).to.not.be.reverted
 
-  // expect(await stablecoin.balanceOf(treasuryWallet.address)).to.be.equal(priceInStablecoin)
+  expect(await stablecoin.balanceOf(treasuryWallet.address)).to.be.equal(previousTreasuryBalance.add(priceInStablecoin))
   expect(await membershipContract.balanceOf(user.address)).to.be.equal(previousNFTBalance.add(nftNum))
 }
 
