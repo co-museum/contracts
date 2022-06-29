@@ -1,7 +1,14 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { ERC721MembershipUpgradeable, ERC20Mock, TokenVault, VoteDelegator } from '../typechain'
+import { ERC721MembershipUpgradeable, ERC20Mock, TokenVault, VoteDelegator, IERC20 } from '../typechain'
+import {
+  deployERC20Mock,
+  deployERC721Mock,
+  deployMembership,
+  deployTokenVault,
+  deployVaultFactory,
+} from '../utils/deployment'
 
 enum State {
   DISABLED,
@@ -12,75 +19,43 @@ enum State {
 }
 
 describe('ERC721MembershipUpgradeable', () => {
-  let mockUSDC: ERC20Mock
   let membershipERC721: ERC721MembershipUpgradeable
+  let mockUSDC: IERC20
   let signer: SignerWithAddress
   let user: SignerWithAddress
   let tokenVault: TokenVault
-  let voteDelegator: VoteDelegator
+  let supportRole: string
+  let senderRole: string
 
   const decimals = 6
   const genesisCode = 0
   const foundationCode = 1
   const friendsCode = 2
-  const initialPrice = ethers.utils.parseEther('4000')
-  const mockUSDCSupply = ethers.utils.parseUnits('50000000000', decimals)
+  const initialPrice = ethers.utils.parseUnits('4000000', decimals)
 
   beforeEach(async () => {
     ;[signer, user] = await ethers.getSigners()
 
-    const Settings = await ethers.getContractFactory('Settings')
-    const settings = await Settings.deploy()
-    await settings.deployed()
+    const vaultFactory = await deployVaultFactory()
 
-    const VaultFactory = await ethers.getContractFactory('ERC721VaultFactory')
-    const vaultFactory = await VaultFactory.deploy(settings.address)
-    await vaultFactory.deployed()
-
-    const DummyNFT = await ethers.getContractFactory('ERC721Mock')
-    const dummyNFT = await DummyNFT.deploy('Dummy', 'DMY')
-    await dummyNFT.deployed()
-
-    const MockUSDC = await ethers.getContractFactory('ERC20Mock')
-    mockUSDC = await MockUSDC.deploy('usdc', 'USDC', signer.address, mockUSDCSupply, decimals)
-    await mockUSDC.deployed()
-
+    const dummyNFT = await deployERC721Mock()
     await dummyNFT.mint(signer.address, 0)
     await dummyNFT.approve(vaultFactory.address, 0)
-    const tx = await vaultFactory.mint(
-      'Dummy Frac', // name
-      'DMYF', // symbol
-      dummyNFT.address, // token
-      mockUSDC.address,
-      0, // tokenID
-      ethers.utils.parseUnits('4000000', decimals), // supply
-      // TODO: tweak once USDC price is implemented
-      initialPrice, // list price
-      0, // fee
-    )
 
-    const receipt = await tx.wait()
-    const [mintEvent] = receipt.events!.filter((event, i, arr) => event.event == 'Mint')
-    const vaultAddress = mintEvent.args!['vault']
-    tokenVault = await ethers.getContractAt('TokenVault', vaultAddress)
+    mockUSDC = await deployERC20Mock(signer, 'Usdc', 'USDC')
 
-    const VoteDelegator = await ethers.getContractFactory('VoteDelegator')
-    voteDelegator = await VoteDelegator.deploy()
-    await voteDelegator.deployed()
-    await voteDelegator.initialize(tokenVault.address)
+    tokenVault = await deployTokenVault(mockUSDC, dummyNFT, 0, vaultFactory)
 
-    const MembershipERC721 = await ethers.getContractFactory('ERC721MembershipUpgradeable')
-    membershipERC721 = await MembershipERC721.deploy()
-    await membershipERC721.deployed()
-    await membershipERC721.initialize('Membership', 'MBR', tokenVault.address, voteDelegator.address, 2, 4, 6)
-
-    tokenVault.approve(membershipERC721.address, ethers.constants.MaxUint256)
-    tokenVault.connect(user).approve(membershipERC721.address, ethers.constants.MaxUint256)
+    membershipERC721 = await deployMembership(tokenVault)
+    await tokenVault.approve(membershipERC721.address, ethers.constants.MaxUint256)
+    await tokenVault.connect(user).approve(membershipERC721.address, ethers.constants.MaxUint256)
+    supportRole = await membershipERC721.SUPPORT_ROLE()
+    senderRole = await membershipERC721.SENDER_ROLE()
   })
 
   describe('redeem with sufficient balance', () => {
     afterEach(async () => {
-      // expect(await mockERC20.balanceOf(user.address)).to.be.equal(0, "not locking correct amount of ERC20")
+      expect(await mockUSDC.balanceOf(user.address)).to.be.equal(0, 'not locking correct amount of ERC20')
       expect(await membershipERC721.balanceOf(user.address)).to.be.equal(1, 'not transferring membership NFT')
     })
 
@@ -214,7 +189,7 @@ describe('ERC721MembershipUpgradeable', () => {
     it("votes on genesis member's behalf", async () => {
       membershipERC721.redeem(genesisCode, signer.address, signer.address)
       const id = (await membershipERC721.genesisTier()).start
-      const price = ethers.utils.parseEther('3500')
+      const price = ethers.utils.parseUnits('3500000', decimals)
       await membershipERC721.updateUserPrice(id, price)
       expect(await tokenVault.userPrices(await membershipERC721.voteDelegators(id))).to.be.equal(price)
     })
@@ -222,7 +197,7 @@ describe('ERC721MembershipUpgradeable', () => {
     it("votes on foundation member's behalf", async () => {
       membershipERC721.redeem(foundationCode, signer.address, signer.address)
       const id = (await membershipERC721.foundationTier()).start
-      const price = ethers.utils.parseEther('4500')
+      const price = ethers.utils.parseUnits('4500000', decimals)
       await membershipERC721.updateUserPrice(id, price)
       expect(await tokenVault.userPrices(await membershipERC721.voteDelegators(id))).to.be.equal(price)
     })
@@ -230,7 +205,7 @@ describe('ERC721MembershipUpgradeable', () => {
     it("votes on friend member's behalf", async () => {
       membershipERC721.redeem(friendsCode, signer.address, signer.address)
       const id = (await membershipERC721.friendTier()).start
-      const price = ethers.utils.parseEther('4000')
+      const price = ethers.utils.parseUnits('4000000', decimals)
       await membershipERC721.updateUserPrice(id, price)
       expect(await tokenVault.userPrices(await membershipERC721.voteDelegators(id))).to.be.equal(price)
     })
@@ -243,7 +218,7 @@ describe('ERC721MembershipUpgradeable', () => {
       expect(await tokenVault.reservePrice()).to.be.equal(initialPrice)
 
       const id = (await membershipERC721.friendTier()).start
-      const price = ethers.utils.parseEther('3500')
+      const price = ethers.utils.parseUnits('3500000', decimals)
       await membershipERC721.updateUserPrice(id, price)
 
       const reservePrice = await tokenVault.reservePrice()
@@ -265,7 +240,7 @@ describe('ERC721MembershipUpgradeable', () => {
       expect(await tokenVault.reservePrice()).to.be.equal(initialPrice)
 
       const id = (await membershipERC721.friendTier()).start
-      const price = ethers.utils.parseEther('4500')
+      const price = ethers.utils.parseUnits('4500000', decimals)
       await membershipERC721.updateUserPrice(id, price)
 
       const reservePrice = await tokenVault.reservePrice()
@@ -280,37 +255,7 @@ describe('ERC721MembershipUpgradeable', () => {
     })
   })
 
-  // TODO: reuse token vault from top-level describe
   describe('pausability', () => {
-    let signer: SignerWithAddress
-    let user: SignerWithAddress
-    let membershipERC721: ERC721MembershipUpgradeable
-    let mockERC20: ERC20Mock
-    let supportRole: string
-    let senderRole: string
-
-    beforeEach(async () => {
-      ;[signer, user] = await ethers.getSigners()
-
-      const MockERC20 = await ethers.getContractFactory('ERC20Mock')
-      mockERC20 = await MockERC20.deploy(
-        'Dummy',
-        'DMY',
-        signer.address,
-        ethers.utils.parseUnits('4000000', decimals),
-        6,
-      )
-      await mockERC20.deployed()
-
-      const MembershipERC721 = await ethers.getContractFactory('ERC721MembershipUpgradeable')
-      membershipERC721 = await MembershipERC721.deploy()
-      await membershipERC721.deployed()
-      await membershipERC721.initialize('Member', 'MBR', mockERC20.address, voteDelegator.address, 2, 4, 6)
-
-      supportRole = await membershipERC721.SUPPORT_ROLE()
-      senderRole = await membershipERC721.SENDER_ROLE()
-    })
-
     describe('pausing access control', () => {
       it('signer is support', async () => {
         expect(await membershipERC721.hasRole(supportRole, signer.address)).to.be.true
@@ -354,17 +299,20 @@ describe('ERC721MembershipUpgradeable', () => {
     })
 
     describe('pausing prevents transfers', () => {
-      // it("blocks non-senders from sending when paused", async () => {
-      //   await membershipERC721.pause()
-      //   await mockERC20.approve(membershipERC721.address, ethers.utils.parseUnits("400", decimals))
-      //   await membershipERC721.redeemFriend()
-      //   await expect(membershipERC721.transferFrom(signer.address, user.address, 0)).to.be.reverted
-      // })
+      // FIXME: why can't we redeem?
+      it('blocks non-senders from sending when paused', async () => {
+        await membershipERC721.pause()
+        await membershipERC721.addSender(membershipERC721.address)
+        await mockUSDC.approve(membershipERC721.address, ethers.utils.parseUnits('400', decimals))
+        await membershipERC721.redeem(friendsCode, signer.address, signer.address)
+        await expect(membershipERC721.transferFrom(signer.address, user.address, 0)).to.be.reverted
+      })
 
       it('allows senders to send', async () => {
         await membershipERC721.pause()
+        await membershipERC721.addSender(membershipERC721.address)
         await membershipERC721.addSender(signer.address)
-        await mockERC20.approve(membershipERC721.address, ethers.utils.parseUnits('400', decimals))
+        await mockUSDC.approve(membershipERC721.address, ethers.utils.parseUnits('400', decimals))
         await membershipERC721.redeem(friendsCode, signer.address, signer.address)
         const id = (await membershipERC721.friendTier()).start
         await expect(membershipERC721.transferFrom(signer.address, user.address, id)).to.not.be.reverted

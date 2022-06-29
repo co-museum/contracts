@@ -17,7 +17,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     /// -----------------------------------
 
     /// @notice usdc address
-    /// custom:update transact in USDC
+    /// @custom:update transact in USDC
     address public usdc;
 
     /// -----------------------------------
@@ -64,7 +64,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     /// -------- VAULT INFORMATION --------
     /// -----------------------------------
 
-    /// @notice the governance contract which gets paid in ETH
+    /// @notice the governance contract
     address public immutable settings;
 
     /// @notice the address who initially deposited the NFT
@@ -104,7 +104,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     /// @notice An event emitted when someone redeems all tokens for the NFT
     event Redeem(address indexed redeemer);
 
-    /// @notice An event emitted when someone cashes in ERC20 tokens for ETH from an ERC721 token sale
+    /// @notice An event emitted when someone cashes in ERC20 tokens for USDC from an ERC721 token sale
     event Cash(address indexed owner, uint256 shares);
 
     event UpdateAuctionLength(uint256 length);
@@ -117,7 +117,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         settings = _settings;
     }
 
-    /// custom:update transact in usdc
+    /// @custom:update transact in usdc
     function initialize(
         address _curator,
         address _token,
@@ -275,19 +275,20 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         }
     }
 
+    function _auctionLive() internal view returns (bool) {
+        return auctionState != State.inactive && auctionState != State.disabled;
+    }
+
     /// --------------------------------
     /// -------- CORE FUNCTIONS --------
     /// --------------------------------
 
     /// @notice a function for an end user to update their desired sale price
-    /// @param _new the desired price in ETH
+    /// @param _new the desired price USDC
     /// @custom:update only allow changes to price when auction is not ongoing
     /// (inactive/disabled)
     function updateUserPrice(uint256 _new) external {
-        require(
-            auctionState == State.inactive || auctionState == State.disabled,
-            "update:auction live cannot update price"
-        );
+        require(!_auctionLive(), "update:auction live cannot update price");
         uint256 old = userPrices[msg.sender];
         require(_new != old, "update:not an update");
         uint256 weight = balanceOf(msg.sender);
@@ -345,7 +346,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         address _to,
         uint256 _amount
     ) internal virtual override onlySenderWhenPaused {
-        if (auctionState == State.inactive || auctionState == State.disabled) {
+        if (!_auctionLive()) {
             uint256 fromPrice = userPrices[_from];
             uint256 toPrice = userPrices[_to];
 
@@ -371,7 +372,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     }
 
     /// @notice kick off an auction. Must give USDC allowance
-    /// custom:update accept payment in USDC and don't accept ETH
+    /// @custom:update accept payment in USDC and don't accept ETH
     function start(uint256 _bid) external {
         require(auctionState == State.inactive, "start:no auction starts");
         require(_bid >= reservePrice(), "start:too low bid");
@@ -391,7 +392,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     }
 
     /// @notice an external function to bid on purchasing the vaults NFT. The msg.value is the bid amount
-    /// custom:update accept payment in USDC and don't accept ETH
+    /// @custom:update accept payment in USDC and don't accept ETH
     function bid(uint256 _bid) external {
         require(auctionState == State.live, "bid:auction is not live");
         uint256 increase = ISettings(settings).minBidIncrease() + 1000;
@@ -403,6 +404,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
             auctionEnd += 15 minutes;
         }
 
+        IERC20(usdc).transfer(winning, livePrice);
         IERC20(usdc).transferFrom(msg.sender, address(this), _bid);
 
         livePrice = _bid;
@@ -440,12 +442,12 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     }
 
     /// @notice an external function to burn ERC20 tokens to receive ETH from ERC721 token purchase
-    /// custom:update send USDC on burn
+    /// @custom:update send USDC on burn
     function cash() external {
         require(auctionState == State.ended, "cash:vault not closed yet");
         uint256 bal = balanceOf(msg.sender);
         require(bal > 0, "cash:no tokens to cash out");
-        uint256 share = (bal * address(this).balance) / totalSupply();
+        uint256 share = (bal * IERC20(usdc).balanceOf(address(this))) / totalSupply();
         _burn(msg.sender, bal);
 
         IERC20(usdc).transfer(msg.sender, share);
