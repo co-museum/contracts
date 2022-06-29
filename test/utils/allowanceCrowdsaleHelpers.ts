@@ -80,7 +80,7 @@ export async function testSuccessfulNFTSaleWithEth(
         value: ethValue,
       }),
   ).to.not.be.reverted
-  expect(await membershipContract.balanceOf(user.address)).to.be.equal(1)
+  expect(await membershipContract.balanceOf(user.address)).to.be.equal(nftNum)
   const newUserBalance = await user.getBalance()
   expect(newUserBalance.lt(priorUserBalance)).to.be.true
   expect((await treasuryWallet.getBalance()).eq(treasuryWalletBalance.add(ethValue))).to.be.true
@@ -162,6 +162,7 @@ export async function testSuccessfulNFTSaleWithStableCoin(
   membershipContract: ERC721MembershipUpgradeable,
   priceInStablecoin: BigNumber,
 ) {
+  const previousNFTBalance = await membershipContract.balanceOf(user.address)
   await expect(
     allowanceCrowdsale
       .connect(user)
@@ -169,7 +170,7 @@ export async function testSuccessfulNFTSaleWithStableCoin(
   ).to.not.be.reverted
 
   // expect(await stablecoin.balanceOf(treasuryWallet.address)).to.be.equal(priceInStablecoin)
-  expect(await membershipContract.balanceOf(user.address)).to.be.equal(1)
+  expect(await membershipContract.balanceOf(user.address)).to.be.equal(previousNFTBalance.add(nftNum))
 }
 
 export async function testUnsuccessfulNFTSaleWithStableCoin(

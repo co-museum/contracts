@@ -579,7 +579,7 @@ describe('AllowanceCrowdsale', () => {
                   utilConstants.friendTokenAmount.mul(utilConstants.stablecoinTokenRate).mul(2),
                 )
 
-                await helpers.testSuccessfulNFTSaleWithStableCoin(
+                await helpers.testUnsuccessfulNFTSaleWithStableCoin(
                   allowanceCrowdsale,
                   userAllocatedOneFriend,
                   utilConstants.numNFTsOne,
@@ -588,19 +588,8 @@ describe('AllowanceCrowdsale', () => {
                   mockUSDC,
                   treasuryWallet,
                   membershipContract,
-                  utilConstants.friendTokenAmount,
+                  utilConstants.revertMessageRunsOutOfNFTs,
                 )
-                // await helpers.testUnsuccessfulNFTSaleWithStableCoin(
-                //   allowanceCrowdsale,
-                //   userAllocatedOneFriend,
-                //   utilConstants.numNFTsOne,
-                //   whitelistIdxUserOne,
-                //   treeSingle,
-                //   mockUSDC,
-                //   treasuryWallet,
-                //   membershipContract,
-                //   utilConstants.revertMessageRunsOutOfNFTs,
-                // )
               })
             })
 
