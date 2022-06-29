@@ -7,7 +7,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721Burnab
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import "../lib/PartiallyPausableUpgradeable.sol";
-import "hardhat/console.sol";
 import "../fractional/ERC721TokenVault.sol";
 import "../fractional/InitializedProxy.sol";
 import "./VoteDelegator.sol";
