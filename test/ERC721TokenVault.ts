@@ -110,6 +110,7 @@ describe('ERC721TokenVault', () => {
       it('allows users set reserve price in usdc', async () => {
         const firstPrice = nftPrice.mul(2)
         await expect(tokenVault.updateUserPrice(firstPrice)).not.to.be.reverted
+        expect(await tokenVault.reservePrice()).to.be.equal(firstPrice)
       })
 
       it('rejects excessive usdc reserve price', async () => {
@@ -130,7 +131,6 @@ describe('ERC721TokenVault', () => {
         const firstPrice = nftPrice.mul(2)
         const newPrice = firstPrice.mul(minReserveFactor).div(2 * 1000)
         await tokenVault.updateUserPrice(firstPrice)
-        console.log(minReserveFactor)
         await tokenVault.connect(user).updateUserPrice(firstPrice)
         await expect(tokenVault.updateUserPrice(newPrice)).to.be.revertedWith('update:reserve price too low')
       })

@@ -64,7 +64,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     /// -------- VAULT INFORMATION --------
     /// -----------------------------------
 
-    /// @notice the governance contract which gets paid in ETH
+    /// @notice the governance contract
     address public immutable settings;
 
     /// @notice the address who initially deposited the NFT
@@ -104,7 +104,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     /// @notice An event emitted when someone redeems all tokens for the NFT
     event Redeem(address indexed redeemer);
 
-    /// @notice An event emitted when someone cashes in ERC20 tokens for ETH from an ERC721 token sale
+    /// @notice An event emitted when someone cashes in ERC20 tokens for USDC from an ERC721 token sale
     event Cash(address indexed owner, uint256 shares);
 
     event UpdateAuctionLength(uint256 length);
@@ -275,19 +275,20 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         }
     }
 
+    function _auctionLive() internal view returns (bool) {
+        return auctionState != State.inactive && auctionState != State.disabled;
+    }
+
     /// --------------------------------
     /// -------- CORE FUNCTIONS --------
     /// --------------------------------
 
     /// @notice a function for an end user to update their desired sale price
-    /// @param _new the desired price in ETH
+    /// @param _new the desired price USDC
     /// @custom:update only allow changes to price when auction is not ongoing
     /// (inactive/disabled)
     function updateUserPrice(uint256 _new) external {
-        require(
-            auctionState == State.inactive || auctionState == State.disabled,
-            "update:auction live cannot update price"
-        );
+        require(!_auctionLive(), "update:auction live cannot update price");
         uint256 old = userPrices[msg.sender];
         require(_new != old, "update:not an update");
         uint256 weight = balanceOf(msg.sender);
@@ -345,7 +346,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         address _to,
         uint256 _amount
     ) internal virtual override onlySenderWhenPaused {
-        if (auctionState == State.inactive || auctionState == State.disabled) {
+        if (!_auctionLive()) {
             uint256 fromPrice = userPrices[_from];
             uint256 toPrice = userPrices[_to];
 
