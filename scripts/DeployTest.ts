@@ -1,94 +1,89 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// When running the script with `npx hardhat run <script>` you'll find the Hardhat
-// Runtime Environment's members available in the global scope.
-import { sign } from 'crypto'
-import { BigNumberish, utils } from 'ethers'
 import { ethers } from 'hardhat'
+import * as utils from '../utils/deployment'
+
+const stablecoinDecimals = 6
+const mockBanksyId = 0
+// NOTE: we assum stablecoin.decimals() == banksyToken.decimals() in contracts
+const banksySupply = ethers.utils.parseUnits('4000000', stablecoinDecimals)
+const banksyPrice = banksySupply // 1 BKLN == 1 USDC/USDT
+const banksyFee = 0 // no inflation
+const genesisEnd = 15
+const foundationEnd = genesisEnd + 200
+const friendEnd = foundationEnd + 3500
 
 async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
+  const [signer, treasury, tokenHolder, user] = await ethers.getSigners()
 
-  // the first address is the default msg.sender
-  const [signer] = await ethers.getSigners()
-  console.log('Default signer:', signer.address)
-
-  // We get the contract to deploy
-  const Settings = await ethers.getContractFactory('Settings')
-  const settings = await Settings.deploy()
-  await settings.deployed()
-  console.log('Settings deployed to:', settings.address)
-
-  const VaultFactory = await ethers.getContractFactory('ERC721VaultFactory')
-  const vaultFactory = await VaultFactory.deploy(settings.address)
-  await vaultFactory.deployed()
-  console.log('VaultFactory deployed to:', vaultFactory.address)
-
-  const DummyNFT = await ethers.getContractFactory('ERC721Mock')
-  const dummyNFT = await DummyNFT.deploy('Dummy', 'DMY')
-  await dummyNFT.deployed()
-  console.log('DummyNFT deployed to:', dummyNFT.address)
-
-  const MockUSDC = await ethers.getContractFactory('ERC20Mock')
-  const mockUSDC = await MockUSDC.deploy('Usdc', 'USDC', signer.address, ethers.utils.parseEther('1000000'))
-  await mockUSDC.deployed()
-
-  const MockUSDT = await ethers.getContractFactory('ERC20Mock')
-  const mockUSDT = await MockUSDT.deploy('Usdt', 'USDT', signer.address, ethers.utils.parseEther('1000000'))
-  await mockUSDT.deployed()
-
-  vaultFactory.on(
-    'Mint',
-    async (
-      token: string,
-      id: BigNumberish,
-      listPrice: BigNumberish,
-      vault: string,
-      vaultId: BigNumberish,
-      event: Event,
-    ) => {
-      console.log('Fractionalised token address:', vault)
-
-      const TimedAllowanceCrowdsale = await ethers.getContractFactory('TimedAllowanceCrowdsale')
-      const timedAllowanceCrowdsale = await TimedAllowanceCrowdsale.deploy(
-        1,
-        signer.address,
-        vault,
-        mockUSDC.address,
-        mockUSDT.address,
-        signer.address,
-        Date.now(),
-        Date.now() + 20,
-      )
-      await timedAllowanceCrowdsale.deployed()
-      console.log('Crowdsale address:', timedAllowanceCrowdsale.address)
-
-      const MembershipERC721 = await ethers.getContractFactory('MembershipERC721')
-      const membershipERC721 = await MembershipERC721.deploy('Member', 'MEM', vault, 2, 4, 6)
-      await membershipERC721.deployed()
-      console.log('Membership ERC721 address:', membershipERC721.address)
-
-      vaultFactory.removeAllListeners()
-    },
+  const mockUSDC = await utils.deployERC20Mock(
+    user,
+    'USD Coin',
+    'USDC',
+    ethers.utils.parseUnits('55000000000', stablecoinDecimals),
+    stablecoinDecimals,
   )
+  console.log(`USDC: ${mockUSDC.address}`)
 
-  await dummyNFT.mint(signer.address, 0)
-  await dummyNFT.approve(vaultFactory.address, 0)
-  await vaultFactory.mint(
-    'Dummy Frac', // name
-    'DMYF', // symbol
-    dummyNFT.address, // token
-    0, // tokenID
-    utils.parseEther('10000'), // supply
-    10, // listPrice
-    0, // fee
+  const mockUSDT = await utils.deployERC20Mock(
+    user,
+    'USD Tether',
+    'USDT',
+    ethers.utils.parseUnits('66000000000', stablecoinDecimals),
+    stablecoinDecimals,
   )
+  console.log(`USDT: ${mockUSDT.address}`)
+
+  const settings = await utils.deploySettings()
+  await settings.setMinReserveFactor(750) // 75%
+  await settings.setMaxReserveFactor(5000) // 500%
+  console.log(`settings: ${settings.address}`)
+
+  const vaultFactory = await utils.deployVaultFactory(settings)
+  console.log(`vault factory: ${vaultFactory.address}`)
+
+  const mockBanksyNFT = await utils.deployERC721Mock('Banksy Laugh Now Title Deed NFT', 'BKLNTD')
+  await mockBanksyNFT.mint(signer.address, mockBanksyId)
+  await mockBanksyNFT.approve(vaultFactory.address, mockBanksyId)
+  console.log(`banksy NFT: ${mockBanksyNFT.address}`)
+
+  const banksyToken = await utils.deployTokenVault(
+    mockUSDC,
+    mockBanksyNFT,
+    mockBanksyId,
+    vaultFactory,
+    'Banksy Laugh Now',
+    'BKLN',
+    banksySupply,
+    banksyPrice,
+    banksyFee,
+  )
+  await banksyToken.transfer(tokenHolder.address, banksySupply)
+  await banksyToken.pause()
+  console.log(`banksy token: ${banksyToken.address}`)
+
+  const voteDelegator = await utils.deployVoteDelegator(banksyToken)
+  console.log(`vote delegator: ${voteDelegator.address}`)
+
+  const membership = await utils.deployMembership(
+    banksyToken,
+    voteDelegator,
+    'Banksy Laugh Now Membership',
+    'BKLNM',
+    genesisEnd,
+    foundationEnd,
+    friendEnd,
+  )
+  await banksyToken.connect(tokenHolder).approve(membership.address, banksySupply)
+  await membership.pause()
+  console.log(`banksy membership: ${membership.address}`)
+
+  const crowdsale = await utils.deployAllowanceCrowdsale(banksyToken, treasury, tokenHolder, membership, [
+    mockUSDC,
+    mockUSDT,
+  ])
+  await banksyToken.connect(tokenHolder).approve(crowdsale.address, banksySupply)
+  await banksyToken.addSender(crowdsale.address)
+  await membership.addSender(crowdsale.address)
+  console.log(`crowdsale: ${crowdsale.address}`)
 }
 
 // We recommend this pattern to be able to use async/await everywhere
