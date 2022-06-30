@@ -2,8 +2,12 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "test": "yarn hardhat test",
+    "test:gas": "REPORT_GAS=true yarn hardhat test",
+    "test:coverage": "yarn hardhat coverage",
     "deploy-test": "hardhat run --network localhost scripts/DeployTest.ts",
-    "prettier-check": "prettier --list-different contracts test scripts utils .github .vscode"
+    "prettier-check": "prettier --list-different contracts test scripts utils .github .vscode",
+    "prettier-action": "yarn prettier contracts test scripts utils .github .vscode"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.0",
