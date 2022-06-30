@@ -2,16 +2,23 @@ name: CI
 on: push
 
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: checkout
+        uses: actions/checkout@v2
         with:
           submodules: recursive
-      - uses: borales/actions-yarn@v3.0.0
+      - name: install
+        uses: borales/actions-yarn@v3.0.0
         with:
           cmd: install
-      - run: yarn prettier-check
-      - run: yarn hardhat compile
-      - run: yarn hardhat test
+      - name: prettier
+        run: yarn prettier-check
+      - name: compile
+        run: yarn hardhat compile
+      - name: test
+        run: yarn hardhat test
+      - name: deploy
+        run: yarn hardhat run scripts/DeployTest.ts
 # TODO: upload artifacts (ABI, docs)
