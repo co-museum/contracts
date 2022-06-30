@@ -14,7 +14,7 @@ jobs:
         with:
           cmd: install
       - name: prettier
-        run: yarn prettier-check
+        run: yarn prettier:check
       - name: compile
         run: yarn hardhat compile
       - name: test
