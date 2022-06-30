@@ -12,42 +12,71 @@
 
 This repository contains the smart contracts for the Co-Museum project.
 
-## Running the local dev environment
+## Running Local Dev Environment
 
-Running `yarn hardhat node` followed by
-`yarn deploy-test` should always produce the same output, reproduced below for convenience:
+Running `yarn hardhat node` followed by `yarn deploy-test` should provide you
+with a full test environment you can develop/test against.
+
+After that connect to the hardhat network at `http://localhost:8545`, with a
+chain ID of `31337`. Input this info into your wallet to connect to the network
+and create custom tokens using the addresses produced by the deployment script
+
+Since contract addresses are computed as a function of the deployer's address
+and their transaction number, if you start from a clean slate (start a fresh
+node and immediately deploy) you should always end up with the same addresses
+(such that you only need to take note of them once).
+
+_Make sure you're using one of the accounts specified in `hardhat.config.ts`_
+
+## Contract/User Relationships
+
+Approval, sender (see
+[PartiallyPausable](./contracts/lib/PartiallyPausableUpgradeable.sol)) as well
+as other relevant relationships between the Co-Museum contracts are laid out in
+the following diagram (dynamic relationshops in red):
+
+> - Implementation details are ommited from this diagram.
+> - All user approvals must be dynamically requested for
+> - Where relationships are through another contract they are indicated with a
+>   label suffix such as approves-<em>stablecoin</em>
+
+```mermaid
+erDiagram
+  USER ||--o{ CROWDSALE-CONTRACT : approves-stablecoin
+  USER ||--o{ MEMBERSHIP-CONTRACT : approves-art-token
+  USER ||--o{ MEMBERSHIP-CONTRACT : approves-membership
+
+  MEMBERSHIP-CONTRACT ||--|| MEMBERSHIP-CONTRACT : sender-of
+  CROWDSALE-CONTRACT ||--|| ART-TOKEN : sender-of
+  MEMBERSHIP-CONTRACT ||--|| ART-TOKEN : sender-of
+
+  NFT-OWNER ||--|| TOKEN-VAULT-FACTORY : approves-art-nft
+  SETTINGS ||--|| TOKEN-VAULT-FACTORY : configures
+  TOKEN-VAULT-FACTORY ||--o{ ART-TOKEN : deploys
+
+  ART-TOKEN-HOLDING-WALLET ||--|| MEMBERSHIP-CONTRACT : approves-art-token
+  ART-TOKEN-HOLDING-WALLET ||--|| CROWDSALE-CONTRACT : approves-art-token
+  CROWDSALE-CONTRACT ||--|| TREASURY-WALLET : pays
 
 ```
-USDC: 0x663F3ad617193148711d28f5334eE4Ed07016602
-USDT: 0x2E983A1Ba5e8b38AAAeC4B440B9dDcFBf72E15d1
-settings: 0x8438Ad1C834623CfF278AB6829a248E37C2D7E3f
-vault factory: 0xF6168876932289D073567f347121A267095f3DD6
-banksy NFT: 0x94B75AA39bEC4cB15e7B9593C315aF203B7B847f
-banksy token: 0x7749f632935738EA2Dd32EBEcbb8B9145E1efeF6
-vote delegator: 0x4F41b941940005aE25D5ecB0F01BaDbc7065E2dD
-banksy membership: 0x558785b76e29e5b9f8Bf428936480B49d71F3d76
-crowdsale: 0xE8BBb5F22E6b3d6CD9157B8FD2b59C076e57a9Fc
-```
 
-After that connect to the hardhat network at `http://localhost:8545`, with a chain
-ID of `31337`. Input this info into your wallet to connect to the network and create custom tokens using the addresses listed above so you can see the relevant balances.
-
-Make sure you're using one of the accounts specified in `hardhat.config.ts`
-
-## Install
+## Building
 
 ```
-git clone https://github.com/co-museum/fractional.git
-cd co-museum-contracts && yarn install
+git clone https://github.com/co-museum/contracts.git co-museum-contracts
+cd co-museum-contracts
+yarn install
+yarn hardhat compile
+yarn hardhat <task>
 ```
 
 ## Scripts
 
 ```
-yarn prettier-action
-yarn prettier-check
+yarn prettier:format
+yarn prettier:check
 yarn test
 yarn test:coverage
 yarn test:gas
-yarn deploy-test
+yarn deploy:test
 ```
