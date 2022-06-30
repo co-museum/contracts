@@ -16,14 +16,14 @@ import {
 const tokenVaultDecimals = 6
 
 export async function deployERC20Mock(
-  signer: SignerWithAddress,
+  holder: SignerWithAddress,
   name = 'ERC20',
   symbol = 'ERC20',
   supply = ethers.utils.parseUnits('9000000', 6),
   decimals = 6,
 ): Promise<IERC20> {
   const MockERC20 = await ethers.getContractFactory('ERC20Mock')
-  const mockERC20 = await MockERC20.deploy(name, symbol, signer.address, supply, decimals)
+  const mockERC20 = await MockERC20.deploy(name, symbol, holder.address, supply, decimals)
   return mockERC20.deployed()
 }
 
