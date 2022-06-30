@@ -1,6 +1,6 @@
 {
   "version": "0.0.0",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "deploy-test": "hardhat run --network localhost scripts/DeployTest.ts",
     "prettier-check": "prettier --list-different contracts test scripts utils .github .vscode"
