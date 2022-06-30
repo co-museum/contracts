@@ -2,11 +2,11 @@ import { ethers } from 'hardhat'
 import * as utils from '../utils/deployment'
 
 const stablecoinDecimals = 6
-const mockBanksyId = 0
-// NOTE: we assum stablecoin.decimals() == banksyToken.decimals() in contracts
-const banksySupply = ethers.utils.parseUnits('4000000', stablecoinDecimals)
-const banksyPrice = banksySupply // 1 BKLN == 1 USDC/USDT
-const banksyFee = 0 // no inflation
+const mockArtId = 0
+// NOTE: we assume stablecoin.decimals() == artToken.decimals() in contracts
+const artSupply = ethers.utils.parseUnits('4000000', stablecoinDecimals)
+const artPrice = artSupply // 1 ART == 1 USDC/USDT
+const artFee = 0 // no inflation
 const genesisEnd = 15
 const foundationEnd = genesisEnd + 200
 const friendEnd = foundationEnd + 3500
@@ -40,54 +40,59 @@ async function main() {
   const vaultFactory = await utils.deployVaultFactory(settings)
   console.log(`vault factory: ${vaultFactory.address}`)
 
-  const mockBanksyNFT = await utils.deployERC721Mock('Banksy Laugh Now Title Deed NFT', 'BKLNTD')
-  await mockBanksyNFT.mint(signer.address, mockBanksyId)
-  await mockBanksyNFT.approve(vaultFactory.address, mockBanksyId)
-  console.log(`banksy NFT: ${mockBanksyNFT.address}`)
+  const mockArtNFT = await utils.deployERC721Mock('Art NFT', 'ARTN')
+  await mockArtNFT.mint(signer.address, mockArtId)
+  // NOTE: needs to happen before mint
+  await mockArtNFT.approve(vaultFactory.address, mockArtId)
+  console.log(`art NFT: ${mockArtNFT.address}`)
 
-  const banksyToken = await utils.deployTokenVault(
+  const artToken = await utils.deployTokenVault(
     mockUSDC,
-    mockBanksyNFT,
-    mockBanksyId,
+    mockArtNFT,
+    mockArtId,
     vaultFactory,
-    'Banksy Laugh Now',
-    'BKLN',
-    banksySupply,
-    banksyPrice,
-    banksyFee,
+    'Art',
+    'ART',
+    artSupply,
+    artPrice,
+    artFee,
   )
-  await banksyToken.transfer(tokenHolder.address, banksySupply)
-  await banksyToken.pause()
-  console.log(`banksy token: ${banksyToken.address}`)
+  await artToken.transfer(tokenHolder.address, artSupply)
+  console.log(`art token: ${artToken.address}`)
 
-  const voteDelegator = await utils.deployVoteDelegator(banksyToken)
+  const voteDelegator = await utils.deployVoteDelegator(artToken)
   console.log(`vote delegator: ${voteDelegator.address}`)
 
   const membership = await utils.deployMembership(
-    banksyToken,
+    artToken,
     voteDelegator,
-    'Banksy Laugh Now Membership',
-    'BKLNM',
+    'Art Membership',
+    'ARTM',
     genesisEnd,
     foundationEnd,
     friendEnd,
   )
-  await banksyToken.connect(tokenHolder).approve(membership.address, banksySupply)
-  await membership.pause()
-  console.log(`banksy membership: ${membership.address}`)
+  console.log(`art membership: ${membership.address}`)
 
-  const crowdsale = await utils.deployAllowanceCrowdsale(banksyToken, treasury, tokenHolder, membership, [
+  const crowdsale = await utils.deployAllowanceCrowdsale(artToken, treasury, tokenHolder, membership, [
     mockUSDC,
     mockUSDT,
   ])
-  await banksyToken.connect(tokenHolder).approve(crowdsale.address, banksySupply)
-  await banksyToken.addSender(crowdsale.address)
-  await membership.addSender(crowdsale.address)
   console.log(`crowdsale: ${crowdsale.address}`)
+
+  // NOTE: crowdsale transfers tokens through membership
+  await artToken.connect(tokenHolder).approve(membership.address, artSupply)
+  await artToken.connect(tokenHolder).approve(crowdsale.address, artSupply)
+
+  // NOTE: crowdsale transfers tokens through membership
+  await membership.addSender(membership.address)
+  await artToken.addSender(crowdsale.address)
+  await artToken.addSender(membership.address)
+
+  await membership.pause()
+  await artToken.pause()
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
 main().catch((error) => {
   console.error(error)
   process.exitCode = 1
