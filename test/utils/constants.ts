@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat'
-import { utils, constants, BigNumber } from 'ethers'
+import { utils } from 'ethers'
 import { calculateEthRate } from '../../utils/crowdsale'
 
 // TODO: Remove dynamic constants
@@ -11,6 +11,9 @@ export const tokenSupply = ethers.utils.parseUnits('4000000', decimals)
 export const totalSupplyOfMockUSDC = utils.parseUnits('9000000', decimals)
 export const totalSupplyOfMockUSDT = utils.parseUnits('9000000', decimals)
 export const friendTokenAmount = utils.parseUnits('400', decimals)
+export const genesisTokenPrice = utils.parseUnits('40000', decimals)
+export const foundationTokenPrice = utils.parseUnits('4000', decimals)
+export const friendTokenPrice = utils.parseUnits('400', decimals)
 export const ethValueForFriendAmount = calculateEthRate(ethUSDPrice).mul(friendTokenAmount)
 export const revertMessageCrowdsaleNotOpen = 'crowdsale:not open'
 export const revertMessageERC20Balance = 'ERC20: transfer amount exceeds balance'

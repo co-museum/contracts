@@ -140,7 +140,6 @@ contract AllowanceCrowdsale is Ownable {
     /// @dev Whitelists array is cleared at end of batch.
     function stopSale() external onlyOwner {
         isActive = false;
-        // TODO: test when whitelist is uninitialised
         for (uint8 i = 0; i < whitelists.length; i++) {
             delete whitelists[i];
         }

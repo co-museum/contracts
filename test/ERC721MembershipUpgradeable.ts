@@ -9,6 +9,7 @@ import {
   deployTokenVault,
   deployVaultFactory,
 } from '../utils/deployment'
+import { numNFTsOne } from './utils/constants'
 
 enum State {
   DISABLED,
@@ -51,6 +52,41 @@ describe('ERC721MembershipUpgradeable', () => {
     await tokenVault.connect(user).approve(membershipERC721.address, ethers.constants.MaxUint256)
     supportRole = await membershipERC721.SUPPORT_ROLE()
     senderRole = await membershipERC721.SENDER_ROLE()
+  })
+
+  describe('URI', () => {
+    it('computes correct url', async () => {
+      const nftId = (await membershipERC721.genesisTier()).start
+      const expected = `ipfs://test/${nftId}.json`
+      await membershipERC721.redeem(genesisCode, signer.address, signer.address)
+      await membershipERC721.setBaseURI('ipfs://test/')
+      expect(await membershipERC721.tokenURI(nftId)).to.be.equal(expected)
+    })
+  })
+
+  describe('remaining NFTs', () => {
+    let start: number
+    let end: number
+    let num: number
+
+    beforeEach(async () => {
+      start = (await membershipERC721.genesisTier()).start.toNumber()
+      end = (await membershipERC721.genesisTier()).end.toNumber()
+      num = end - start
+    })
+
+    it('just redeemed', async () => {
+      expect(await membershipERC721.getTierNumRemainingNFTs(genesisCode)).to.be.equal(num)
+      await membershipERC721.redeem(genesisCode, signer.address, signer.address)
+      expect(await membershipERC721.getTierNumRemainingNFTs(genesisCode)).to.be.equal(num - 1)
+    })
+
+    it('redeemed and released', async () => {
+      expect(await membershipERC721.getTierNumRemainingNFTs(genesisCode)).to.be.equal(num)
+      await membershipERC721.redeem(genesisCode, signer.address, signer.address)
+      await membershipERC721.release(start)
+      expect(await membershipERC721.getTierNumRemainingNFTs(genesisCode)).to.be.equal(num)
+    })
   })
 
   describe('redeem with sufficient balance', () => {
