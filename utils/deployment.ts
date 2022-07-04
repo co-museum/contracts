@@ -99,7 +99,7 @@ export async function deployMembership(
     friendEnd,
     genesisTokenPrice,
     foundationTokenPrice,
-    friendTokenPrice
+    friendTokenPrice,
   )
   return Promise.resolve(membershipContract)
 }
