@@ -1,5 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { BigNumberish, utils } from 'ethers'
+import { BigNumberish } from 'ethers'
 import { ethers } from 'hardhat'
 import {
   AllowanceCrowdsale,
@@ -14,6 +14,9 @@ import {
 } from '../typechain'
 
 const tokenVaultDecimals = 6
+const genesisTokenPrice = ethers.utils.parseUnits('40000', tokenVaultDecimals)
+const foundationTokenPrice = ethers.utils.parseUnits('4000', tokenVaultDecimals)
+const friendTokenPrice = ethers.utils.parseUnits('400', tokenVaultDecimals)
 
 export async function deployERC20Mock(
   holder: SignerWithAddress,
@@ -94,6 +97,9 @@ export async function deployMembership(
     genesisEnd,
     foundationEnd,
     friendEnd,
+    genesisTokenPrice,
+    foundationTokenPrice,
+    friendTokenPrice,
   )
   return Promise.resolve(membershipContract)
 }

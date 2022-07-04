@@ -10,6 +10,7 @@ import "../lib/PartiallyPausableUpgradeable.sol";
 import "../fractional/ERC721TokenVault.sol";
 import "../fractional/InitializedProxy.sol";
 import "./VoteDelegator.sol";
+import "hardhat/console.sol";
 
 /// @title Membership NFT contract allowing users to redeem memberships in
 /// exchange for $ART tokens and release memberships to get $ART tokens back.
@@ -21,8 +22,10 @@ contract ERC721MembershipUpgradeable is
     PartiallyPausableUpgradeable,
     OwnableUpgradeable
 {
+    using Strings for uint256;
     /// @dev metadata url prefix
-    string private _membershipBaseURI;
+    string private _baseTokenURI;
+    string private baseExtension = ".json";
     /// @return vault address of associated token vault
     address public vault;
 
@@ -51,8 +54,7 @@ contract ERC721MembershipUpgradeable is
     /// @param id ID of released NFT
     event Release(address indexed owner, uint256 indexed id);
 
-    /// Lets make this public?
-    address private voteDelegatorLogic;
+    address public voteDelegatorLogic;
 
     /// @dev Arrays holding released NFT Ids for each tier
     uint256[] private friendIdStack;
@@ -75,10 +77,18 @@ contract ERC721MembershipUpgradeable is
     Tier public foundationTier;
     Tier public genesisTier;
 
+    /// @notice Returns number of remaining NFTs that can be redeemed at tierCode tier
+    /// @param tierCode Code for tier
+    /// @return num number of remaining NFTs that can be redeemed at tierCode tier
+    function getTierNumRemainingNFTs(TierCode tierCode) public view returns (uint256 num) {
+        Tier storage tier = _getTierByCode(tierCode);
+        return tier.end - tier.currId + tier.releasedIds.length;
+    }
+
     /// @notice Returns tierPrice for tierCode
     /// @param tierCode Code for tier
-    /// @return price Returns price of given tier
-    function getTierPrice(TierCode tierCode) public view returns (uint256) {
+    /// @return price price of given tier in terms of $ART tokens
+    function getTierPrice(TierCode tierCode) public view returns (uint256 price) {
         Tier storage tier = _getTierByCode(tierCode);
         return tier.price;
     }
@@ -125,6 +135,9 @@ contract ERC721MembershipUpgradeable is
     /// @param genesisEnd end of genesis membership NFT IDs
     /// @param foundationEnd end of foundation membership NFT IDs
     /// @param friendEnd end of friend membership NFT IDs
+    /// @param genesisPrice genesis tier price in terms of $ART tokens
+    /// @param foundationPrice foundation tier price in terms of $ART tokens
+    /// @param friendPrice friend tier price in terms of $ART tokens
     function initialize(
         string memory name_,
         string memory symbol_,
@@ -132,7 +145,10 @@ contract ERC721MembershipUpgradeable is
         address voteDelegatorLogic_,
         uint256 genesisEnd,
         uint256 foundationEnd,
-        uint256 friendEnd
+        uint256 friendEnd,
+        uint256 genesisPrice,
+        uint256 foundationPrice,
+        uint256 friendPrice
     ) external initializer {
         __ERC721_init(name_, symbol_);
         __Ownable_init();
@@ -141,19 +157,13 @@ contract ERC721MembershipUpgradeable is
         vault = vault_;
         voteDelegatorLogic = voteDelegatorLogic_;
 
-        genesisTier = Tier({
-            currId: 0,
-            start: 0,
-            end: genesisEnd,
-            price: 40000 * 10**TokenVault(vault).decimals(),
-            releasedIds: friendIdStack
-        });
+        genesisTier = Tier({currId: 0, start: 0, end: genesisEnd, price: genesisPrice, releasedIds: friendIdStack});
 
         foundationTier = Tier({
             currId: genesisEnd,
             start: genesisEnd,
             end: foundationEnd,
-            price: 4000 * 10**TokenVault(vault).decimals(),
+            price: foundationPrice,
             releasedIds: foundationIdStack
         });
 
@@ -161,7 +171,7 @@ contract ERC721MembershipUpgradeable is
             currId: foundationEnd,
             start: foundationEnd,
             end: friendEnd,
-            price: 400 * 10**TokenVault(vault).decimals(),
+            price: friendPrice,
             releasedIds: genesisIdStack
         });
     }
@@ -186,15 +196,21 @@ contract ERC721MembershipUpgradeable is
         burn(id);
     }
 
-    /// @return _membershipBaseURI
+    /// @return _baseTokenURI
     function _baseURI() internal view override returns (string memory) {
-        return _membershipBaseURI;
+        return _baseTokenURI;
     }
 
-    /// @notice set _membershipBaseURI (reveal collection)
+    /// @notice set _baseTokenURI (reveal collection)
     /// @param membershipBaseURI_ base URI
     function setBaseURI(string calldata membershipBaseURI_) external onlyOwner {
-        _membershipBaseURI = membershipBaseURI_;
+        _baseTokenURI = membershipBaseURI_;
+    }
+
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        console.log(_exists(tokenId));
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+        return string(abi.encodePacked(_baseTokenURI, tokenId.toString(), baseExtension));
     }
 
     /// @notice redeem membership associated with tierCode
@@ -281,7 +297,9 @@ contract ERC721MembershipUpgradeable is
         Tier storage tier = _getTier(nftID);
         // 0 if voting again and tier.price if after transfer/mint
         uint256 amount = tier.price - TokenVault(vault).balanceOf(voteDelegatorAddress);
-        TokenVault(vault).transfer(voteDelegatorAddress, amount);
+        if (amount != 0) {
+            TokenVault(vault).transfer(voteDelegatorAddress, amount);
+        }
         voteDelegator.updateUserPrice(newPrice);
     }
 

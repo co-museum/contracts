@@ -22,19 +22,19 @@ contract PartiallyPausableUpgradeable is PausableUpgradeable, AccessControlUpgra
         __AccessControl_init();
         _setRoleAdmin(SENDER_ROLE, SUPPORT_ROLE);
         ownerAddress = _ownerAddress;
-        _setupRole(SUPPORT_ROLE, ownerAddress);
+        _grantRole(SUPPORT_ROLE, ownerAddress);
     }
 
     /// @notice give an address the sender role
     /// @param sender address to grant sender role to
     function addSender(address sender) external {
-        _setupRole(SENDER_ROLE, sender);
+        grantRole(SENDER_ROLE, sender);
     }
 
     /// @notice take sender role away from address
     /// @param sender address to revoke sender role from
     function removeSender(address sender) external {
-        _revokeRole(SENDER_ROLE, sender);
+        revokeRole(SENDER_ROLE, sender);
     }
 
     /// @notice kick self from support role
