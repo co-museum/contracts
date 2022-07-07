@@ -10,7 +10,6 @@ import "../lib/PartiallyPausableUpgradeable.sol";
 import "../fractional/ERC721TokenVault.sol";
 import "../fractional/InitializedProxy.sol";
 import "./VoteDelegator.sol";
-import "hardhat/console.sol";
 
 /// @title Membership NFT contract allowing users to redeem memberships in
 /// exchange for $ART tokens and release memberships to get $ART tokens back.
@@ -208,7 +207,7 @@ contract ERC721MembershipUpgradeable is
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        console.log(_exists(tokenId));
+        // console.log(_exists(tokenId));
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
         return string(abi.encodePacked(_baseTokenURI, tokenId.toString(), baseExtension));
     }
