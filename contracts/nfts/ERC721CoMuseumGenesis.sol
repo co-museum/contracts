@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-contract CoMuseumGenesis is ERC721A, ERC2981, Ownable {
+contract ERC721CoMuseumGenesis is ERC721A, ERC2981, Ownable {
     using Strings for uint256;
     address payable public immutable receiverAddress;
     string private _baseTokenURI;
