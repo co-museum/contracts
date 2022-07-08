@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract ERC721TitleDeed is ERC721Royalty, Ownable {
     using Strings for uint256;
+    uint256 public totalSupply;
     address payable public immutable receiverAddress;
     string private _baseTokenURI;
     string private baseExtension = ".json";
@@ -17,8 +18,8 @@ contract ERC721TitleDeed is ERC721Royalty, Ownable {
     }
 
     ///  @notice Public mint function.
-    function mintTitleDeed() external onlyOwner {
-        _safeMint(address(this), 1);
+    function mintTitleDeed(address to) external onlyOwner {
+        _safeMint(to, totalSupply++); // mint and then increment
     }
 
     ///@notice Withdraw funds.
