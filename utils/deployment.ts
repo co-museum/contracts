@@ -3,8 +3,10 @@ import { BigNumberish } from 'ethers'
 import { ethers } from 'hardhat'
 import {
   AllowanceCrowdsale,
+  ERC721,
   ERC721MembershipUpgradeable,
   ERC721Mock,
+  ERC721TitleDeed,
   ERC721VaultFactory,
   IERC20,
   IERC721,
@@ -49,10 +51,16 @@ export async function deployERC721Mock(name = 'Dummy NFT', symbol = 'DMY'): Prom
   return dummyNFT.deployed()
 }
 
+export async function deployERC721TitleDeed(recieverAddress: string): Promise<ERC721TitleDeed> {
+  const TitleDeedNFT = await ethers.getContractFactory('ERC721TitleDeed')
+  const titleDeedNFT = await TitleDeedNFT.deploy(recieverAddress)
+  return titleDeedNFT.deployed()
+}
+
 export async function deployTokenVault(
   usdc: IERC20,
   // HACK: ERC721 seems to not satisfy IERC721 after compilation to TypeScript
-  nft: ERC721Mock | IERC721,
+  nft: ERC721 | ERC721Mock | IERC721,
   nftId: BigNumberish,
   vaultFactory: ERC721VaultFactory,
   name = 'Dummy Frac',
