@@ -18,13 +18,13 @@ describe('ERC721TitleDeed', () => {
 
   describe('airdrop', () => {
     it('can mint one NFT at a time', async () => {
-      await erc721TitleDeed.mintTitleDeed(signer.address)
+      await erc721TitleDeed.mint(signer.address)
       expect(await erc721TitleDeed.ownerOf(0)).to.be.equal(signer.address)
     })
 
     it('can add multiple NFTs to the collection', async () => {
       for (let i = 0; i < 5; i++) {
-        await erc721TitleDeed.mintTitleDeed(signer.address)
+        await erc721TitleDeed.mint(signer.address)
         expect(await erc721TitleDeed.ownerOf(i)).to.be.equal(signer.address)
       }
     })
@@ -43,12 +43,12 @@ describe('ERC721TitleDeed', () => {
 
     it('can set royalty for a specific token', async () => {
       await expect(erc721TitleDeed.setDefaultRoyalty(signer.address, 500)).to.not.be.reverted
-      await erc721TitleDeed.mintTitleDeed(signer.address)
+      await erc721TitleDeed.mint(signer.address)
       await expect(erc721TitleDeed.setTokenRoyalty(3, signer.address, 700)).to.not.be.reverted
     })
     it('can reset default royalty for a specific token to the global default', async () => {
       await expect(erc721TitleDeed.setDefaultRoyalty(signer.address, 500)).to.not.be.reverted
-      await erc721TitleDeed.mintTitleDeed(signer.address)
+      await erc721TitleDeed.mint(signer.address)
       await expect(erc721TitleDeed.setTokenRoyalty(3, signer.address, 700)).to.not.be.reverted
       await expect(erc721TitleDeed.resetTokenRoyalty(3)).to.not.be.reverted
     })
