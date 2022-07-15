@@ -18,7 +18,7 @@ contract ERC721TitleDeed is ERC721Royalty, Ownable {
     }
 
     ///  @notice Public mint function.
-    function mintTitleDeed(address to) external onlyOwner {
+    function mint(address to) external onlyOwner {
         _safeMint(to, totalSupply++); // mint and then increment
     }
 

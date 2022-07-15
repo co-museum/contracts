@@ -5,7 +5,7 @@
     "test": "yarn hardhat test",
     "test:gas": "REPORT_GAS=true yarn hardhat test",
     "test:coverage": "yarn hardhat coverage",
-    "deploy:test": "hardhat run --network localhost scripts/DeployTest.ts",
+    "deploy:test": "yarn hardhat run --network localhost scripts/DeployTest.ts",
     "prettier:format": "yarn prettier -w contracts test scripts utils .github .vscode",
     "prettier:check": "prettier --list-different contracts test scripts utils .github .vscode"
   },
@@ -22,7 +22,7 @@
     "@typescript-eslint/eslint-plugin": "^4.29.1",
     "@typescript-eslint/parser": "^4.29.1",
     "chai": "^4.2.0",
-    "dotenv": "^10.0.0",
+    "dotenv": "^16.0.1",
     "erc721a": "^4.1.0",
     "eslint": "^7.29.0",
     "eslint-config-prettier": "^8.3.0",
