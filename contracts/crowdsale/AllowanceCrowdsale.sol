@@ -24,7 +24,7 @@ contract AllowanceCrowdsale is Ownable {
     /// @dev The _claimed variable represents whether the user has claimed their
     /// $ART tokens allocation fully or partially without regard to crowdsale
     /// rounds
-    mapping(address => bool) private _claimed;
+    mapping(address => bool) public _claimed;
 
     /// @notice Struct represeting a single group of whitelisted users
     /// determined by the merkle root of a list of addresses, their
@@ -236,7 +236,7 @@ contract AllowanceCrowdsale is Ownable {
         require(MerkleProof.verify(proof, whitelistRoot, keccak256(abi.encodePacked(msg.sender))), "Invalid proof");
     }
 
-    /// @dev Checks whether stablecoin is accepted and teturns the stablecoin
+    /// @dev Checks whether stablecoin is accepted and returns the stablecoin
     /// @param stablecoinAddress Address of stablecoin
     function getStablecoin(address stablecoinAddress) internal view returns (IERC20) {
         bool hasTokenAddress = false;

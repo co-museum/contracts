@@ -49,6 +49,12 @@ async function main() {
   await artNFT.approve(vaultFactory.address, mockArtId)
   console.log(`art NFT: ${artNFT.address}`)
 
+  // const artNFT = await utils.deployERC721Mock('Art NFT', 'ARTN')
+  // await artNFT.mint(signer.address, mockArtId)
+  // // NOTE: needs to happen before mint
+  // await artNFT.approve(vaultFactory.address, mockArtId)
+  // console.log(`art NFT: ${artNFT.address}`)
+
   const artToken = await utils.deployTokenVault(
     mockUSDC,
     artNFT,
@@ -86,14 +92,17 @@ async function main() {
   // NOTE: crowdsale transfers tokens through membership
   await artToken.connect(tokenHolder).approve(membership.address, artSupply)
   await artToken.connect(tokenHolder).approve(crowdsale.address, artSupply)
+  console.log(`art token permissions sorted`)
 
   // NOTE: crowdsale transfers tokens through membership
   await membership.addSender(membership.address)
   await artToken.addSender(crowdsale.address)
   await artToken.addSender(membership.address)
+  console.log(`senders added`)
 
   await membership.pause()
   await artToken.pause()
+  console.log(`contracts paused`)
 }
 
 main().catch((error) => {
