@@ -41,7 +41,7 @@ contract ERC721TitleDeed is ERC721Royalty, Ownable {
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+        require(_exists(tokenId), "URI query for nonexistent token");
         return string(abi.encodePacked(_baseTokenURI, tokenId.toString(), baseExtension));
     }
 
