@@ -5,21 +5,22 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-contract ERC721TitleDeed is ERC721Royalty, Ownable {
+contract ERC721HonoraryMembership is ERC721Royalty, Ownable {
     using Strings for uint256;
     uint256 public totalSupply;
     address payable public immutable receiverAddress;
     string private _baseTokenURI;
     string private baseExtension = ".json";
 
-    constructor(address payable receiverAddress_) ERC721("CoMuseumTitleDeeds", "COMUTD") {
+    constructor(address payable receiverAddress_) ERC721("Co-Museum Honorary Membership", "COMUH") {
         require(receiverAddress_ != address(0), "Receiver can't be 0x0");
         receiverAddress = payable(receiverAddress_);
     }
 
     ///  @notice Public mint function.
+    ///  @param to Recipient address.
     function mint(address to) external onlyOwner {
-        _safeMint(to, totalSupply++); // mint and then increment
+        _safeMint(to, totalSupply++);
     }
 
     ///@notice Withdraw funds.
@@ -41,7 +42,7 @@ contract ERC721TitleDeed is ERC721Royalty, Ownable {
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        require(_exists(tokenId), "URI query for nonexistent token");
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
         return string(abi.encodePacked(_baseTokenURI, tokenId.toString(), baseExtension));
     }
 
