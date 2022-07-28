@@ -1,4 +1,5 @@
 import { ethers } from 'hardhat'
+import { NonceManager } from '@ethersproject/experimental'
 import * as utils from '../utils/deployment'
 
 const stablecoinDecimals = 6
@@ -12,12 +13,14 @@ const foundationEnd = genesisEnd + 200
 const friendEnd = foundationEnd + 3500
 
 async function main() {
-  const [signer, treasury, tokenHolder, user] = await ethers.getSigners()
+  const [signer, treasury, tokenHolder] = await ethers.getSigners()
+  const nonceSigner = new NonceManager(signer)
+  const nonceTokenHolder = new NonceManager(tokenHolder)
 
   console.log('signer', signer.address)
 
   const mockUSDC = await utils.deployERC20Mock(
-    user,
+    signer,
     'USD Coin',
     'USDC',
     ethers.utils.parseUnits('55000000000', stablecoinDecimals),
@@ -27,7 +30,7 @@ async function main() {
   console.log(`USDC: ${mockUSDC.address}`)
 
   const mockUSDT = await utils.deployERC20Mock(
-    user,
+    signer,
     'USD Tether',
     'USDT',
     ethers.utils.parseUnits('66000000000', stablecoinDecimals),
@@ -35,18 +38,18 @@ async function main() {
   )
   console.log(`USDT: ${mockUSDT.address}`)
 
-  const settings = await utils.deploySettings()
-  await settings.setMinReserveFactor(750) // 75%
-  await settings.setMaxReserveFactor(5000) // 500%
+  const settings = await utils.deploySettings(nonceSigner)
+  await settings.connect(nonceSigner).setMinReserveFactor(750) // 75%
+  await settings.connect(nonceSigner).setMaxReserveFactor(5000) // 500%
   console.log(`settings: ${settings.address}`)
 
-  const vaultFactory = await utils.deployVaultFactory(settings)
+  const vaultFactory = await utils.deployVaultFactory(settings, nonceSigner)
   console.log(`vault factory: ${vaultFactory.address}`)
 
-  const artNFT = await utils.deployERC721TitleDeed(signer.address)
-  await artNFT.mint(signer.address)
+  const artNFT = await utils.deployERC721ArtNFT(signer.address, nonceSigner)
+  await artNFT.connect(nonceSigner).mint(signer.address)
   // NOTE: needs to happen before mint
-  await artNFT.approve(vaultFactory.address, mockArtId)
+  await artNFT.connect(nonceSigner).approve(vaultFactory.address, mockArtId)
   console.log(`art NFT: ${artNFT.address}`)
 
   // const artNFT = await utils.deployERC721Mock('Art NFT', 'ARTN')
@@ -65,11 +68,12 @@ async function main() {
     artSupply,
     artPrice,
     artFee,
+    nonceSigner,
   )
-  await artToken.transfer(tokenHolder.address, artSupply)
+  await artToken.connect(nonceSigner).transfer(tokenHolder.address, artSupply)
   console.log(`art token: ${artToken.address}`)
 
-  const voteDelegator = await utils.deployVoteDelegator(artToken)
+  const voteDelegator = await utils.deployVoteDelegator(artToken, nonceSigner)
   console.log(`vote delegator: ${voteDelegator.address}`)
 
   const membership = await utils.deployMembership(
@@ -80,28 +84,33 @@ async function main() {
     genesisEnd,
     foundationEnd,
     friendEnd,
+    nonceSigner,
   )
   console.log(`art membership: ${membership.address}`)
 
-  const crowdsale = await utils.deployAllowanceCrowdsale(artToken, treasury, tokenHolder, membership, [
-    mockUSDC,
-    mockUSDT,
-  ])
+  const crowdsale = await utils.deployAllowanceCrowdsale(
+    artToken,
+    treasury,
+    tokenHolder,
+    membership,
+    [mockUSDC, mockUSDT],
+    nonceSigner,
+  )
   console.log(`crowdsale: ${crowdsale.address}`)
 
   // NOTE: crowdsale transfers tokens through membership
-  await artToken.connect(tokenHolder).approve(membership.address, artSupply)
-  await artToken.connect(tokenHolder).approve(crowdsale.address, artSupply)
+  await artToken.connect(nonceTokenHolder).approve(membership.address, artSupply)
+  await artToken.connect(nonceTokenHolder).approve(crowdsale.address, artSupply)
   console.log(`art token permissions sorted`)
 
   // NOTE: crowdsale transfers tokens through membership
-  await membership.addSender(membership.address)
-  await artToken.addSender(crowdsale.address)
-  await artToken.addSender(membership.address)
+  await membership.connect(nonceSigner).addSender(membership.address)
+  await artToken.connect(nonceSigner).addSender(crowdsale.address)
+  await artToken.connect(nonceSigner).addSender(membership.address)
   console.log(`senders added`)
 
-  await membership.pause()
-  await artToken.pause()
+  await membership.connect(nonceSigner).pause()
+  await artToken.connect(nonceSigner).pause()
   console.log(`contracts paused`)
 }
 
