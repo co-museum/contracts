@@ -126,6 +126,8 @@ contract AllowanceCrowdsale is Ownable {
 
         require(tierCodes.length != 0, "crowdsale:whitelists arrays.length should be > 0");
 
+        // require(!isActive, "sale still active");
+
         isActive = true;
 
         for (uint256 i = 0; i < tierCodes.length; i++) {

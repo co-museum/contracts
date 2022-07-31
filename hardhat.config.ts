@@ -7,12 +7,14 @@ import '@typechain/hardhat'
 import 'hardhat-gas-reporter'
 import 'solidity-coverage'
 import '@primitivefi/hardhat-dodoc'
-import { BigNumber } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
+import { NonceManager } from '@ethersproject/experimental'
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { Address } from 'cluster'
+import '@nomiclabs/hardhat-ethers'
+import './tasks'
 
 dotenv.config()
-
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
 
 const samplePrivateKeyList = [
   '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a',
@@ -34,11 +36,11 @@ const accounts =
       ]
     : samplePrivateKeyList
 
-task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
-  for (const account of accounts) {
-    console.log(account)
-  }
-})
+// task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
+//   for (const account of accounts) {
+//     console.log(account)
+//   }
+// })
 
 const config: HardhatUserConfig = {
   solidity: {
