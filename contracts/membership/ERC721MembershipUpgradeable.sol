@@ -88,13 +88,13 @@ contract ERC721MembershipUpgradeable is
     /// @notice give an address the sender role
     /// @param tokenId tokenId to lock
     /// @param timestamp time to lock tokenID until
-    function addEscrowReleaseTime(uint256 tokenId, uint256 timestamp) external {
+    function addEscrowReleaseTime(uint256 tokenId, uint256 timestamp) external onlyOwner {
         escrowReleaseTimes[tokenId] = timestamp;
     }
 
     /// @notice give an address the sender role
     /// @param tokenId tokenId to unlock
-    function removeEscrowReleaseTime(uint256 tokenId) external {
+    function removeEscrowReleaseTime(uint256 tokenId) external onlyOwner {
         escrowReleaseTimes[tokenId] = 0;
     }
 

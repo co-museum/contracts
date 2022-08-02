@@ -155,6 +155,48 @@ describe('ERC721MembershipUpgradeable', () => {
       await membershipERC721.connect(user).release(friendId)
       expect(await tokenVault.balanceOf(user.address)).to.be.equal(price, 'not releasing correct amount of ERC20')
     })
+
+    describe('escrow', () => {
+      const releaseDelay = 1000
+      beforeEach(async () => {
+        const price = await membershipERC721.getTierPrice(friendsCode)
+        tokenVault.transfer(user.address, price)
+        await membershipERC721.connect(user).redeem(friendsCode, user.address, user.address)
+        const now = new Date()
+        const secondsSinceEpoch = Math.round(now.getTime() / 1000)
+        membershipERC721.addEscrowReleaseTime(friendId, secondsSinceEpoch + releaseDelay)
+      })
+
+      it('blocks unwrapping of tokens before release time', async () => {
+        await expect(membershipERC721.connect(user).release(friendId)).to.be.revertedWith('membership:locked in escrow')
+      })
+
+      it('removes escrow', async () => {
+        membershipERC721.removeEscrowReleaseTime(friendId)
+        await expect(membershipERC721.connect(user).release(friendId)).not.to.be.reverted
+      })
+
+      it('allows unwrapping of tokens after release time', async () => {
+        await ethers.provider.send('evm_increaseTime', [releaseDelay])
+      })
+
+      it('does not enforce escrow after disabling', async () => {
+        membershipERC721.disableEscrow()
+        await expect(membershipERC721.connect(user).release(friendId)).not.to.be.reverted
+      })
+
+      it('only allows owner to handle escrow functions', async () => {
+        await expect(membershipERC721.connect(user).addEscrowReleaseTime(friendId, 0)).to.be.revertedWith(
+          'Ownable: caller is not the owner',
+        )
+        await expect(membershipERC721.connect(user).removeEscrowReleaseTime(friendId)).to.be.revertedWith(
+          'Ownable: caller is not the owner',
+        )
+        await expect(membershipERC721.connect(user).disableEscrow()).to.be.revertedWith(
+          'Ownable: caller is not the owner',
+        )
+      })
+    })
   })
 
   describe('running out of tokens', () => {
