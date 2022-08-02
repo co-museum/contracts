@@ -29,6 +29,10 @@ contract ERC721MembershipUpgradeable is
     /// @return vault address of associated token vault
     address public vault;
 
+    /// @return releaseTime escrow release time for token ID
+    mapping(uint256 => uint256) public escrowReleaseTimes;
+    bool public escrowEnabled = true;
+
     /// @notice membership tier abstraction
     /// @param currId the ID about to be redeemed (barring any released IDs)
     /// @param start starting ID (inclusive) of tier
@@ -76,6 +80,30 @@ contract ERC721MembershipUpgradeable is
     Tier public friendTier;
     Tier public foundationTier;
     Tier public genesisTier;
+
+    function disableEscrow() external onlyOwner {
+        escrowEnabled = false;
+    }
+
+    /// @notice give an address the sender role
+    /// @param tokenId tokenId to lock
+    /// @param timestamp time to lock tokenID until
+    function addEscrowReleaseTime(uint256 tokenId, uint256 timestamp) external {
+        escrowReleaseTimes[tokenId] = timestamp;
+    }
+
+    /// @notice give an address the sender role
+    /// @param tokenId tokenId to unlock
+    function removeEscrowReleaseTime(uint256 tokenId) external {
+        escrowReleaseTimes[tokenId] = 0;
+    }
+
+    /// @dev for unset token IDs block.timestamp will always be > 0
+    function requireEscrowReleased(uint256 tokenId) internal view {
+        if (escrowEnabled) {
+            require(block.timestamp > escrowReleaseTimes[tokenId], "membership:locked in escrow");
+        }
+    }
 
     /// @notice Returns number of remaining NFTs that can be redeemed at tierCode tier
     /// @param tierCode Code for tier
@@ -181,6 +209,7 @@ contract ERC721MembershipUpgradeable is
     /// @param id NFT id
     function release(uint256 id) external {
         require(msg.sender == ownerOf(id), "membership:can only release your own membership");
+        requireEscrowReleased(id);
         Tier storage tier = _getTier(id);
 
         address voteDelegatorAddress = voteDelegators[id];
