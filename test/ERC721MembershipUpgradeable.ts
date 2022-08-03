@@ -160,36 +160,51 @@ describe('ERC721MembershipUpgradeable', () => {
       const releaseDelay = 1000
       beforeEach(async () => {
         const price = await membershipERC721.getTierPrice(friendsCode)
-        tokenVault.transfer(user.address, price)
+        tokenVault.transfer(user.address, price.mul(2))
+        await membershipERC721.connect(user).redeem(friendsCode, user.address, user.address)
         await membershipERC721.connect(user).redeem(friendsCode, user.address, user.address)
         const now = new Date()
         const secondsSinceEpoch = Math.round(now.getTime() / 1000)
-        membershipERC721.addEscrowReleaseTime(friendId, secondsSinceEpoch + releaseDelay)
+        membershipERC721.addEscrowReleaseTime(
+          [friendId, friendId + 1],
+          [secondsSinceEpoch + releaseDelay, secondsSinceEpoch + releaseDelay * 2],
+        )
       })
 
       it('blocks unwrapping of tokens before release time', async () => {
         await expect(membershipERC721.connect(user).release(friendId)).to.be.revertedWith('membership:locked in escrow')
+        await expect(membershipERC721.connect(user).release(friendId + 1)).to.be.revertedWith(
+          'membership:locked in escrow',
+        )
       })
 
       it('removes escrow', async () => {
-        membershipERC721.removeEscrowReleaseTime(friendId)
+        membershipERC721.removeEscrowReleaseTime([friendId, friendId + 1])
         await expect(membershipERC721.connect(user).release(friendId)).not.to.be.reverted
+        await expect(membershipERC721.connect(user).release(friendId + 1)).not.to.be.reverted
       })
 
       it('allows unwrapping of tokens after release time', async () => {
         await ethers.provider.send('evm_increaseTime', [releaseDelay])
+        await expect(membershipERC721.connect(user).release(friendId)).not.to.be.reverted
+        await expect(membershipERC721.connect(user).release(friendId + 1)).to.be.revertedWith(
+          'membership:locked in escrow',
+        )
+        await ethers.provider.send('evm_increaseTime', [releaseDelay])
+        await expect(membershipERC721.connect(user).release(friendId + 1)).not.to.be.reverted
       })
 
       it('does not enforce escrow after disabling', async () => {
         membershipERC721.disableEscrow()
         await expect(membershipERC721.connect(user).release(friendId)).not.to.be.reverted
+        await expect(membershipERC721.connect(user).release(friendId + 1)).not.to.be.reverted
       })
 
       it('only allows owner to handle escrow functions', async () => {
-        await expect(membershipERC721.connect(user).addEscrowReleaseTime(friendId, 0)).to.be.revertedWith(
+        await expect(membershipERC721.connect(user).addEscrowReleaseTime([friendId], [0])).to.be.revertedWith(
           'Ownable: caller is not the owner',
         )
-        await expect(membershipERC721.connect(user).removeEscrowReleaseTime(friendId)).to.be.revertedWith(
+        await expect(membershipERC721.connect(user).removeEscrowReleaseTime([friendId])).to.be.revertedWith(
           'Ownable: caller is not the owner',
         )
         await expect(membershipERC721.connect(user).disableEscrow()).to.be.revertedWith(

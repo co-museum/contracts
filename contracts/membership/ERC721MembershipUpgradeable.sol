@@ -86,16 +86,21 @@ contract ERC721MembershipUpgradeable is
     }
 
     /// @notice give an address the sender role
-    /// @param tokenId tokenId to lock
-    /// @param timestamp time to lock tokenID until
-    function addEscrowReleaseTime(uint256 tokenId, uint256 timestamp) external onlyOwner {
-        escrowReleaseTimes[tokenId] = timestamp;
+    /// @param tokenIds tokenIds to lock
+    /// @param timestamps time to lock tokenIDs until
+    /// @dev assumes tokenIds and timestamps are of the same length
+    function addEscrowReleaseTime(uint256[] calldata tokenIds, uint256[] calldata timestamps) external onlyOwner {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            escrowReleaseTimes[tokenIds[i]] = timestamps[i];
+        }
     }
 
     /// @notice give an address the sender role
-    /// @param tokenId tokenId to unlock
-    function removeEscrowReleaseTime(uint256 tokenId) external onlyOwner {
-        escrowReleaseTimes[tokenId] = 0;
+    /// @param tokenIds tokenIds to unlock
+    function removeEscrowReleaseTime(uint256[] calldata tokenIds) external onlyOwner {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            escrowReleaseTimes[tokenIds[i]] = 0;
+        }
     }
 
     /// @dev for unset token IDs block.timestamp will always be > 0
