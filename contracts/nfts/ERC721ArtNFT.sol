@@ -12,7 +12,7 @@ contract ERC721ArtNFT is ERC721Royalty, Ownable {
     string private _baseTokenURI;
     string private baseExtension = ".json";
 
-    constructor(address payable receiverAddress_) ERC721("CoMuseumTitleDeeds", "COMUTD") {
+    constructor(address payable receiverAddress_) ERC721("Co-Museum Art", "COMUA") {
         require(receiverAddress_ != address(0), "Receiver can't be 0x0");
         receiverAddress = payable(receiverAddress_);
     }

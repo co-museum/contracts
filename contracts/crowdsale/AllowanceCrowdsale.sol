@@ -21,10 +21,10 @@ import "../nfts/ERC721MembershipUpgradeable.sol";
 contract AllowanceCrowdsale is Ownable {
     using SafeERC20 for IERC20;
 
-    /// @dev The _claimed variable represents whether the user has claimed their
+    /// @dev The claimed variable represents whether the user has claimed their
     /// $ART tokens allocation fully or partially without regard to crowdsale
     /// rounds
-    mapping(address => bool) public _claimed;
+    mapping(address => bool) public claimed;
 
     /// @notice Struct represeting a single group of whitelisted users
     /// determined by the merkle root of a list of addresses, their
@@ -126,7 +126,7 @@ contract AllowanceCrowdsale is Ownable {
 
         require(tierCodes.length != 0, "crowdsale:whitelists arrays.length should be > 0");
 
-        // require(!isActive, "sale still active");
+        require(!isActive, "sale still active");
 
         isActive = true;
 
@@ -167,14 +167,14 @@ contract AllowanceCrowdsale is Ownable {
         bool payWithEth,
         address _stablecoinAddress
     ) external payable onlyWhileOpen {
-        require(!_claimed[msg.sender], "crowdsale:user has already claimed allocation");
+        require(!claimed[msg.sender], "crowdsale:user has already claimed allocation");
         Whitelist storage whitelist = whitelists[whitelistIndex];
         uint256 allocation = whitelist.allocation;
         uint256 price = ERC721MembershipUpgradeable(membershipContract).getTierPrice(whitelist.tierCode);
         _validatePurchase(allocation, quantity, price, proof, whitelist.merkleRoot);
         _receivePayment(payWithEth, quantity, _stablecoinAddress);
         IERC20(tokenContract).safeTransferFrom(tokenHoldingWallet, msg.sender, quantity);
-        _claimed[msg.sender] = true;
+        claimed[msg.sender] = true;
     }
 
     /// @notice Helps a whitelisted user buy membership NFTs based on thier
@@ -197,7 +197,7 @@ contract AllowanceCrowdsale is Ownable {
         bool payWithEth,
         address _stablecoinAddress
     ) external payable onlyWhileOpen {
-        require(!_claimed[msg.sender], "crowdsale:user has already claimed allocation");
+        require(!claimed[msg.sender], "crowdsale:user has already claimed allocation");
         Whitelist storage whitelist = whitelists[whitelistIndex];
         uint256 allocation = whitelist.allocation;
         uint256 price = ERC721MembershipUpgradeable(membershipContract).getTierPrice(whitelist.tierCode);
@@ -207,7 +207,7 @@ contract AllowanceCrowdsale is Ownable {
         for (uint256 i = 0; i < numNFTs; i++) {
             ERC721MembershipUpgradeable(membershipContract).redeem(whitelist.tierCode, tokenHoldingWallet, msg.sender);
         }
-        _claimed[msg.sender] = true;
+        claimed[msg.sender] = true;
     }
 
     /// @dev Validates if the purchase is being made in a discrete number of

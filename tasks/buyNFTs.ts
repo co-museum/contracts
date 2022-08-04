@@ -7,8 +7,7 @@ import MerkleTree from 'merkletreejs'
 require('@nomiclabs/hardhat-ethers')
 
 //sample command
-// npx hardhat start-sale-manual --contractaddress 0xd2DB665bCf769a65bDAa3fb9B95C9c919B264ef2 --tiercodes 2,2,1 --allocations 400,800,40000 --roots 0xe9707d0e6171f728f7473c24cc0432a9b07eaaf1efed6a137a4a8c12c79552d9,0x00314e565e0574cb412563df634608d76f5c59d9f817e85966100ec1d48005c0,0x6079234475ac4992943f96a73c5e885e89ecaf8a07e9d34aa76ac8301352a2fd --network goerli
-// npx hardhat buy-nfts-files --filenames "./data/genesisBatchOne.json" --crowdsaleaddress 0x6FA2bE3A77a00331bb96AB50C381B329277b2FC5 --network goerli
+// npx hardhat buy-nfts-files --filenames "./data/sampleGenesisBatch.json" --crowdsaleaddress 0x6FA2bE3A77a00331bb96AB50C381B329277b2FC5 --network goerli
 
 task('buy-nfts-files', 'Starts the sale')
   .addParam('filenames', "The account's address")
