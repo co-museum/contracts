@@ -163,12 +163,8 @@ describe('ERC721MembershipUpgradeable', () => {
         tokenVault.transfer(user.address, price.mul(2))
         await membershipERC721.connect(user).redeem(friendsCode, user.address, user.address)
         await membershipERC721.connect(user).redeem(friendsCode, user.address, user.address)
-        const now = new Date()
-        const secondsSinceEpoch = Math.round(now.getTime() / 1000)
-        membershipERC721.addEscrowReleaseTime(
-          [friendId, friendId + 1],
-          [secondsSinceEpoch + releaseDelay, secondsSinceEpoch + releaseDelay * 2],
-        )
+        const now = (await ethers.provider.getBlock('latest')).timestamp
+        membershipERC721.addEscrowReleaseTime([friendId, friendId + 1], [now + releaseDelay, now + releaseDelay * 2])
       })
 
       it('blocks unwrapping of tokens before release time', async () => {

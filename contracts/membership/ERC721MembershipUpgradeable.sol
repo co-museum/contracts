@@ -242,7 +242,6 @@ contract ERC721MembershipUpgradeable is
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        console.log(_exists(tokenId));
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
         return string(abi.encodePacked(_baseTokenURI, tokenId.toString(), baseExtension));
     }
