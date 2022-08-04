@@ -105,7 +105,6 @@ describe('AllowanceCrowdsale', () => {
       sort: true,
     })
     rootSingle = treeOneFriend.getHexRoot()
-    console.log(rootSingle)
 
     // two NFTs allocated for user 2
     const leavesDouble = whitelistTwoFriends.map((address) => utils.keccak256(address))
@@ -113,7 +112,6 @@ describe('AllowanceCrowdsale', () => {
       sort: true,
     })
     rootDouble = treeTwoFriends.getHexRoot()
-    console.log(rootDouble)
 
     const leavesExceedingSupply = whitelistExceedingSupply.map((address) => utils.keccak256(address))
     treeExceedingSupply = new MerkleTree(leavesExceedingSupply, utils.keccak256, {
@@ -126,7 +124,6 @@ describe('AllowanceCrowdsale', () => {
       sort: true,
     })
     rootFoundation = treeOneFoundation.getHexRoot()
-    console.log(rootFoundation)
 
     whitelistIdxOneFriend = helpers.findWhiteListArrIdx(whitelistArr, userOneFriend.address)
     whitelistIdxTwoFriends = helpers.findWhiteListArrIdx(whitelistArr, userTwoFriends.address)
