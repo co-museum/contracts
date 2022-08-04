@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat'
-import * as utils from '../utils/deployment'
+import * as utils from '../../utils/deployment'
 
 const stablecoinDecimals = 6
 const mockArtId = 0

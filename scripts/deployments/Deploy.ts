@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
 import { NonceManager } from '@ethersproject/experimental'
-import * as utils from '../utils/deployment'
+import * as utils from '../../utils/deployment'
 
 const stablecoinDecimals = 6
 const mockArtId = 0
