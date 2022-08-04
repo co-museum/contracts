@@ -29,6 +29,10 @@ contract ERC721MembershipUpgradeable is
     /// @return vault address of associated token vault
     address public vault;
 
+    /// @return releaseTime escrow release time for token ID
+    mapping(uint256 => uint256) public escrowReleaseTimes;
+    bool public escrowEnabled = true;
+
     /// @notice membership tier abstraction
     /// @param currId the ID about to be redeemed (barring any released IDs)
     /// @param start starting ID (inclusive) of tier
@@ -76,6 +80,35 @@ contract ERC721MembershipUpgradeable is
     Tier public friendTier;
     Tier public foundationTier;
     Tier public genesisTier;
+
+    function disableEscrow() external onlyOwner {
+        escrowEnabled = false;
+    }
+
+    /// @notice give an address the sender role
+    /// @param tokenIds tokenIds to lock
+    /// @param timestamps time to lock tokenIDs until
+    /// @dev assumes tokenIds and timestamps are of the same length
+    function addEscrowReleaseTime(uint256[] calldata tokenIds, uint256[] calldata timestamps) external onlyOwner {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            escrowReleaseTimes[tokenIds[i]] = timestamps[i];
+        }
+    }
+
+    /// @notice give an address the sender role
+    /// @param tokenIds tokenIds to unlock
+    function removeEscrowReleaseTime(uint256[] calldata tokenIds) external onlyOwner {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            escrowReleaseTimes[tokenIds[i]] = 0;
+        }
+    }
+
+    /// @dev for unset token IDs block.timestamp will always be > 0
+    function requireEscrowReleased(uint256 tokenId) internal view {
+        if (escrowEnabled) {
+            require(block.timestamp > escrowReleaseTimes[tokenId], "membership:locked in escrow");
+        }
+    }
 
     /// @notice Returns number of remaining NFTs that can be redeemed at tierCode tier
     /// @param tierCode Code for tier
@@ -181,6 +214,7 @@ contract ERC721MembershipUpgradeable is
     /// @param id NFT id
     function release(uint256 id) external {
         require(msg.sender == ownerOf(id), "membership:can only release your own membership");
+        requireEscrowReleased(id);
         Tier storage tier = _getTier(id);
 
         address voteDelegatorAddress = voteDelegators[id];
@@ -208,7 +242,6 @@ contract ERC721MembershipUpgradeable is
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        console.log(_exists(tokenId));
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
         return string(abi.encodePacked(_baseTokenURI, tokenId.toString(), baseExtension));
     }
