@@ -12,7 +12,7 @@ import { NonceManager } from '@ethersproject/experimental'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { Address } from 'cluster'
 import '@nomiclabs/hardhat-ethers'
-import './tasks'
+// import './tasks'
 
 dotenv.config()
 
@@ -35,12 +35,6 @@ const accounts =
         `0x${process.env.ACCOUNT_FOUR}`,
       ]
     : samplePrivateKeyList
-
-// task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
-//   for (const account of accounts) {
-//     console.log(account)
-//   }
-// })
 
 const config: HardhatUserConfig = {
   solidity: {

@@ -12,18 +12,18 @@ import {
 } from '../../typechain'
 
 // COMMANDS
-// phase-one: yarn hardhat deployment-phase-one --network goerli
+// deploy-phase-nft: yarn hardhat deployment-phase-one --network goerli
 // phase-one-approve: yarn hardhat deployment-phase-one-approve --network goerli --vaultfactoryaddress 0x2E74fB56cfc5F48D9081C4c57981CEFc180a5332 --artnftaddress 0x8BC19A026c00658c461fa259004845BAF7758890
 // phase-two: yarn hardhat deployment-phase-two --network goerli --vaultfactoryaddress 0x2E74fB56cfc5F48D9081C4c57981CEFc180a5332 --artnftaddress 0x8BC19A026c00658c461fa259004845BAF7758890
 // phase-three: yarn hardhat deployment-phase-three --network goerli --tokenvaultaddress 0x77AACA9866437294728f5cdb7B912B1D4D43AE3C --artnftaddress 0x8BC19A026c00658c461fa259004845BAF7758890
 // phase-four: yarn hardhat deployment-phase-four --network goerli --tokenvaultaddress 0x77AACA9866437294728f5cdb7B912B1D4D43AE3C --artnftaddress 0x8BC19A026c00658c461fa259004845BAF7758890 --membershipaddress 0xd6276FE4a7Af3C5361B646085B52e8863d078bc7
 // phase-five: yarn hardhat deployment-phase-five --network goerli --tokenvaultaddress 0x77AACA9866437294728f5cdb7B912B1D4D43AE3C --membershipaddress 0xd6276FE4a7Af3C5361B646085B52e8863d078bc7 --crowdsaleaddress 0x6FA2bE3A77a00331bb96AB50C381B329277b2FC5
-// phase-six: yarn hardhat deployment-phase-six --network goerli --tokenvaultaddress 0xaBAcfDAFB357135672EC295CCf77c3da9E980194 --membershipaddress 0x9EE096E88309B6F101Cc94F65eaf10d40e956772 --crowdsaleaddress 0xdeed74e2086bE9A3Ea9a6D750Ab45E4be8567945
+// phase-six: yarn hardhat deployment-phase-six --network goerli --tokenvaultaddress 0x77AACA9866437294728f5cdb7B912B1D4D43AE3C --membershipaddress 0xd6276FE4a7Af3C5361B646085B52e8863d078bc7 --crowdsaleaddress 0x6FA2bE3A77a00331bb96AB50C381B329277b2FC5
 
 const usdcaddress = '0x07865c6E87B9F70255377e024ace6630C1Eaa37F'
 
 // DEPLOYMENT PHASES
-task('deployment-phase-one', 'Deploys, mints and approves ART NFT').setAction(async (taskArgs, hre) => {
+task('deploy-phase-nft', 'Deploys, mints and approves ART NFT').setAction(async (taskArgs, hre) => {
   const settings: Settings = await hre.run('settings')
   const vaultFactory: ERC721VaultFactory = await hre.run('vault-factory', { settingsaddress: settings.address })
   const artNFT: ERC721ArtNFT = await hre.run('art-nft', { recieveraddress: process.env.RECIEVER_ADDRESS })
