@@ -1,6 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumberish, Signer } from 'ethers'
 import { ethers } from 'hardhat'
+import hre from 'hardhat'
 import {
   AllowanceCrowdsale,
   ERC721,
@@ -20,6 +21,33 @@ const genesisTokenPrice = ethers.utils.parseUnits('40000', tokenVaultDecimals)
 const foundationTokenPrice = ethers.utils.parseUnits('4000', tokenVaultDecimals)
 const friendTokenPrice = ethers.utils.parseUnits('400', tokenVaultDecimals)
 
+const etherscanUrl = 'etherscan.io'
+const goerli = 'goerli'
+
+export enum txType {
+  address = 'address',
+  tx = 'tx',
+}
+
+// prints etherscan URL if on goerli or mainnet
+// just contract address otherwise
+export function printTx(message: string, hash: string, type?: txType): void {
+  switch (hre.network.name) {
+    case 'mainnet': {
+      console.log(`${message}: https://${etherscanUrl}/${type}/${hash}`)
+      break
+    }
+    case goerli: {
+      console.log(`${message}: https://${goerli}.${etherscanUrl}/${type}/${hash}`)
+      break
+    }
+    default: {
+      console.log(`${message}: ${hash}`)
+      break
+    }
+  }
+}
+
 async function getSignerOrDefault(signer?: Signer): Promise<Signer> {
   const [defaultSigner] = await ethers.getSigners()
   return signer ? Promise.resolve(signer) : Promise.resolve(defaultSigner)
@@ -31,9 +59,12 @@ export async function deployERC20Mock(
   symbol = 'ERC20',
   supply = ethers.utils.parseUnits('9000000', 6),
   decimals = 6,
+  signer?: Signer,
 ): Promise<IERC20> {
+  const sig = await getSignerOrDefault(signer)
   const MockERC20 = await ethers.getContractFactory('ERC20Mock')
-  const mockERC20 = await MockERC20.deploy(name, symbol, holder.address, supply, decimals)
+  const mockERC20 = await MockERC20.connect(sig).deploy(name, symbol, holder.address, supply, decimals)
+  printTx(name, mockERC20.address, txType.address)
   return mockERC20.deployed()
 }
 
@@ -41,6 +72,7 @@ export async function deploySettings(signer?: Signer): Promise<Settings> {
   const Settings = await ethers.getContractFactory('Settings')
   const sig = await getSignerOrDefault(signer)
   const settings = await Settings.connect(sig).deploy()
+  printTx('settings', settings.address, txType.address)
   return settings.deployed()
 }
 
@@ -49,6 +81,7 @@ export async function deployVaultFactory(settings?: Settings, signer?: Signer): 
   const VaultFactory = await ethers.getContractFactory('ERC721VaultFactory')
   const sig = await getSignerOrDefault(signer)
   const vaultFactory = await VaultFactory.connect(sig).deploy(settings.address)
+  printTx('vault factory', vaultFactory.address, txType.address)
   return vaultFactory.deployed()
 }
 
@@ -56,13 +89,15 @@ export async function deployERC721Mock(name = 'Dummy NFT', symbol = 'DMY', signe
   const DummyNFT = await ethers.getContractFactory('ERC721Mock')
   const sig = await getSignerOrDefault(signer)
   const dummyNFT = await DummyNFT.connect(sig).deploy(name, symbol)
+  printTx(name, dummyNFT.address, txType.address)
   return dummyNFT.deployed()
 }
 
-export async function deployERC721ArtNFT(recieverAddress: string, signer?: Signer): Promise<ERC721ArtNFT> {
+export async function deployERC721ArtNFT(receiverAddress: string, signer?: Signer): Promise<ERC721ArtNFT> {
   const ArtNFT = await ethers.getContractFactory('ERC721ArtNFT')
   const sig = await getSignerOrDefault(signer)
-  const artNFT = await ArtNFT.connect(sig).deploy(recieverAddress)
+  const artNFT = await ArtNFT.connect(sig).deploy(receiverAddress)
+  printTx('art NFT', artNFT.address, txType.address)
   return artNFT.deployed()
 }
 
@@ -74,9 +109,9 @@ export async function deployTokenVault(
   vaultFactory: ERC721VaultFactory,
   name = 'Dummy Frac',
   symbol = 'DMYF',
-  tokenSupply = ethers.utils.parseUnits('4000000', tokenVaultDecimals),
-  initialPrice = ethers.utils.parseUnits('4000000', tokenVaultDecimals),
-  fee = 0,
+  tokenSupply: BigNumberish = ethers.utils.parseUnits('4000000', tokenVaultDecimals),
+  initialPrice: BigNumberish = ethers.utils.parseUnits('4000000', tokenVaultDecimals),
+  fee: BigNumberish = 0,
   signer?: Signer,
 ): Promise<TokenVault> {
   const sig = await getSignerOrDefault(signer)
@@ -86,6 +121,7 @@ export async function deployTokenVault(
   const receipt = await tx.wait()
   const [mintEvent] = receipt.events!.filter((event, i, arr) => event.event == 'Mint')
   const vaultAddress = mintEvent.args!['vault']
+  printTx('token vault', vaultAddress, txType.address)
   return ethers.getContractAt('TokenVault', vaultAddress)
 }
 
@@ -95,6 +131,7 @@ export async function deployVoteDelegator(tokenVault: TokenVault, signer?: Signe
   const voteDelegator = await VoteDelegator.connect(sig).deploy()
   await voteDelegator.deployed()
   await voteDelegator.connect(sig).initialize(tokenVault.address)
+  printTx('vote delegator', voteDelegator.address, txType.address)
   return Promise.resolve(voteDelegator)
 }
 
@@ -127,6 +164,7 @@ export async function deployMembership(
       foundationTokenPrice,
       friendTokenPrice,
     )
+  printTx('membership', membershipContract.address, txType.address)
   return Promise.resolve(membershipContract)
 }
 
@@ -147,5 +185,6 @@ export async function deployAllowanceCrowdsale(
     membershipContract.address,
     acceptedStablecoins.map((erc20) => erc20.address),
   )
+  printTx('crowdsale', allowanceCrowdsale.address, txType.address)
   return allowanceCrowdsale.deployed()
 }

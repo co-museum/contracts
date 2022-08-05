@@ -93,10 +93,6 @@ const config: HardhatUserConfig = {
       chainId: 31337,
       accounts: samplePrivateKeyList,
     },
-    ropsten: {
-      url: process.env.ROPSTEN_URL || '',
-      accounts: accounts,
-    },
 
     goerli: {
       url: `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
