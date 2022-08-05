@@ -15,7 +15,7 @@ async function main() {
   const settings = await utils.deploySettings(nonceSigner)
   addressCfg.Settings = settings.address
   cfg.saveConfig(cfg.ConfigEnv.address, addressCfg)
-  
+
   await settings.connect(nonceSigner).setMinReserveFactor(settingsCfg.minReserveFactor)
   await settings.connect(nonceSigner).setMaxReserveFactor(settingsCfg.maxReserveFactor)
 }

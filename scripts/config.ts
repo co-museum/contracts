@@ -1,16 +1,23 @@
 import { BigNumberish, BytesLike } from 'ethers'
-import { writeFileSync } from 'fs'
+import { existsSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
 
 export function loadConfig(envVar: ConfigEnv): any {
-  // require assumes relative to script and we want relative to cwd
+  // require assumes path is relative to script and we want relative to cwd
   const fileName = resolve(process.env[envVar]!)
-  console.log(`loading config from ${fileName}`)
-  return require(fileName)
+  console.log(`loading config from: ${fileName}`)
+  if (existsSync(fileName)) {
+    return require(fileName)
+  } else {
+    return {}
+  }
 }
 
 export function saveConfig(envVar: ConfigEnv, data: any): void {
-  writeFileSync(process.env[envVar]!, JSON.stringify(data, undefined, 2))
+  // relative paths are fine here but for vidual consistency convert to absolute
+  const fileName = resolve(process.env[envVar]!)
+  console.log(`saving config to: ${fileName}`)
+  writeFileSync(fileName, JSON.stringify(data, undefined, 2))
 }
 
 export enum ContractName {
@@ -29,6 +36,7 @@ export enum ConfigEnv {
   partiallyPause = 'COMUCFG_PARTIALLY_PAUSE',
   setRate = 'COMUCFG_SET_RATE',
   escrow = 'COMUCFG_ESCROW',
+  tokenVault = 'COMUCFG_TOKEN_VAULT',
 }
 
 export interface AddressConfig {
@@ -38,6 +46,9 @@ export interface AddressConfig {
   [ContractName.tokenVault]?: string
   [ContractName.membership]?: string
   [ContractName.crowdsale]?: string
+  tokenHolder?: string
+  usdcAddress?: string
+  usdtAddress?: string
 }
 
 export interface StartSaleConfig {
@@ -65,4 +76,13 @@ export interface SetRateConfig {
 export interface EscrowConfig {
   tokenIds: BigNumberish[]
   timestamps?: BigNumberish[]
+}
+
+export interface TokenVaultConfig {
+  artId: BigNumberish
+  name: string
+  symbol: string
+  tokenSupply: BigNumberish
+  initialPrice: BigNumberish
+  fee: BigNumberish
 }
