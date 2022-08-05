@@ -7,9 +7,6 @@ import { IERC20 } from '../../typechain'
 
 dotenv.config()
 
-// never really changes
-const tokenVaultDecimals = 6
-
 async function main() {
   const [signer] = await ethers.getSigners()
   const nonceSigner = new NonceManager(signer)
@@ -17,19 +14,15 @@ async function main() {
   const addressCfg: cfg.AddressConfig = cfg.loadConfig(cfg.ConfigEnv.address)
   const tokenVaultCfg: cfg.TokenVaultConfig = cfg.loadConfig(cfg.ConfigEnv.tokenVault)
 
-  // don't need to know anything about the abi - we just need the address
-  const usdc = new ethers.Contract(addressCfg.usdcAddress!, []) as IERC20
-  const artNFT = await ethers.getContractAt(cfg.ContractName.artNFT, addressCfg.ERC721ArtNFT!)
-  const vaultFactory = await ethers.getContractAt(cfg.ContractName.vaultFactory, addressCfg.ERC721VaultFactory!)
   const tokenVault = await utils.deployTokenVault(
-    usdc,
-    artNFT,
+    addressCfg.usdcAddress!,
+    addressCfg.ERC721ArtNFT!,
     tokenVaultCfg.artId,
-    vaultFactory,
+    addressCfg.ERC721VaultFactory!,
     tokenVaultCfg.name,
     tokenVaultCfg.symbol,
-    ethers.utils.parseUnits(tokenVaultCfg.tokenSupply.toString(), tokenVaultDecimals),
-    ethers.utils.parseUnits(tokenVaultCfg.initialPrice.toString(), tokenVaultDecimals),
+    ethers.utils.parseUnits(tokenVaultCfg.tokenSupply.toString(), tokenVaultCfg.decimals),
+    ethers.utils.parseUnits(tokenVaultCfg.initialPrice.toString(), tokenVaultCfg.decimals),
     tokenVaultCfg.fee,
     nonceSigner,
   )

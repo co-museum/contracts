@@ -30,15 +30,15 @@ describe('ERC721TokenVault', () => {
   beforeEach(async () => {
     ;[signer, user, crowdsaleContract] = await ethers.getSigners()
 
-    mockUSDC = await deployERC20Mock(signer, 'Usdc', 'USDC', usdcSupply)
+    mockUSDC = await deployERC20Mock(signer.address, 'Usdc', 'USDC', usdcSupply)
     settings = await deploySettings()
-    const vaultFactory = await deployVaultFactory(settings)
+    const vaultFactory = await deployVaultFactory(settings.address)
 
     dummyNFT = await deployERC721Mock()
     await dummyNFT.mint(signer.address, 0)
     await dummyNFT.approve(vaultFactory.address, 0)
 
-    tokenVault = await deployTokenVault(mockUSDC, dummyNFT, 0, vaultFactory, 'Banksy Laugh Now', 'BKLN', tokenSupply)
+    tokenVault = await deployTokenVault(mockUSDC.address, dummyNFT.address, 0, vaultFactory.address, 'Banksy Laugh Now', 'BKLN', tokenSupply)
     supportRole = await tokenVault.SUPPORT_ROLE()
     senderRole = await tokenVault.SENDER_ROLE()
     await mockUSDC.approve(tokenVault.address, ethers.constants.MaxUint256)

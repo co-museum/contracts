@@ -67,8 +67,8 @@ describe('AllowanceCrowdsale', () => {
     whitelistOneFoundation = [userOneFoundation.address]
     whitelistArr = [whitelistOneFriend, whitelistTwoFriends, whitelistExceedingSupply, whitelistOneFoundation]
 
-    mockUSDC = await deployERC20Mock(signer, 'Usdc', 'USDC', utilConstants.totalSupplyOfMockUSDC)
-    mockUSDT = await deployERC20Mock(signer, 'Usdt', 'USDT', utilConstants.totalSupplyOfMockUSDT)
+    mockUSDC = await deployERC20Mock(signer.address, 'Usdc', 'USDC', utilConstants.totalSupplyOfMockUSDC)
+    mockUSDT = await deployERC20Mock(signer.address, 'Usdt', 'USDT', utilConstants.totalSupplyOfMockUSDT)
     for (let user of [userOneFriend, userTwoFriends, userExceedingSupply]) {
       mockUSDC.transfer(user.address, utilConstants.totalSupplyOfMockUSDC.div(3))
       mockUSDT.transfer(user.address, utilConstants.totalSupplyOfMockUSDT.div(3))
@@ -80,18 +80,18 @@ describe('AllowanceCrowdsale', () => {
     await dummyNFT.mint(signer.address, 0)
     await dummyNFT.approve(vaultFactory.address, 0)
 
-    tokenVault = await deployTokenVault(mockUSDC, dummyNFT, 0, vaultFactory)
+    tokenVault = await deployTokenVault(mockUSDC.address, dummyNFT.address, 0, vaultFactory.address)
     await tokenVault.transfer(tokenHoldingWallet.address, await tokenVault.balanceOf(signer.address))
 
-    membershipContract = await deployMembership(tokenVault)
+    membershipContract = await deployMembership(tokenVault.address)
     await tokenVault.connect(tokenHoldingWallet).approve(membershipContract.address, ethers.constants.MaxInt256)
 
     allowanceCrowdsale = await deployAllowanceCrowdsale(
-      tokenVault,
-      treasuryWallet,
-      tokenHoldingWallet,
-      membershipContract,
-      [mockUSDC, mockUSDT],
+      tokenVault.address,
+      treasuryWallet.address,
+      tokenHoldingWallet.address,
+      membershipContract.address,
+      [mockUSDC.address, mockUSDT.address],
     )
     tokenVault.connect(tokenHoldingWallet).approve(allowanceCrowdsale.address, ethers.constants.MaxUint256)
     for (let user of [userOneFriend, userTwoFriends, userExceedingSupply]) {

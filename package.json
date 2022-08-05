@@ -6,7 +6,6 @@
     "test:gas": "REPORT_GAS=true yarn hardhat test",
     "test:coverage": "yarn hardhat coverage",
     "deploy:test": "yarn hardhat run --network localhost scripts/DeployTest.ts",
-    "deploy:testnet": "yarn hardhat run --network goerli scripts/Deploy.ts",
     "prettier:format": "yarn prettier -w contracts test scripts utils .github .vscode",
     "prettier:check": "prettier --list-different contracts test scripts utils .github .vscode"
   },

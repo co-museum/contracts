@@ -1,6 +1,7 @@
 import { ethers } from 'hardhat'
 import { NonceManager } from '@ethersproject/experimental'
 import * as utils from '../../utils/deployment'
+import { decimals } from '../../test/utils/constants'
 
 const stablecoinDecimals = 6
 const mockArtId = 0
@@ -20,7 +21,7 @@ async function main() {
   console.log('signer', signer.address)
 
   const mockUSDC = await utils.deployERC20Mock(
-    signer,
+    signer.address,
     'USD Coin',
     'USDC',
     ethers.utils.parseUnits('55000000000', stablecoinDecimals),
@@ -30,7 +31,7 @@ async function main() {
   console.log(`USDC: ${mockUSDC.address}`)
 
   const mockUSDT = await utils.deployERC20Mock(
-    signer,
+    signer.address,
     'USD Tether',
     'USDT',
     ethers.utils.parseUnits('66000000000', stablecoinDecimals),
@@ -43,7 +44,7 @@ async function main() {
   await settings.connect(nonceSigner).setMaxReserveFactor(5000) // 500%
   console.log(`settings: ${settings.address}`)
 
-  const vaultFactory = await utils.deployVaultFactory(settings, nonceSigner)
+  const vaultFactory = await utils.deployVaultFactory(settings.address, nonceSigner)
   console.log(`vault factory: ${vaultFactory.address}`)
 
   const artNFT = await utils.deployERC721ArtNFT(signer.address, nonceSigner)
@@ -59,10 +60,10 @@ async function main() {
   // console.log(`art NFT: ${artNFT.address}`)
 
   const artToken = await utils.deployTokenVault(
-    mockUSDC,
-    artNFT,
+    mockUSDC.address,
+    artNFT.address,
     mockArtId,
-    vaultFactory,
+    vaultFactory.address,
     'Art',
     'ART',
     artSupply,
@@ -73,27 +74,30 @@ async function main() {
   await artToken.connect(nonceSigner).transfer(tokenHolder.address, artSupply)
   console.log(`art token: ${artToken.address}`)
 
-  const voteDelegator = await utils.deployVoteDelegator(artToken, nonceSigner)
+  const voteDelegator = await utils.deployVoteDelegator(artToken.address, nonceSigner)
   console.log(`vote delegator: ${voteDelegator.address}`)
 
   const membership = await utils.deployMembership(
-    artToken,
-    voteDelegator,
+    artToken.address,
+    voteDelegator.address,
     'Art Membership',
     'ARTM',
     genesisEnd,
     foundationEnd,
     friendEnd,
+    ethers.utils.parseUnits('40000', decimals),
+    ethers.utils.parseUnits('4000', decimals),
+    ethers.utils.parseUnits('400', decimals),
     nonceSigner,
   )
   console.log(`art membership: ${membership.address}`)
 
   const crowdsale = await utils.deployAllowanceCrowdsale(
-    artToken,
-    treasury,
-    tokenHolder,
-    membership,
-    [mockUSDC, mockUSDT],
+    artToken.address,
+    treasury.address,
+    tokenHolder.address,
+    membership.address,
+    [mockUSDC.address, mockUSDT.address],
     nonceSigner,
   )
   console.log(`crowdsale: ${crowdsale.address}`)
