@@ -15,7 +15,7 @@ async function main() {
 
   const addressCfg: cfg.AddressConfig = cfg.loadConfig(cfg.ConfigEnv.address)
   const mockUSDC = await utils.deployERC20Mock(
-    signer,
+    signer.address,
     'USD Coin',
     'USDC',
     ethers.utils.parseUnits('55000000000', stablecoinDecimals),
@@ -23,7 +23,7 @@ async function main() {
     nonceSigner,
   )
   const mockUSDT = await utils.deployERC20Mock(
-    signer,
+    signer.address,
     'USD Tether',
     'USDT',
     ethers.utils.parseUnits('66000000000', stablecoinDecimals),

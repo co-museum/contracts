@@ -37,6 +37,7 @@ export enum ConfigEnv {
   setRate = 'COMUCFG_SET_RATE',
   escrow = 'COMUCFG_ESCROW',
   tokenVault = 'COMUCFG_TOKEN_VAULT',
+  membership = 'COMUCFG_MEMBERSHIP',
 }
 
 export interface AddressConfig {
@@ -47,16 +48,18 @@ export interface AddressConfig {
   [ContractName.membership]?: string
   [ContractName.crowdsale]?: string
   tokenHolder?: string
+  treasuryWallet?: string
   usdcAddress?: string
   usdtAddress?: string
 }
 
 export interface StartSaleConfig {
   tierCodes: BigNumberish[]
-  allocations: BigNumberish[]
   roots?: BytesLike[]
   // converted to roots
   addresses?: string[][]
+  // parsed internally
+  allocations: number[]
 }
 
 export interface SettingsConfig {
@@ -69,8 +72,8 @@ export interface PartiallyPauseConfig {
 }
 
 export interface SetRateConfig {
-  ethRate: BigNumberish
-  stablecoinRate: BigNumberish
+  ethUSDPrice: number
+  stablecoinRate: number
 }
 
 export interface EscrowConfig {
@@ -82,7 +85,21 @@ export interface TokenVaultConfig {
   artId: BigNumberish
   name: string
   symbol: string
-  tokenSupply: BigNumberish
-  initialPrice: BigNumberish
   fee: BigNumberish
+  decimals: number
+  // parsed in script
+  tokenSupply: number
+  initialPrice: number
+}
+
+export interface MembershipConfig {
+  name: string
+  symbol: string
+  friendEnd: BigNumberish
+  foundationEnd: BigNumberish
+  genesisEnd: BigNumberish
+  // parsed in script
+  friendPrice: number
+  foundationPrice: number
+  genesisPrice: number
 }

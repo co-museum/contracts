@@ -15,7 +15,7 @@ async function main() {
   const [signer, treasury, tokenHolder, user] = await ethers.getSigners()
 
   const mockUSDC = await utils.deployERC20Mock(
-    user,
+    user.address,
     'USD Coin',
     'USDC',
     ethers.utils.parseUnits('55000000000', stablecoinDecimals),
@@ -24,7 +24,7 @@ async function main() {
   console.log(`USDC: ${mockUSDC.address}`)
 
   const mockUSDT = await utils.deployERC20Mock(
-    user,
+    user.address,
     'USD Tether',
     'USDT',
     ethers.utils.parseUnits('66000000000', stablecoinDecimals),
@@ -37,7 +37,7 @@ async function main() {
   await settings.setMaxReserveFactor(5000) // 500%
   console.log(`settings: ${settings.address}`)
 
-  const vaultFactory = await utils.deployVaultFactory(settings)
+  const vaultFactory = await utils.deployVaultFactory(settings.address)
   console.log(`vault factory: ${vaultFactory.address}`)
 
   const mockArtNFT = await utils.deployERC721Mock('Art NFT', 'ARTN')
@@ -47,10 +47,10 @@ async function main() {
   console.log(`art NFT: ${mockArtNFT.address}`)
 
   const artToken = await utils.deployTokenVault(
-    mockUSDC,
-    mockArtNFT,
+    mockUSDC.address,
+    mockArtNFT.address,
     mockArtId,
-    vaultFactory,
+    vaultFactory.address,
     'Art',
     'ART',
     artSupply,
@@ -60,12 +60,12 @@ async function main() {
   await artToken.transfer(tokenHolder.address, artSupply)
   console.log(`art token: ${artToken.address}`)
 
-  const voteDelegator = await utils.deployVoteDelegator(artToken)
+  const voteDelegator = await utils.deployVoteDelegator(artToken.address)
   console.log(`vote delegator: ${voteDelegator.address}`)
 
   const membership = await utils.deployMembership(
-    artToken,
-    voteDelegator,
+    artToken.address,
+    voteDelegator.address,
     'Art Membership',
     'ARTM',
     genesisEnd,
@@ -74,10 +74,13 @@ async function main() {
   )
   console.log(`art membership: ${membership.address}`)
 
-  const crowdsale = await utils.deployAllowanceCrowdsale(artToken, treasury, tokenHolder, membership, [
-    mockUSDC,
-    mockUSDT,
-  ])
+  const crowdsale = await utils.deployAllowanceCrowdsale(
+    artToken.address,
+    treasury.address,
+    tokenHolder.address,
+    membership.address,
+    [mockUSDC.address, mockUSDT.address],
+  )
   console.log(`crowdsale: ${crowdsale.address}`)
 
   // NOTE: crowdsale transfers tokens through membership

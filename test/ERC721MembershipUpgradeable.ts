@@ -43,11 +43,11 @@ describe('ERC721MembershipUpgradeable', () => {
     await dummyNFT.mint(signer.address, 0)
     await dummyNFT.approve(vaultFactory.address, 0)
 
-    mockUSDC = await deployERC20Mock(signer, 'Usdc', 'USDC')
+    mockUSDC = await deployERC20Mock(signer.address, 'Usdc', 'USDC')
 
-    tokenVault = await deployTokenVault(mockUSDC, dummyNFT, 0, vaultFactory)
+    tokenVault = await deployTokenVault(mockUSDC.address, dummyNFT.address, 0, vaultFactory.address)
 
-    membershipERC721 = await deployMembership(tokenVault)
+    membershipERC721 = await deployMembership(tokenVault.address)
     await tokenVault.approve(membershipERC721.address, ethers.constants.MaxUint256)
     await tokenVault.connect(user).approve(membershipERC721.address, ethers.constants.MaxUint256)
     supportRole = await membershipERC721.SUPPORT_ROLE()
