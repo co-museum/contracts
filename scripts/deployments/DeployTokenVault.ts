@@ -25,7 +25,7 @@ async function main() {
     tokenVaultCfg.fee,
     nonceSigner,
   )
-  // default to singer as the token holder
+  // default to signer as the token holder
   if (addressCfg.tokenHolder !== undefined) {
     await tokenVault.connect(nonceSigner).transfer(addressCfg.tokenHolder, tokenVaultCfg.tokenSupply)
   }
