@@ -1,0 +1,12 @@
+{
+  "artId": {
+    "type": "BigNumber",
+    "hex": "0x00"
+  },
+  "name": "Art Token",
+  "symbol": "ART",
+  "tokenSupply": 4000000,
+  "initialPrice": 4000000,
+  "fee": 0,
+  "decimals": 6
+}

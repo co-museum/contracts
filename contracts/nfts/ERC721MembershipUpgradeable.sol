@@ -10,7 +10,6 @@ import "../lib/PartiallyPausableUpgradeable.sol";
 import "../fractional/ERC721TokenVault.sol";
 import "../fractional/InitializedProxy.sol";
 import "./VoteDelegator.sol";
-import "hardhat/console.sol";
 
 /// @title Membership NFT contract allowing users to redeem memberships in
 /// exchange for $ART tokens and release memberships to get $ART tokens back.
