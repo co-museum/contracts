@@ -1,18 +1,13 @@
 import * as dotenv from 'dotenv'
 
-import { HardhatUserConfig, task } from 'hardhat/config'
+import { HardhatUserConfig } from 'hardhat/config'
 import '@nomiclabs/hardhat-etherscan'
 import '@nomiclabs/hardhat-waffle'
 import '@typechain/hardhat'
 import 'hardhat-gas-reporter'
 import 'solidity-coverage'
 import '@primitivefi/hardhat-dodoc'
-import { BigNumber, ethers } from 'ethers'
-import { NonceManager } from '@ethersproject/experimental'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { Address } from 'cluster'
 import '@nomiclabs/hardhat-ethers'
-// import './tasks'
 
 dotenv.config()
 
