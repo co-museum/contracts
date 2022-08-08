@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import { ethers } from 'hardhat'
 import { ERC721HonoraryMembership, ERC20Mock } from '../typechain'
 
-describe('ERC721CoMuseumGenesis', () => {
+describe('ERC721HonoraryMembership', () => {
   let erc721HonoraryMembership: ERC721HonoraryMembership
   let signer: SignerWithAddress
   let user1: SignerWithAddress
