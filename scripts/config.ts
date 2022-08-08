@@ -2,6 +2,8 @@ import { BigNumberish, BytesLike } from 'ethers'
 import { existsSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
 
+// TODO: figure out how to enforce mandatory configs
+
 export function loadConfig(envVar: ConfigEnv): any {
   // require assumes path is relative to script and we want relative to cwd
   const fileName = resolve(process.env[envVar]!)
@@ -14,7 +16,7 @@ export function loadConfig(envVar: ConfigEnv): any {
 }
 
 export function saveConfig(envVar: ConfigEnv, data: any): void {
-  // relative paths are fine here but for vidual consistency convert to absolute
+  // relative paths are fine here but for visual consistency convert to absolute
   const fileName = resolve(process.env[envVar]!)
   console.log(`saving config to: ${fileName}`)
   writeFileSync(fileName, JSON.stringify(data, undefined, 2))

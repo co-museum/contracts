@@ -9,7 +9,6 @@ async function main() {
   const addressCfg: cfg.AddressConfig = cfg.loadConfig(cfg.ConfigEnv.address)
   const tokenVaultCfg: cfg.TokenVaultConfig = cfg.loadConfig(cfg.ConfigEnv.tokenVault)
   const membershipCfg: cfg.MembershipConfig = cfg.loadConfig(cfg.ConfigEnv.membership)
-  // TODO: figure out how to enforce mandatory configs
   // careful with default args here
   const membership = await utils.deployMembership(
     addressCfg.TokenVault!,

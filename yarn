@@ -1,6 +1,0 @@
-yarn run v1.22.18
-$ yarn hardhat run scripts/deployments/DeploySettings.ts --network localhost deploy:2
-$ /Users/alaukikpant/code/fractional/node_modules/.bin/hardhat run scripts/deployments/DeploySettings.ts --network localhost deploy:2
-
-info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.
-info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.

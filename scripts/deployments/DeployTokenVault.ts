@@ -3,7 +3,6 @@ import { NonceManager } from '@ethersproject/experimental'
 import * as utils from '../../utils/deployment'
 import * as cfg from '../config'
 import * as dotenv from 'dotenv'
-import { IERC20 } from '../../typechain'
 
 dotenv.config()
 
@@ -27,9 +26,8 @@ async function main() {
     nonceSigner,
   )
   // default to singer as the token holder
-  const holder = addressCfg.tokenHolder ? addressCfg.tokenHolder : signer.address
-  if (holder != signer.address) {
-    await tokenVault.connect(nonceSigner).transfer(holder, tokenVaultCfg.tokenSupply)
+  if (addressCfg.tokenHolder !== undefined) {
+    await tokenVault.connect(nonceSigner).transfer(addressCfg.tokenHolder, tokenVaultCfg.tokenSupply)
   }
 
   addressCfg.TokenVault = tokenVault.address

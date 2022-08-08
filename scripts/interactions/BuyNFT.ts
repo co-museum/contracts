@@ -10,7 +10,7 @@ import { ERC721MembershipUpgradeable } from '../../typechain'
 
 dotenv.config()
 
-// localhost only
+// TODO: Make script work everywhere, not just localhost
 async function main() {
   const signers = await ethers.getSigners()
   console.log(signers.length)
