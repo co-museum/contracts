@@ -5,6 +5,7 @@
     "test": "yarn hardhat test",
     "test:gas": "REPORT_GAS=true yarn hardhat test",
     "test:coverage": "yarn hardhat coverage",
+    "deploy:test": "yarn hardhat run --network localhost scripts/deployments/DeployTest.ts",
     "prettier:format": "yarn prettier -w contracts test scripts utils .github .vscode",
     "prettier:check": "prettier --list-different contracts test scripts utils .github .vscode",
     "deploy:1": "yarn hardhat run scripts/deployments/DeploySettings.ts --network localhost",
@@ -20,7 +21,7 @@
     "deploy:11": "yarn hardhat run scripts/interactions/StartSale.ts --network localhost",
     "deploy:12": "yarn hardhat run scripts/interactions/Approve.ts --network localhost",
     "deploy:13": "yarn hardhat run scripts/interactions/BuyNFT.ts --network localhost",
-    "deploy:test": "yarn deploy:1 && yarn deploy:2 && yarn deploy:3 && yarn deploy:4 && yarn deploy:5 && yarn deploy:6 && yarn deploy:7 && yarn deploy:8 && yarn deploy:9 && yarn deploy:10 && yarn deploy:11 && yarn deploy:12"
+    "deploy:all": "yarn deploy:1 && yarn deploy:2 && yarn deploy:3 && yarn deploy:4 && yarn deploy:5 && yarn deploy:6 && yarn deploy:7 && yarn deploy:8 && yarn deploy:9 && yarn deploy:10 && yarn deploy:11 && yarn deploy:12"
   },
   "devDependencies": {
     "@ethersproject/experimental": "5.6.3",
