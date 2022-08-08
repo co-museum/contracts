@@ -1,4 +1,4 @@
 {
-    "minReserveFactor": 750,
-    "maxReserveFactor": 5000
+  "minReserveFactor": 750,
+  "maxReserveFactor": 5000
 }
