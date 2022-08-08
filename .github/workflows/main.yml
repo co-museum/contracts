@@ -20,5 +20,5 @@ jobs:
       - name: test
         run: yarn hardhat test
       - name: deploy
-        run: yarn hardhat run scripts/deployments/DeployTestnet.ts
+        run: yarn hardhat run scripts/deployments/DeployTest.ts
 # TODO: upload artifacts (ABI, docs)
