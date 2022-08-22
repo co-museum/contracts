@@ -1078,6 +1078,136 @@ describe('AllowanceCrowdsale', () => {
         var [, start, ,] = await membershipContract.friendTier()
         await membershipContract.connect(userOneFriend).approve(membershipContract.address, start)
         await expect(membershipContract.connect(userOneFriend).release(start)).to.be.revertedWith(
+          utilConstants.revertMessageReleaseNotEnabled,
+        )
+      })
+    })
+  })
+
+  describe('post-sale', () => {
+    let whitelistIdx: number
+    let start: BigNumber
+    beforeEach(async () => {
+      await helpers.startSaleAndSetRate(
+        allowanceCrowdsale,
+        utilConstants.ethUSDPrice,
+        utilConstants.decimals,
+        utilConstants.tokenSupply,
+        rootSingle,
+        rootDouble,
+        rootExceedingSupply,
+        rootFoundation,
+      )
+      tokenVault.addSender(allowanceCrowdsale.address)
+      tokenVault.addSender(membershipContract.address)
+      membershipContract.addSender(membershipContract.address)
+      tokenVault.connect(tokenHoldingWallet).approve(allowanceCrowdsale.address, ethers.constants.MaxInt256)
+      tokenVault.connect(tokenHoldingWallet).approve(membershipContract.address, ethers.constants.MaxInt256)
+      tokenVault.pause()
+      membershipContract.pause()
+      whitelistIdx = helpers.findWhiteListArrIdx(whitelistArr, userOneFriend.address)
+    })
+
+    describe('transfer membership NFTs', () => {
+      it('can transfer after releaseEnabled=true and membershipContract=unpaused', async () => {
+        await helpers.testSuccessfulNFTSaleWithEth(
+          allowanceCrowdsale,
+          userOneFriend,
+          utilConstants.numNFTsOne,
+          whitelistIdxOneFriend,
+          treeOneFriend,
+          utilConstants.ethValueForFriendAmount,
+          treasuryWallet,
+          membershipContract,
+        )
+
+        const [, startVar, ,] = await membershipContract.friendTier()
+        start = startVar
+
+        await membershipContract.toggleReleaseEnabled()
+        await membershipContract.unpause()
+        await membershipContract.connect(userOneFriend).transferFrom(userOneFriend.address, signer.address, start)
+        const ownerUpdated = (await membershipContract.ownerOf(start)) === signer.address
+        await expect(ownerUpdated).to.be.true
+      })
+
+      it('cannot transfer after releaseEnabled=false and membershipContract=paused', async () => {
+        await helpers.testSuccessfulNFTSaleWithEth(
+          allowanceCrowdsale,
+          userOneFriend,
+          utilConstants.numNFTsOne,
+          whitelistIdxOneFriend,
+          treeOneFriend,
+          utilConstants.ethValueForFriendAmount,
+          treasuryWallet,
+          membershipContract,
+        )
+
+        const [, startVar, ,] = await membershipContract.friendTier()
+        start = startVar
+
+        await expect(
+          membershipContract.connect(userOneFriend).transferFrom(userOneFriend.address, signer.address, start),
+        ).to.be.revertedWith(utilConstants.revertMessageNoPermissionToSend)
+        const ownerNotUpdated = (await membershipContract.ownerOf(start)) === userOneFriend.address
+        await expect(ownerNotUpdated).to.be.true
+      })
+
+      it('cannot release if releaseEnabled=false and membershipContract=unpaused', async () => {
+        await helpers.testSuccessfulNFTSaleWithStableCoin(
+          allowanceCrowdsale,
+          userOneFriend,
+          utilConstants.numNFTsOne,
+          whitelistIdxOneFriend,
+          treeOneFriend,
+          mockUSDC,
+          treasuryWallet,
+          membershipContract,
+          utilConstants.friendTokenAmount.mul(utilConstants.stablecoinTokenRate),
+        )
+        await membershipContract.unpause()
+        var [, start, ,] = await membershipContract.friendTier()
+        await membershipContract.connect(userOneFriend).approve(membershipContract.address, start)
+        await expect(membershipContract.connect(userOneFriend).release(start)).to.be.revertedWith(
+          utilConstants.revertMessageReleaseNotEnabled,
+        )
+      })
+
+      it('can release if releaseEnabled=true and membershipContract=unpaused', async () => {
+        await helpers.testSuccessfulNFTSaleWithStableCoin(
+          allowanceCrowdsale,
+          userOneFriend,
+          utilConstants.numNFTsOne,
+          whitelistIdxOneFriend,
+          treeOneFriend,
+          mockUSDC,
+          treasuryWallet,
+          membershipContract,
+          utilConstants.friendTokenAmount.mul(utilConstants.stablecoinTokenRate),
+        )
+        await membershipContract.unpause()
+        await membershipContract.toggleReleaseEnabled()
+        var [, start, ,] = await membershipContract.friendTier()
+        await membershipContract.connect(userOneFriend).approve(membershipContract.address, start)
+        await expect(membershipContract.connect(userOneFriend).release(start)).to.not.be.reverted
+      })
+
+      it('cannot release if releaseEnabled=true and membershipContract=paused', async () => {
+        await helpers.testSuccessfulNFTSaleWithStableCoin(
+          allowanceCrowdsale,
+          userOneFriend,
+          utilConstants.numNFTsOne,
+          whitelistIdxOneFriend,
+          treeOneFriend,
+          mockUSDC,
+          treasuryWallet,
+          membershipContract,
+          utilConstants.friendTokenAmount.mul(utilConstants.stablecoinTokenRate),
+        )
+        await membershipContract.toggleReleaseEnabled()
+        var [, start, ,] = await membershipContract.friendTier()
+        await membershipContract.connect(userOneFriend).approve(membershipContract.address, start)
+        await expect(membershipContract.connect(userOneFriend).release(start)).to.be.revertedWith(
           utilConstants.revertMessageNoPermissionToSend,
         )
       })
