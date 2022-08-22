@@ -46,7 +46,7 @@ contract ERC721VaultFactory is Ownable, Pausable {
         uint256 _supply,
         uint256 _listPrice,
         uint256 _fee
-    ) external whenNotPaused returns (uint256) {
+    ) external whenNotPaused onlyOwner returns (uint256) {
         bytes memory _initializationCalldata = abi.encodeWithSignature(
             "initialize(address,address,uint256,uint256,uint256,uint256,string,string,address)",
             msg.sender,
