@@ -11,7 +11,6 @@ import {
   TokenVault,
   VoteDelegator,
 } from '../typechain'
-import { Address } from 'cluster'
 
 const tokenVaultDecimals = 6
 const genesisTokenPrice = ethers.utils.parseUnits('40000', tokenVaultDecimals)

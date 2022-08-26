@@ -10,8 +10,8 @@ async function main() {
 
   const addressCfg: cfg.AddressConfig = cfg.loadConfig(cfg.ConfigEnv.address)
   // give NFT to signer by default
-  const artNFT = await utils.deployHonoraryMembership(signer.address)
-  addressCfg.ERC721ArtNFT = artNFT.address
+  const honoraryMembershipNFT = await utils.deployHonoraryMembership(signer.address)
+  addressCfg.ERC721HonoraryMembership = honoraryMembershipNFT.address
   cfg.saveConfig(cfg.ConfigEnv.address, addressCfg)
 }
 
