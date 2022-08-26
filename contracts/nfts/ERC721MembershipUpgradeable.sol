@@ -28,6 +28,9 @@ contract ERC721MembershipUpgradeable is
     /// @return vault address of associated token vault
     address public vault;
 
+    /// @return releaseEnabled toggle to check if NFTs can be released
+    bool public releaseEnabled;
+
     /// @return releaseTime escrow release time for token ID
     mapping(uint256 => uint256) public escrowReleaseTimes;
     bool public escrowEnabled = true;
@@ -206,6 +209,13 @@ contract ERC721MembershipUpgradeable is
             price: friendPrice,
             releasedIds: genesisIdStack
         });
+
+        releaseEnabled = false;
+    }
+
+    /// @notice Enables release of membership NFTs
+    function enableRelease() external onlyOwner {
+        releaseEnabled = true;
     }
 
     /// @dev source address parameter is omitted as function is only used by end users
@@ -213,6 +223,7 @@ contract ERC721MembershipUpgradeable is
     /// @param id NFT id
     function release(uint256 id) external {
         require(msg.sender == ownerOf(id), "membership:can only release your own membership");
+        require(releaseEnabled, "membership: release not enabled");
         requireEscrowReleased(id);
         Tier storage tier = _getTier(id);
 
@@ -226,6 +237,7 @@ contract ERC721MembershipUpgradeable is
 
         tier.releasedIds.push(id);
         emit Release(msg.sender, id);
+        // inside burn, msg.sender is the original msg.sender
         burn(id);
     }
 
