@@ -2,6 +2,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
 import { ERC721HonoraryMembership, ERC20Mock } from '../typechain'
+import { deployHonoraryMembership } from '../utils/deployment'
 
 describe('ERC721HonoraryMembership', () => {
   let erc721HonoraryMembership: ERC721HonoraryMembership
@@ -10,10 +11,7 @@ describe('ERC721HonoraryMembership', () => {
 
   beforeEach(async () => {
     ;[signer, user1] = await ethers.getSigners()
-
-    const ERC721HonoraryMembership = await ethers.getContractFactory('ERC721HonoraryMembership')
-    erc721HonoraryMembership = await ERC721HonoraryMembership.deploy(signer.address)
-    await erc721HonoraryMembership.deployed()
+    erc721HonoraryMembership = await deployHonoraryMembership(signer.address)
   })
 
   describe('mint', () => {

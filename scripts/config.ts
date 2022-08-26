@@ -1,5 +1,6 @@
 import { BigNumberish, BytesLike } from 'ethers'
 import { existsSync, writeFileSync } from 'fs'
+import { string } from 'hardhat/internal/core/params/argumentTypes'
 import { resolve } from 'path'
 
 // TODO: figure out how to enforce mandatory configs
@@ -28,6 +29,7 @@ export enum ContractName {
   artNFT = 'ERC721ArtNFT',
   tokenVault = 'TokenVault',
   membership = 'ERC721MembershipUpgradeable',
+  honoraryMembership = 'ERC721HonoraryMembership',
   crowdsale = 'AllowanceCrowdsale',
 }
 
@@ -40,6 +42,7 @@ export enum ConfigEnv {
   escrow = 'COMUCFG_ESCROW',
   tokenVault = 'COMUCFG_TOKEN_VAULT',
   membership = 'COMUCFG_MEMBERSHIP',
+  artNFT = 'COMUCFG_NFTS',
 }
 
 export interface AddressConfig {
@@ -49,6 +52,7 @@ export interface AddressConfig {
   [ContractName.tokenVault]?: string
   [ContractName.membership]?: string
   [ContractName.crowdsale]?: string
+  [ContractName.honoraryMembership]?: string
   tokenHolder?: string
   treasuryWallet?: string
   usdcAddress?: string
@@ -104,4 +108,10 @@ export interface MembershipConfig {
   friendPrice: number
   foundationPrice: number
   genesisPrice: number
+}
+
+export interface NFTConfig {
+  artNFTBaseURI?: string
+  membershipNFTBaseURI?: string
+  honoraryMembershipBaseURI?: string
 }
