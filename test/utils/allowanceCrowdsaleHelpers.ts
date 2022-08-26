@@ -12,7 +12,6 @@ enum Tier {
   Friend = 2,
 }
 
-// 1. NFT sale with ETH
 export async function testSuccessfulNFTSaleWithEth(
   allowanceCrowdsale: AllowanceCrowdsale,
   user: SignerWithAddress,
@@ -62,8 +61,6 @@ export async function testUnsuccessfulNFTSaleWithEth(
   expect(await membershipContract.balanceOf(user.address)).to.be.equal(0)
 }
 
-// 2. NFT sale with stablecoin
-
 export async function testSuccessfulNFTSaleWithStableCoin(
   allowanceCrowdsale: AllowanceCrowdsale,
   user: SignerWithAddress,
@@ -110,7 +107,6 @@ export async function testUnsuccessfulNFTSaleWithStableCoin(
   expect(await stablecoin.balanceOf(treasuryWallet.address)).to.be.equal(previousStablecoinBalance)
 }
 
-// 3. Start sale and set rates
 export async function startSaleAndSetRate(
   allowanceCrowdsale: AllowanceCrowdsale,
   ethUSDPrice: number,
@@ -154,7 +150,6 @@ export async function startSale(
   )
 }
 
-// 6. Find idx of array where address belongs to in whiteListArr
 export function findWhiteListArrIdx(whiteListArr: string[][], address: string): number {
   for (var counter: number = 0; counter < whiteListArr.length; counter++) {
     if (whiteListArr[counter].includes(address)) {
