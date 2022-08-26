@@ -1109,6 +1109,12 @@ describe('AllowanceCrowdsale', () => {
     })
 
     describe('transfer membership NFTs', () => {
+      let start: number
+
+      beforeEach(async () => {
+        start = (await membershipContract.friendTier()).start.toNumber()
+      })
+
       it('can transfer after releaseEnabled=true and membershipContract=unpaused', async () => {
         await helpers.testSuccessfulNFTSaleWithEth(
           allowanceCrowdsale,
@@ -1121,10 +1127,7 @@ describe('AllowanceCrowdsale', () => {
           membershipContract,
         )
 
-        const [, startVar, ,] = await membershipContract.friendTier()
-        start = startVar
-
-        await membershipContract.toggleReleaseEnabled()
+        await membershipContract.enableRelease()
         await membershipContract.unpause()
         await membershipContract.connect(userOneFriend).transferFrom(userOneFriend.address, signer.address, start)
         const ownerUpdated = (await membershipContract.ownerOf(start)) === signer.address
@@ -1142,9 +1145,6 @@ describe('AllowanceCrowdsale', () => {
           treasuryWallet,
           membershipContract,
         )
-
-        const [, startVar, ,] = await membershipContract.friendTier()
-        start = startVar
 
         await expect(
           membershipContract.connect(userOneFriend).transferFrom(userOneFriend.address, signer.address, start),
@@ -1166,7 +1166,6 @@ describe('AllowanceCrowdsale', () => {
           utilConstants.friendTokenAmount.mul(utilConstants.stablecoinTokenRate),
         )
         await membershipContract.unpause()
-        var [, start, ,] = await membershipContract.friendTier()
         await membershipContract.connect(userOneFriend).approve(membershipContract.address, start)
         await expect(membershipContract.connect(userOneFriend).release(start)).to.be.revertedWith(
           utilConstants.revertMessageReleaseNotEnabled,
@@ -1186,8 +1185,7 @@ describe('AllowanceCrowdsale', () => {
           utilConstants.friendTokenAmount.mul(utilConstants.stablecoinTokenRate),
         )
         await membershipContract.unpause()
-        await membershipContract.toggleReleaseEnabled()
-        var [, start, ,] = await membershipContract.friendTier()
+        await membershipContract.enableRelease()
         await membershipContract.connect(userOneFriend).approve(membershipContract.address, start)
         await expect(membershipContract.connect(userOneFriend).release(start)).to.not.be.reverted
       })
@@ -1204,8 +1202,7 @@ describe('AllowanceCrowdsale', () => {
           membershipContract,
           utilConstants.friendTokenAmount.mul(utilConstants.stablecoinTokenRate),
         )
-        await membershipContract.toggleReleaseEnabled()
-        var [, start, ,] = await membershipContract.friendTier()
+        await membershipContract.enableRelease()
         await membershipContract.connect(userOneFriend).approve(membershipContract.address, start)
         await expect(membershipContract.connect(userOneFriend).release(start)).to.be.revertedWith(
           utilConstants.revertMessageNoPermissionToSend,

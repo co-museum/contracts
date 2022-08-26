@@ -213,9 +213,9 @@ contract ERC721MembershipUpgradeable is
         releaseEnabled = false;
     }
 
-    /// @notice Toggles the releasedEnabled variable
-    function toggleReleaseEnabled() external onlyOwner {
-        releaseEnabled = !releaseEnabled;
+    /// @notice Enables release of membership NFTs
+    function enableRelease() external onlyOwner {
+        releaseEnabled = true;
     }
 
     /// @dev source address parameter is omitted as function is only used by end users

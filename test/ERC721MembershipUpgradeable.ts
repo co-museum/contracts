@@ -52,7 +52,7 @@ describe('ERC721MembershipUpgradeable', () => {
     await tokenVault.connect(user).approve(membershipERC721.address, ethers.constants.MaxUint256)
     supportRole = await membershipERC721.SUPPORT_ROLE()
     senderRole = await membershipERC721.SENDER_ROLE()
-    await membershipERC721.toggleReleaseEnabled()
+    await membershipERC721.enableRelease()
   })
 
   describe('URI', () => {
