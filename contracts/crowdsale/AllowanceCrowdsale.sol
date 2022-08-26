@@ -147,36 +147,6 @@ contract AllowanceCrowdsale is Ownable {
         }
     }
 
-    /// @notice Helps whitelisted user buy $ART tokens based on thier
-    /// allocation
-    /// @param quantity Number of $ART tokens a user wants to buy
-    /// @param whitelistIndex Index of whitelist in array of whitelists
-    /// @dev There can be several whitelists in a batch of token sale with
-    /// different allocations. WhiltelistIndex represents which which whitelist
-    /// a user belongs to
-    /// @param proof Merkle proof used to verify that the msg.sender is a part
-    /// of a Merkle tree
-    /// @param payWithEth Whether msg.sender pays with ETH or stablecoin
-    /// @param _stablecoinAddress Stablecoin addresses used to buy tokens
-    /// @dev _stablecoinAddress is passed as the zero address if payWithEth is
-    /// true
-    function buyTokens(
-        uint256 quantity,
-        uint8 whitelistIndex,
-        bytes32[] calldata proof,
-        bool payWithEth,
-        address _stablecoinAddress
-    ) external payable onlyWhileOpen {
-        require(!claimed[msg.sender], "crowdsale:user has already claimed allocation");
-        Whitelist storage whitelist = whitelists[whitelistIndex];
-        uint256 allocation = whitelist.allocation;
-        uint256 price = ERC721MembershipUpgradeable(membershipContract).getTierPrice(whitelist.tierCode);
-        _validatePurchase(allocation, quantity, price, proof, whitelist.merkleRoot);
-        _receivePayment(payWithEth, quantity, _stablecoinAddress);
-        IERC20(tokenContract).safeTransferFrom(tokenHoldingWallet, msg.sender, quantity);
-        claimed[msg.sender] = true;
-    }
-
     /// @notice Helps a whitelisted user buy membership NFTs based on thier
     /// allocation
     /// @param numNFTs Number of NFTs a user wants to buy
