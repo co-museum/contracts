@@ -1,21 +1,17 @@
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumberish, Signer } from 'ethers'
 import { ethers } from 'hardhat'
 import hre from 'hardhat'
 import {
   AllowanceCrowdsale,
-  ERC721,
   ERC721MembershipUpgradeable,
   ERC721Mock,
   ERC721ArtNFT,
   ERC721VaultFactory,
   IERC20,
-  IERC721,
   Settings,
   TokenVault,
   VoteDelegator,
 } from '../typechain'
-import { Address } from 'cluster'
 
 const tokenVaultDecimals = 6
 const genesisTokenPrice = ethers.utils.parseUnits('40000', tokenVaultDecimals)
