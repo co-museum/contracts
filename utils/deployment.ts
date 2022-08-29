@@ -191,7 +191,7 @@ export async function deployAllowanceCrowdsale(
   return allowanceCrowdsale.deployed()
 }
 
-// TODO: consider imple,enting custom deployment function types with runtypes
+// TODO: consider implementing custom deployment function types with runtypes
 export function assertDefined<T>(val: T, message: string): NonNullable<T> {
   if (val == undefined) {
     throw new Error(message)
