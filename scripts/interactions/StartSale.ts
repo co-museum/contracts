@@ -21,11 +21,16 @@ async function main() {
   const tokenVaultCfg = cfg.TokenVaultConfig.check(cfg.loadConfig(cfg.ConfigEnv.tokenVault))
   const startSaleCfg = cfg.StartSaleConfig.check(cfg.loadConfig(cfg.ConfigEnv.startSale))
 
-  const crowdsale = await ethers.getContractAt('AllowanceCrowdsale', addressCfg.AllowanceCrowdsale!)
-  const rootsFromAddresses = startSaleCfg.addresses!.map((addresses) => merkleRootFromAddresses(addresses))
+  const crowdsale = await ethers.getContractAt(
+    'AllowanceCrowdsale',
+    utils.assertDefined(addressCfg.AllowanceCrowdsale, 'crowdsale address unedfined'),
+  )
+  const rootsFromAddresses = startSaleCfg.addresses?.map((addresses) => merkleRootFromAddresses(addresses))
   const roots = startSaleCfg.roots ? startSaleCfg.roots : []
-  roots.push(...rootsFromAddresses)
-  const allocations = startSaleCfg.allocations!.map((alloc) =>
+  if (rootsFromAddresses) {
+    roots.push(...rootsFromAddresses)
+  }
+  const allocations = startSaleCfg.allocations?.map((alloc) =>
     ethers.utils.parseUnits(alloc.toString(), tokenVaultCfg.decimals),
   )
   const tx = await crowdsale.connect(nonceSigner).startSale(startSaleCfg.tierCodes, allocations, roots)

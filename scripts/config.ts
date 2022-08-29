@@ -1,12 +1,13 @@
 import { existsSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
 import { Record, String, Number, Static, Array } from 'runtypes'
+import { assertDefined } from '../utils/deployment'
 
 // TODO: figure out how to enforce mandatory configs
 
-export function loadConfig(envVar: ConfigEnv): any {
+export function loadConfig(envVar: ConfigEnv): unknown {
   // require assumes path is relative to script and we want relative to cwd
-  const fileName = resolve(process.env[envVar]!)
+  const fileName = resolve(assertDefined(process.env[envVar], `environment variable '${envVar}' undefined`))
   console.log(`loading config from: ${fileName}`)
   if (existsSync(fileName)) {
     return require(fileName)
@@ -15,9 +16,9 @@ export function loadConfig(envVar: ConfigEnv): any {
   }
 }
 
-export function saveConfig(envVar: ConfigEnv, data: any): void {
+export function saveConfig(envVar: ConfigEnv, data: unknown): void {
   // relative paths are fine here but for visual consistency convert to absolute
-  const fileName = resolve(process.env[envVar]!)
+  const fileName = resolve(assertDefined(process.env[envVar], `environment variable '${envVar}' undefined`))
   console.log(`saving config to: ${fileName}`)
   writeFileSync(fileName, JSON.stringify(data, undefined, 2))
 }
@@ -85,7 +86,7 @@ export type SetRateConfig = Static<typeof SetRateConfig>
 
 export const EscrowConfig = Record({
   tokenIds: Array(Number),
-  timestamps: Array(Number).optional(),
+  timestamps: Array(Number),
 })
 export type EscrowConfig = Static<typeof EscrowConfig>
 

@@ -14,10 +14,10 @@ async function main() {
   const tokenVaultCfg = cfg.TokenVaultConfig.check(cfg.loadConfig(cfg.ConfigEnv.tokenVault))
 
   const tokenVault = await utils.deployTokenVault(
-    addressCfg.usdcAddress!,
-    addressCfg.ERC721ArtNFT!,
+    utils.assertDefined(addressCfg.usdcAddress, 'usdc address undefined'),
+    utils.assertDefined(addressCfg.ERC721ArtNFT, 'art nft undefined'),
     tokenVaultCfg.artId,
-    addressCfg.ERC721VaultFactory!,
+    utils.assertDefined(addressCfg.ERC721VaultFactory, 'vault factory undefined'),
     tokenVaultCfg.name,
     tokenVaultCfg.symbol,
     ethers.utils.parseUnits(tokenVaultCfg.tokenSupply.toString(), tokenVaultCfg.decimals),

@@ -2,6 +2,7 @@ import { ethers } from 'hardhat'
 import { NonceManager } from '@ethersproject/experimental'
 import * as cfg from '../config'
 import * as dotenv from 'dotenv'
+import * as utils from '../../utils/deployment'
 
 dotenv.config()
 
@@ -12,13 +13,20 @@ async function main() {
   const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
   const tokenVaultCfg = cfg.TokenVaultConfig.check(cfg.loadConfig(cfg.ConfigEnv.tokenVault))
 
-  const artNFT = await ethers.getContractAt(cfg.ContractName.artNFT, addressCfg.ERC721ArtNFT!)
+  const artNFT = await ethers.getContractAt(
+    cfg.ContractName.artNFT,
+    utils.assertDefined(addressCfg.ERC721ArtNFT, 'art nft address undefined'),
+  )
   const tx = await artNFT.connect(nonceSigner).mint(signer.address)
   const receipt = await tx.wait()
-  const [mintEvent] = receipt.events!.filter((event, i, arr) => event.event == 'Transfer')
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const [mintEvent] = receipt.events!.filter((event) => event.event == 'Transfer')
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const tokenId = mintEvent.args!['tokenId']
   tokenVaultCfg.artId = tokenId
-  await artNFT.connect(nonceSigner).approve(addressCfg.ERC721VaultFactory!, tokenId)
+  await artNFT
+    .connect(nonceSigner)
+    .approve(utils.assertDefined(addressCfg.ERC721VaultFactory, 'vault factory address undefined'), tokenId)
 
   cfg.saveConfig(cfg.ConfigEnv.address, addressCfg)
   cfg.saveConfig(cfg.ConfigEnv.tokenVault, tokenVaultCfg)

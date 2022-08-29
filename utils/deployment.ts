@@ -190,3 +190,11 @@ export async function deployAllowanceCrowdsale(
   printTx('crowdsale', allowanceCrowdsale.address, txType.address)
   return allowanceCrowdsale.deployed()
 }
+
+// TODO: consider imple,enting custom deployment function types with runtypes
+export function assertDefined<T>(val: T, message: string): NonNullable<T> {
+  if (val == undefined) {
+    throw new Error(message)
+  }
+  return val as NonNullable<T>
+}

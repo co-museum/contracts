@@ -1,10 +1,9 @@
 import { utils, constants, BigNumber } from 'ethers'
 import { calculateEthRate } from '../../utils/crowdsale'
 import { expect } from 'chai'
-import { AllowanceCrowdsale, ERC721MembershipUpgradeable, TokenVault, IERC20 } from '../../typechain'
+import { AllowanceCrowdsale, ERC721MembershipUpgradeable, IERC20 } from '../../typechain'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { MerkleTree } from 'merkletreejs'
-import { Console } from 'console'
 
 enum Tier {
   Genesis = 0,
@@ -21,7 +20,7 @@ export async function testSuccessfulNFTSaleWithEth(
   ethValue: BigNumber,
   treasuryWallet: SignerWithAddress,
   membershipContract: ERC721MembershipUpgradeable,
-) {
+): Promise<void> {
   const priorUserBalance = await user.getBalance()
   const treasuryWalletBalance = await treasuryWallet.getBalance()
   await expect(
@@ -47,7 +46,7 @@ export async function testUnsuccessfulNFTSaleWithEth(
   membershipContract: ERC721MembershipUpgradeable,
   treasuryWallet: SignerWithAddress,
   revertMessage: string,
-) {
+): Promise<void> {
   const treasuryWalletBalance = await treasuryWallet.getBalance()
   await expect(
     allowanceCrowdsale
@@ -71,7 +70,7 @@ export async function testSuccessfulNFTSaleWithStableCoin(
   treasuryWallet: SignerWithAddress,
   membershipContract: ERC721MembershipUpgradeable,
   priceInStablecoin: BigNumber,
-) {
+): Promise<void> {
   const previousNFTBalance = await membershipContract.balanceOf(user.address)
   const previousTreasuryBalance = await stablecoin.balanceOf(treasuryWallet.address)
   await expect(
@@ -94,7 +93,7 @@ export async function testUnsuccessfulNFTSaleWithStableCoin(
   treasuryWallet: SignerWithAddress,
   membershipContract: ERC721MembershipUpgradeable,
   revertMessage: string,
-) {
+): Promise<void> {
   const previousNFTBalance = await membershipContract.balanceOf(user.address)
   const previousStablecoinBalance = await stablecoin.balanceOf(treasuryWallet.address)
   await expect(
@@ -116,7 +115,7 @@ export async function startSaleAndSetRate(
   rootDouble: string,
   rootExceedingSupply: string,
   rootFoundation: string,
-) {
+): Promise<void> {
   await allowanceCrowdsale.setRates(1, calculateEthRate(ethUSDPrice))
   await startSale(
     allowanceCrowdsale,
@@ -137,7 +136,7 @@ export async function startSale(
   rootDouble: string,
   rootExceedingSupply: string,
   rootFoundation: string,
-) {
+): Promise<void> {
   await allowanceCrowdsale.startSale(
     [Tier.Friend, Tier.Friend, Tier.Friend, Tier.Foundation],
     [
@@ -151,7 +150,7 @@ export async function startSale(
 }
 
 export function findWhiteListArrIdx(whiteListArr: string[][], address: string): number {
-  for (var counter: number = 0; counter < whiteListArr.length; counter++) {
+  for (let counter = 0; counter < whiteListArr.length; counter++) {
     if (whiteListArr[counter].includes(address)) {
       return counter
     }

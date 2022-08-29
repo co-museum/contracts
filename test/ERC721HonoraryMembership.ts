@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { ERC721HonoraryMembership, ERC20Mock } from '../typechain'
+import { ERC721HonoraryMembership } from '../typechain'
 
 describe('ERC721HonoraryMembership', () => {
   let erc721HonoraryMembership: ERC721HonoraryMembership

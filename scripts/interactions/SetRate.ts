@@ -10,7 +10,10 @@ async function main() {
   const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
   const tokenVaultCfg = cfg.TokenVaultConfig.check(cfg.loadConfig(cfg.ConfigEnv.tokenVault))
   const setRateCfg = cfg.SetRateConfig.check(cfg.loadConfig(cfg.ConfigEnv.setRate))
-  const crowdsale = await ethers.getContractAt(cfg.ContractName.crowdsale, addressCfg.AllowanceCrowdsale!)
+  const crowdsale = await ethers.getContractAt(
+    cfg.ContractName.crowdsale,
+    utils.assertDefined(addressCfg.AllowanceCrowdsale, 'crowdsale address undefined'),
+  )
 
   const tx = await crowdsale.setRates(
     setRateCfg.stablecoinRate,
