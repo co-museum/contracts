@@ -11,6 +11,7 @@ import {
   TokenVault,
   VoteDelegator,
 } from '../typechain'
+import { Address } from 'cluster'
 
 const tokenVaultDecimals = 6
 const genesisTokenPrice = ethers.utils.parseUnits('40000', tokenVaultDecimals)
@@ -96,6 +97,13 @@ export async function deployERC721ArtNFT(receiverAddress: string, signer?: Signe
   const artNFT = await ArtNFT.connect(sig).deploy(receiverAddress)
   printTx('art NFT', artNFT.address, txType.address)
   return artNFT.deployed()
+}
+
+export async function deployHonoraryMembership(signer: string) {
+  const ERC721HonoraryMembership = await ethers.getContractFactory('ERC721HonoraryMembership')
+  const erc721HonoraryMembership = await ERC721HonoraryMembership.deploy(signer)
+  printTx('honorary membership NFT', erc721HonoraryMembership.address, txType.address)
+  return erc721HonoraryMembership.deployed()
 }
 
 export async function deployTokenVault(

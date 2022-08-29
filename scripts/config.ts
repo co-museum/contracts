@@ -29,6 +29,7 @@ export enum ContractName {
   artNFT = 'ERC721ArtNFT',
   tokenVault = 'TokenVault',
   membership = 'ERC721MembershipUpgradeable',
+  honoraryMembership = 'ERC721HonoraryMembership',
   crowdsale = 'AllowanceCrowdsale',
 }
 
@@ -41,6 +42,7 @@ export enum ConfigEnv {
   escrow = 'COMUCFG_ESCROW',
   tokenVault = 'COMUCFG_TOKEN_VAULT',
   membership = 'COMUCFG_MEMBERSHIP',
+  nfts = 'COMUCFG_NFTS',
 }
 
 export const AddressConfig = Record({
@@ -114,3 +116,9 @@ export const MembershipConfig = Record({
   genesisPrice: Number,
 })
 export type MembershipConfig = Static<typeof MembershipConfig>
+
+export const NFTConfig = Record({
+  artNFTBaseURI: String.optional(),
+  membershipNFTBaseURI: String.optional(),
+  honoraryMembershipBaseURI: String.optional(),
+})

@@ -14,6 +14,9 @@ const friendEnd = foundationEnd + 3500
 async function main() {
   const [signer, treasury, tokenHolder, user] = await ethers.getSigners()
 
+  const honoraryMembership = await utils.deployHonoraryMembership(signer.address)
+  console.log(`honorary Membership: ${honoraryMembership.address}`)
+
   const mockUSDC = await utils.deployERC20Mock(
     user.address,
     'USD Coin',
