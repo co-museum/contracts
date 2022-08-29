@@ -16,9 +16,11 @@ async function main() {
   )
 
   const tokenBaseURI = nftCofg.membershipNFTBaseURI
+
   const tx = await membershipNFT
     .connect(signer)
     .setBaseURI(utils.assertDefined(tokenBaseURI, 'membership token URI undefined'))
+  await tx.wait()
   utils.printTx('set base URI', tx.hash, utils.txType.tx)
 }
 
