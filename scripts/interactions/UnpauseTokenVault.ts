@@ -9,7 +9,7 @@ async function main() {
   const [signer] = await ethers.getSigners()
   const nonceSigner = new NonceManager(signer)
 
-  const addressCfg: cfg.AddressConfig = cfg.loadConfig(cfg.ConfigEnv.address)
+  const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
   const tokenVault = await ethers.getContractAt(cfg.ContractName.tokenVault, addressCfg.TokenVault!)
   await tokenVault.connect(nonceSigner).unpause()
 }

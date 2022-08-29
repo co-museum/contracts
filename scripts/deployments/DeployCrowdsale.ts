@@ -8,7 +8,7 @@ dotenv.config()
 async function main() {
   const [signer] = await ethers.getSigners()
 
-  const addressCfg: cfg.AddressConfig = cfg.loadConfig(cfg.ConfigEnv.address)
+  const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
   const treasuryWallet = addressCfg.treasuryWallet ? addressCfg.treasuryWallet : signer.address
   const tokenHolder = addressCfg.tokenHolder ? addressCfg.tokenHolder : signer.address
   const crowdsale = await utils.deployAllowanceCrowdsale(

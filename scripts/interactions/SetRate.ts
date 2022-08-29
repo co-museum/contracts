@@ -7,14 +7,12 @@ import * as dotenv from 'dotenv'
 dotenv.config()
 
 async function main() {
-  const [signer] = await ethers.getSigners()
-
-  const addressCfg: cfg.AddressConfig = cfg.loadConfig(cfg.ConfigEnv.address)
-  const tokenVaultCfg: cfg.TokenVaultConfig = cfg.loadConfig(cfg.ConfigEnv.tokenVault)
-  const setRateCfg: cfg.SetRateConfig = cfg.loadConfig(cfg.ConfigEnv.setRate)
+  const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
+  const tokenVaultCfg = cfg.TokenVaultConfig.check(cfg.loadConfig(cfg.ConfigEnv.tokenVault))
+  const setRateCfg = cfg.SetRateConfig.check(cfg.loadConfig(cfg.ConfigEnv.setRate))
   const crowdsale = await ethers.getContractAt(cfg.ContractName.crowdsale, addressCfg.AllowanceCrowdsale!)
 
-  let tx = await crowdsale.setRates(
+  const tx = await crowdsale.setRates(
     setRateCfg.stablecoinRate,
     calculateEthRate(setRateCfg.ethUSDPrice, tokenVaultCfg.decimals, setRateCfg.stablecoinRate),
   )

@@ -9,7 +9,7 @@ async function main() {
   const [signer] = await ethers.getSigners()
   const nonceSigner = new NonceManager(signer)
 
-  const addressCfg: cfg.AddressConfig = cfg.loadConfig(cfg.ConfigEnv.address)
+  const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
   const membership = await ethers.getContractAt(cfg.ContractName.membership, addressCfg.ERC721MembershipUpgradeable!)
 
   await membership.connect(nonceSigner).unpause()

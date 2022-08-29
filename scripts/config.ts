@@ -1,6 +1,6 @@
-import { BigNumberish, BytesLike } from 'ethers'
 import { existsSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
+import { Record, String, Number, Static, Array } from 'runtypes'
 
 // TODO: figure out how to enforce mandatory configs
 
@@ -42,66 +42,74 @@ export enum ConfigEnv {
   membership = 'COMUCFG_MEMBERSHIP',
 }
 
-export interface AddressConfig {
-  [ContractName.settings]?: string
-  [ContractName.vaultFactory]?: string
-  [ContractName.artNFT]?: string
-  [ContractName.tokenVault]?: string
-  [ContractName.membership]?: string
-  [ContractName.crowdsale]?: string
-  tokenHolder?: string
-  treasuryWallet?: string
-  usdcAddress?: string
-  usdtAddress?: string
-}
+export const AddressConfig = Record({
+  [ContractName.settings]: String.optional(),
+  [ContractName.vaultFactory]: String.optional(),
+  [ContractName.artNFT]: String.optional(),
+  [ContractName.tokenVault]: String.optional(),
+  [ContractName.membership]: String.optional(),
+  [ContractName.crowdsale]: String.optional(),
+  tokenHolder: String.optional(),
+  treasuryWallet: String.optional(),
+  usdcAddress: String.optional(),
+  usdtAddress: String.optional(),
+})
+export type AddressConfig = Static<typeof AddressConfig>
 
-export interface StartSaleConfig {
-  tierCodes: BigNumberish[]
-  roots?: BytesLike[]
+export const StartSaleConfig = Record({
+  tierCodes: Array(Number),
+  roots: Array(String).optional(),
   // converted to roots
-  addresses?: string[][]
+  addresses: Array(Array(String)).optional(),
   // parsed internally
-  allocations: number[]
-}
+  allocations: Array(Number),
+})
+export type StartSaleConfig = Static<typeof StartSaleConfig>
 
-export interface SettingsConfig {
-  minReserveFactor: BigNumberish
-  maxReserveFactor: BigNumberish
-}
+export const SettingsConfig = Record({
+  minReserveFactor: Number,
+  maxReserveFactor: Number,
+})
+export type SettingsConfig = Static<typeof SettingsConfig>
 
-export interface PartiallyPauseConfig {
-  contractName: ContractName
-}
+export const PartiallyPauseConfig = Record({
+  contractName: String,
+})
+export type PartiallyPauseConfig = Static<typeof PartiallyPauseConfig>
 
-export interface SetRateConfig {
-  ethUSDPrice: number
-  stablecoinRate: number
-}
+export const SetRateConfig = Record({
+  ethUSDPrice: Number,
+  stablecoinRate: Number,
+})
+export type SetRateConfig = Static<typeof SetRateConfig>
 
-export interface EscrowConfig {
-  tokenIds: BigNumberish[]
-  timestamps?: BigNumberish[]
-}
+export const EscrowConfig = Record({
+  tokenIds: Array(Number),
+  timestamps: Array(Number).optional(),
+})
+export type EscrowConfig = Static<typeof EscrowConfig>
 
-export interface TokenVaultConfig {
-  artId: BigNumberish
-  name: string
-  symbol: string
-  fee: BigNumberish
-  decimals: number
+export const TokenVaultConfig = Record({
+  artId: Number,
+  name: String,
+  symbol: String,
+  fee: Number,
+  decimals: Number,
   // parsed in script
-  tokenSupply: number
-  initialPrice: number
-}
+  tokenSupply: Number,
+  initialPrice: Number,
+})
+export type TokenVaultConfig = Static<typeof TokenVaultConfig>
 
-export interface MembershipConfig {
-  name: string
-  symbol: string
-  friendEnd: BigNumberish
-  foundationEnd: BigNumberish
-  genesisEnd: BigNumberish
+export const MembershipConfig = Record({
+  name: String,
+  symbol: String,
+  friendEnd: Number,
+  foundationEnd: Number,
+  genesisEnd: Number,
   // parsed in script
-  friendPrice: number
-  foundationPrice: number
-  genesisPrice: number
-}
+  friendPrice: Number,
+  foundationPrice: Number,
+  genesisPrice: Number,
+})
+export type MembershipConfig = Static<typeof MembershipConfig>

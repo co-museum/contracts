@@ -17,9 +17,9 @@ async function main() {
   const [signer] = await ethers.getSigners()
   const nonceSigner = new NonceManager(signer)
 
-  const addressCfg: cfg.AddressConfig = cfg.loadConfig(cfg.ConfigEnv.address)
-  const tokenVaultCfg: cfg.TokenVaultConfig = cfg.loadConfig(cfg.ConfigEnv.tokenVault)
-  const startSaleCfg: cfg.StartSaleConfig = cfg.loadConfig(cfg.ConfigEnv.startSale)
+  const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
+  const tokenVaultCfg = cfg.TokenVaultConfig.check(cfg.loadConfig(cfg.ConfigEnv.tokenVault))
+  const startSaleCfg = cfg.StartSaleConfig.check(cfg.loadConfig(cfg.ConfigEnv.startSale))
 
   const crowdsale = await ethers.getContractAt('AllowanceCrowdsale', addressCfg.AllowanceCrowdsale!)
   const rootsFromAddresses = startSaleCfg.addresses!.map((addresses) => merkleRootFromAddresses(addresses))

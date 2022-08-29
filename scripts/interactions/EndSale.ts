@@ -10,7 +10,7 @@ async function main() {
   const [signer] = await ethers.getSigners()
   const nonceSigner = new NonceManager(signer)
 
-  const addressCfg: cfg.AddressConfig = cfg.loadConfig(cfg.ConfigEnv.address)
+  const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
   const crowdsale = await ethers.getContractAt('AllowanceCrowdsale', addressCfg.AllowanceCrowdsale!)
 
   const tx = await crowdsale.connect(nonceSigner).stopSale()

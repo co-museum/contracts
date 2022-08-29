@@ -18,8 +18,8 @@ async function main() {
   const nonceSigner = new NonceManager(signer)
   console.log(signer.address)
 
-  const addressCfg: cfg.AddressConfig = cfg.loadConfig(cfg.ConfigEnv.address)
-  const startSaleCfg: cfg.StartSaleConfig = cfg.loadConfig(cfg.ConfigEnv.startSale)
+  const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
+  const startSaleCfg = cfg.StartSaleConfig.check(cfg.loadConfig(cfg.ConfigEnv.startSale))
   const crowdsale = await ethers.getContractAt(cfg.ContractName.crowdsale, addressCfg.AllowanceCrowdsale!)
   console.log(startSaleCfg.addresses)
 

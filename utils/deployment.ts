@@ -1,16 +1,12 @@
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumberish, Signer } from 'ethers'
-import { ethers } from 'hardhat'
-import hre from 'hardhat'
+import hre, { ethers } from 'hardhat'
 import {
   AllowanceCrowdsale,
-  ERC721,
   ERC721MembershipUpgradeable,
   ERC721Mock,
   ERC721ArtNFT,
   ERC721VaultFactory,
   IERC20,
-  IERC721,
   Settings,
   TokenVault,
   VoteDelegator,
@@ -120,7 +116,9 @@ export async function deployTokenVault(
     .connect(sig)
     .mint(name, symbol, nft, usdc, nftId, tokenSupply, initialPrice, fee)
   const receipt = await tx.wait()
-  const [mintEvent] = receipt.events!.filter((event, i, arr) => event.event == 'Mint')
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const [mintEvent] = receipt.events!.filter((event) => event.event == 'Mint')
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const vaultAddress = mintEvent.args!['vault']
   printTx('token vault', vaultAddress, txType.address)
   return ethers.getContractAt('TokenVault', vaultAddress)
