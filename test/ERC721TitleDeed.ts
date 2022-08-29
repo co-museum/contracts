@@ -1,15 +1,14 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { ERC721ArtNFT, ERC20Mock } from '../typechain'
+import { ERC721ArtNFT } from '../typechain'
 
 describe('ERC721TitleDeed', () => {
   let erc721ArtNFT: ERC721ArtNFT
   let signer: SignerWithAddress
-  let user1: SignerWithAddress
 
   beforeEach(async () => {
-    ;[signer, user1] = await ethers.getSigners()
+    ;[signer] = await ethers.getSigners()
 
     const ERC721ArtNFT = await ethers.getContractFactory('ERC721ArtNFT')
     erc721ArtNFT = await ERC721ArtNFT.deploy(signer.address)
