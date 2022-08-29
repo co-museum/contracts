@@ -9,11 +9,14 @@ async function main() {
   const [signer] = await ethers.getSigners()
 
   const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
-  const nftCofg = cfg.NFTConfig.check(cfg.loadConfig(cfg.ConfigEnv.nfts))
-  const artNFT = await ethers.getContractAt(cfg.ContractName.artNFT, addressCfg.ERC721ArtNFT!)
+  const nftCofg = cfg.ArtNFTConfig.check(cfg.loadConfig(cfg.ConfigEnv.artNFT))
+  const artNFT = await ethers.getContractAt(
+    cfg.ContractName.artNFT,
+    utils.assertDefined(addressCfg.ERC721ArtNFT, 'artNFT undefined'),
+  )
 
-  const tokenBaseURI = nftCofg.artNFTBaseURI
-  const tx = await artNFT.connect(signer).setBaseURI(tokenBaseURI!)
+  const tokenBaseURI = utils.assertDefined(nftCofg.artNFTBaseURI, 'artNFT base uri undefined')
+  const tx = await artNFT.connect(signer).setBaseURI(tokenBaseURI)
   utils.printTx('set base URI', tx.hash, utils.txType.tx)
 }
 

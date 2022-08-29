@@ -42,7 +42,8 @@ export enum ConfigEnv {
   escrow = 'COMUCFG_ESCROW',
   tokenVault = 'COMUCFG_TOKEN_VAULT',
   membership = 'COMUCFG_MEMBERSHIP',
-  nfts = 'COMUCFG_NFTS',
+  honoraryMembership = 'COMUCFG_HON',
+  artNFT = 'COMUCFG_ARTNFT',
 }
 
 export const AddressConfig = Record({
@@ -114,11 +115,14 @@ export const MembershipConfig = Record({
   friendPrice: Number,
   foundationPrice: Number,
   genesisPrice: Number,
+  membershipNFTBaseURI: String.optional(),
 })
 export type MembershipConfig = Static<typeof MembershipConfig>
 
-export const NFTConfig = Record({
-  artNFTBaseURI: String.optional(),
-  membershipNFTBaseURI: String.optional(),
+export const HonoraryNFTConfig = Record({
   honoraryMembershipBaseURI: String.optional(),
+})
+
+export const ArtNFTConfig = Record({
+  artNFTBaseURI: String.optional(),
 })

@@ -8,7 +8,7 @@ dotenv.config()
 async function main() {
   const [signer] = await ethers.getSigners()
 
-  const addressCfg: cfg.AddressConfig = cfg.loadConfig(cfg.ConfigEnv.address)
+  const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
   // give NFT to signer by default
   const honoraryMembershipNFT = await utils.deployHonoraryMembership(signer.address)
   addressCfg.ERC721HonoraryMembership = honoraryMembershipNFT.address

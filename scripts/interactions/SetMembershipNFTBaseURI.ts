@@ -9,7 +9,7 @@ async function main() {
   const [signer] = await ethers.getSigners()
 
   const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
-  const nftCofg = cfg.NFTConfig.check(cfg.loadConfig(cfg.ConfigEnv.nfts))
+  const nftCofg = cfg.MembershipConfig.check(cfg.loadConfig(cfg.ConfigEnv.membership))
   const membershipNFT = await ethers.getContractAt(
     cfg.ContractName.membership,
     utils.assertDefined(addressCfg.ERC721MembershipUpgradeable, 'memebrship undefined'),
