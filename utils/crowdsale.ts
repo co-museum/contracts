@@ -1,4 +1,4 @@
-import { BigNumberish, BigNumber } from 'ethers'
+import { BigNumber } from 'ethers'
 import { ethers } from 'hardhat'
 
 const ethDecimals = 18

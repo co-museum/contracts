@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { ERC721MembershipUpgradeable, TokenVault, VoteDelegator, IERC20 } from '../typechain'
+import { ERC721MembershipUpgradeable, TokenVault, IERC20 } from '../typechain'
 import {
   deployERC20Mock,
   deployERC721Mock,
@@ -9,7 +9,6 @@ import {
   deployTokenVault,
   deployVaultFactory,
 } from '../utils/deployment'
-import { numNFTsOne } from './utils/constants'
 
 enum State {
   DISABLED,

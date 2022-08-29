@@ -8,15 +8,18 @@ dotenv.config()
 async function main() {
   const [signer] = await ethers.getSigners()
 
-  const addressCfg: cfg.AddressConfig = cfg.loadConfig(cfg.ConfigEnv.address)
+  const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
   const treasuryWallet = addressCfg.treasuryWallet ? addressCfg.treasuryWallet : signer.address
   const tokenHolder = addressCfg.tokenHolder ? addressCfg.tokenHolder : signer.address
   const crowdsale = await utils.deployAllowanceCrowdsale(
-    addressCfg.TokenVault!,
+    utils.assertDefined(addressCfg.TokenVault, 'vault address undefined'),
     treasuryWallet,
     tokenHolder,
-    addressCfg.ERC721MembershipUpgradeable!,
-    [addressCfg.usdcAddress!, addressCfg.usdtAddress!],
+    utils.assertDefined(addressCfg.ERC721MembershipUpgradeable, 'membership address undefined'),
+    [
+      utils.assertDefined(addressCfg.usdcAddress, 'usdc address undefined'),
+      utils.assertDefined(addressCfg.usdtAddress, 'usdt address undefined'),
+    ],
   )
   addressCfg.AllowanceCrowdsale = crowdsale.address
   cfg.saveConfig(cfg.ConfigEnv.address, addressCfg)

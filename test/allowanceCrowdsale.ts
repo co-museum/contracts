@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { utils, constants, BigNumber } from 'ethers'
+import { utils, BigNumberish } from 'ethers'
 import { MerkleTree } from 'merkletreejs'
 import { AllowanceCrowdsale, ERC721MembershipUpgradeable, TokenVault, IERC20 } from '../typechain'
 import { calculateEthRate } from '../utils/crowdsale'
@@ -46,7 +46,6 @@ describe('AllowanceCrowdsale', () => {
   let treeOneFoundation: MerkleTree
   let whitelistIdxOneFriend: number
   let whitelistIdxTwoFriends: number
-  let whitelistIdxExceedingSupply: number
   let whitelistIdxFoundation: number
   let whitelistIdxNonWhitelisted: number
 
@@ -69,7 +68,7 @@ describe('AllowanceCrowdsale', () => {
 
     mockUSDC = await deployERC20Mock(signer.address, 'Usdc', 'USDC', utilConstants.totalSupplyOfMockUSDC)
     mockUSDT = await deployERC20Mock(signer.address, 'Usdt', 'USDT', utilConstants.totalSupplyOfMockUSDT)
-    for (let user of [userOneFriend, userTwoFriends, userExceedingSupply]) {
+    for (const user of [userOneFriend, userTwoFriends, userExceedingSupply]) {
       mockUSDC.transfer(user.address, utilConstants.totalSupplyOfMockUSDC.div(3))
       mockUSDT.transfer(user.address, utilConstants.totalSupplyOfMockUSDT.div(3))
     }
@@ -94,7 +93,7 @@ describe('AllowanceCrowdsale', () => {
       [mockUSDC.address, mockUSDT.address],
     )
     tokenVault.connect(tokenHoldingWallet).approve(allowanceCrowdsale.address, ethers.constants.MaxUint256)
-    for (let user of [userOneFriend, userTwoFriends, userExceedingSupply]) {
+    for (const user of [userOneFriend, userTwoFriends, userExceedingSupply]) {
       mockUSDC.connect(user).approve(allowanceCrowdsale.address, ethers.constants.MaxUint256)
       mockUSDT.connect(user).approve(allowanceCrowdsale.address, ethers.constants.MaxUint256)
     }
@@ -127,7 +126,6 @@ describe('AllowanceCrowdsale', () => {
 
     whitelistIdxOneFriend = helpers.findWhiteListArrIdx(whitelistArr, userOneFriend.address)
     whitelistIdxTwoFriends = helpers.findWhiteListArrIdx(whitelistArr, userTwoFriends.address)
-    whitelistIdxExceedingSupply = helpers.findWhiteListArrIdx(whitelistArr, userExceedingSupply.address)
     whitelistIdxFoundation = helpers.findWhiteListArrIdx(whitelistArr, userOneFoundation.address)
     whitelistIdxNonWhitelisted = helpers.findWhiteListArrIdx(whitelistArr, userNotWhitelisted.address)
   })
@@ -527,7 +525,7 @@ describe('AllowanceCrowdsale', () => {
   })
 
   describe('not whitelisted', () => {
-    var whitelistIdx: number
+    let whitelistIdx: number
     beforeEach(async () => {
       whitelistIdx = whitelistIdxNonWhitelisted
       expect(whitelistIdx).to.be.equal(-1)
@@ -650,7 +648,6 @@ describe('AllowanceCrowdsale', () => {
   })
 
   describe('pausability', () => {
-    let whitelistIdx: number
     beforeEach(async () => {
       await helpers.startSaleAndSetRate(
         allowanceCrowdsale,
@@ -669,7 +666,6 @@ describe('AllowanceCrowdsale', () => {
       tokenVault.connect(tokenHoldingWallet).approve(membershipContract.address, ethers.constants.MaxInt256)
       tokenVault.pause()
       membershipContract.pause()
-      whitelistIdx = helpers.findWhiteListArrIdx(whitelistArr, userOneFriend.address)
     })
     describe('NFTs for whitelisted address', () => {
       it('can buy NFTs with ETH', async () => {
@@ -709,7 +705,7 @@ describe('AllowanceCrowdsale', () => {
           membershipContract,
           utilConstants.friendTokenAmount.mul(utilConstants.stablecoinTokenRate),
         )
-        var [, start, ,] = await membershipContract.friendTier()
+        const [, start, ,] = await membershipContract.friendTier()
         await membershipContract.connect(userOneFriend).approve(membershipContract.address, start)
         await expect(membershipContract.connect(userOneFriend).release(start)).to.be.revertedWith(
           utilConstants.revertMessageReleaseNotEnabled,
@@ -719,8 +715,7 @@ describe('AllowanceCrowdsale', () => {
   })
 
   describe('post-sale', () => {
-    let whitelistIdx: number
-    let start: BigNumber
+    let start: BigNumberish
     beforeEach(async () => {
       await helpers.startSaleAndSetRate(
         allowanceCrowdsale,
@@ -739,12 +734,9 @@ describe('AllowanceCrowdsale', () => {
       tokenVault.connect(tokenHoldingWallet).approve(membershipContract.address, ethers.constants.MaxInt256)
       tokenVault.pause()
       membershipContract.pause()
-      whitelistIdx = helpers.findWhiteListArrIdx(whitelistArr, userOneFriend.address)
     })
 
     describe('transfer membership NFTs', () => {
-      let start: number
-
       beforeEach(async () => {
         start = (await membershipContract.friendTier()).start.toNumber()
       })

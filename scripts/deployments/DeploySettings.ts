@@ -10,8 +10,8 @@ async function main() {
   const [signer] = await ethers.getSigners()
   const nonceSigner = new NonceManager(signer)
 
-  const addressCfg: cfg.AddressConfig = cfg.loadConfig(cfg.ConfigEnv.address)
-  const settingsCfg: cfg.SettingsConfig = cfg.loadConfig(cfg.ConfigEnv.settings)
+  const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
+  const settingsCfg = cfg.SettingsConfig.check(cfg.loadConfig(cfg.ConfigEnv.settings))
   const settings = await utils.deploySettings(nonceSigner)
   addressCfg.Settings = settings.address
   cfg.saveConfig(cfg.ConfigEnv.address, addressCfg)
