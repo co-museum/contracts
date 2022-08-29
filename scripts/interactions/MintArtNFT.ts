@@ -14,6 +14,7 @@ async function main() {
 
   const artNFT = await ethers.getContractAt(cfg.ContractName.artNFT, addressCfg.ERC721ArtNFT!)
   const tx = await artNFT.connect(nonceSigner).mint(signer.address)
+  console.log('Minted NFT at txn:', tx.hash)
   const receipt = await tx.wait()
   const [mintEvent] = receipt.events!.filter((event, i, arr) => event.event == 'Transfer')
   const tokenId = mintEvent.args!['tokenId']

@@ -14,17 +14,15 @@ dotenv.config()
 async function main() {
   const signers = await ethers.getSigners()
   console.log(signers.length)
-  const signer = signers[7]
-  const nonceSigner = new NonceManager(signer)
+  const signer = signers[4]
   console.log(signer.address)
 
   const addressCfg: cfg.AddressConfig = cfg.loadConfig(cfg.ConfigEnv.address)
   const startSaleCfg: cfg.StartSaleConfig = cfg.loadConfig(cfg.ConfigEnv.startSale)
   const crowdsale = await ethers.getContractAt(cfg.ContractName.crowdsale, addressCfg.AllowanceCrowdsale!)
-  console.log(startSaleCfg.addresses)
-
   const whitelistIdx = 0
-  const userIdx = 0
+  console.log(startSaleCfg.addresses![0].indexOf(signer.address))
+
   // const userAddress = startSaleCfg.addresses![whitelistIdx][userIdx]
   const leaves = startSaleCfg.addresses![whitelistIdx].map((address) => ethers.utils.keccak256(address))
   const tree = new MerkleTree(leaves, ethers.utils.keccak256, { sort: true })
