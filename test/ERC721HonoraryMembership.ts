@@ -17,7 +17,7 @@ describe('ERC721HonoraryMembership', () => {
   describe('mint', () => {
     it('can mint one NFT', async () => {
       await erc721HonoraryMembership.mint(user1.address)
-      expect(await erc721HonoraryMembership.ownerOf(0)).to.be.equal(user1.address)
+      expect(await erc721HonoraryMembership.ownerOf(1)).to.be.equal(user1.address)
     })
 
     it('can mint multiple NFTs', async () => {
@@ -25,7 +25,7 @@ describe('ERC721HonoraryMembership', () => {
         await erc721HonoraryMembership.mint(user1.address)
       }
       for (let i = 0; i < 5; i++) {
-        expect(await erc721HonoraryMembership.ownerOf(i)).to.be.equal(user1.address)
+        expect(await erc721HonoraryMembership.ownerOf(i + 1)).to.be.equal(user1.address)
       }
     })
   })

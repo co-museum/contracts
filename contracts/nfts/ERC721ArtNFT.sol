@@ -4,10 +4,12 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract ERC721ArtNFT is ERC721Royalty, Ownable {
     using Strings for uint256;
-    uint256 public totalSupply;
+    using Counters for Counters.Counter;
+    Counters.Counter public tokenIdCounter;
     address payable public immutable receiverAddress;
     string private _baseTokenURI;
     string private baseExtension = ".json";
@@ -19,7 +21,8 @@ contract ERC721ArtNFT is ERC721Royalty, Ownable {
 
     ///  @notice Public mint function.
     function mint(address to) external onlyOwner {
-        _safeMint(to, totalSupply++); // mint and then increment
+        tokenIdCounter.increment();
+        _safeMint(to, tokenIdCounter.current());
     }
 
     ///@notice Withdraw funds.

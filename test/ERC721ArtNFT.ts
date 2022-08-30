@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import { ethers } from 'hardhat'
 import { ERC721ArtNFT } from '../typechain'
 
-describe('ERC721TitleDeed', () => {
+describe('ERC721ArtNFT', () => {
   let erc721ArtNFT: ERC721ArtNFT
   let signer: SignerWithAddress
 
@@ -18,13 +18,13 @@ describe('ERC721TitleDeed', () => {
   describe('airdrop', () => {
     it('can mint one NFT at a time', async () => {
       await erc721ArtNFT.mint(signer.address)
-      expect(await erc721ArtNFT.ownerOf(0)).to.be.equal(signer.address)
+      expect(await erc721ArtNFT.ownerOf(1)).to.be.equal(signer.address)
     })
 
     it('can add multiple NFTs to the collection', async () => {
       for (let i = 0; i < 5; i++) {
         await erc721ArtNFT.mint(signer.address)
-        expect(await erc721ArtNFT.ownerOf(i)).to.be.equal(signer.address)
+        expect(await erc721ArtNFT.ownerOf(i + 1)).to.be.equal(signer.address)
       }
     })
   })
