@@ -224,7 +224,7 @@ describe('ERC721MembershipUpgradeable', () => {
       const start = (await membershipERC721.foundationTier()).start.toNumber()
       const end = (await membershipERC721.foundationTier()).end.toNumber()
       for (let i = start; i < end; i++) {
-        await membershipERC721.redeem(genesisCode, signer.address, signer.address)
+        await membershipERC721.redeem(foundationCode, signer.address, signer.address)
       }
       expect(membershipERC721.redeem(foundationCode, signer.address, signer.address)).to.be.reverted
     })

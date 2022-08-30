@@ -192,7 +192,7 @@ contract ERC721MembershipUpgradeable is
         vault = vault_;
         voteDelegatorLogic = voteDelegatorLogic_;
 
-        genesisTier = Tier({currId: 0, start: 0, end: genesisEnd, price: genesisPrice, releasedIds: friendIdStack});
+        genesisTier = Tier({currId: 1, start: 1, end: genesisEnd, price: genesisPrice, releasedIds: friendIdStack});
 
         foundationTier = Tier({
             currId: genesisEnd,
