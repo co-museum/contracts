@@ -1,9 +1,9 @@
 {
   "name": "Art Membership",
   "symbol": "ARTM",
-  "genesisEnd": 15,
-  "foundationEnd": 215,
-  "friendEnd": 5715,
+  "genesisEnd": 19,
+  "foundationEnd": 239,
+  "friendEnd": 5739,
   "genesisPrice": 45000,
   "foundationPrice": 4500,
   "friendPrice": 450,
