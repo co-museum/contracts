@@ -5,8 +5,8 @@
   },
   "name": "Art Token",
   "symbol": "ART",
-  "tokenSupply": 4000000,
-  "initialPrice": 4000000,
+  "tokenSupply": 4500000,
+  "initialPrice": 4500000,
   "fee": 0,
   "decimals": 6
 }
