@@ -3,7 +3,7 @@ import * as cfg from '../config'
 import * as utils from '../../utils/deployment'
 import * as dotenv from 'dotenv'
 import MerkleTree from 'merkletreejs'
-import { BytesLike, keccak256 } from 'ethers/lib/utils'
+import { keccak256 } from 'ethers/lib/utils'
 import { calculateEthRate } from '../../utils/crowdsale'
 
 dotenv.config()
@@ -19,7 +19,7 @@ async function main() {
   const startSaleCfg = cfg.StartSaleConfig.check(cfg.loadConfig(cfg.ConfigEnv.startSale))
   const crowdsale = await ethers.getContractAt(
     cfg.ContractName.crowdsale,
-    utils.assertDefined(addressCfg.AllowanceCrowdsale, 'crowdsale address undefined'),
+    utils.assertDefined(addressCfg.AllowanceCrowdsale),
   )
   console.log(startSaleCfg.addresses)
 
@@ -27,7 +27,7 @@ async function main() {
   // const userIdx = 0
   // const userAddress = startSaleCfg.addresses![whitelistIdx][userIdx]
   const leaves = startSaleCfg.addresses?.[whitelistIdx].map((address) => ethers.utils.keccak256(address))
-  const tree = new MerkleTree(leaves, ethers.utils.keccak256, { sort: true })
+  const tree = new MerkleTree(utils.assertDefined(leaves), ethers.utils.keccak256, { sort: true })
   const proof = tree.getHexProof(keccak256(signer.address))
   console.log(proof)
   const numNFTs = 1

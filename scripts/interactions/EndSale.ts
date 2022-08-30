@@ -11,10 +11,7 @@ async function main() {
   const nonceSigner = new NonceManager(signer)
 
   const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
-  const crowdsale = await ethers.getContractAt(
-    'AllowanceCrowdsale',
-    utils.assertDefined(addressCfg.AllowanceCrowdsale, 'crowdsale address undefined'),
-  )
+  const crowdsale = await ethers.getContractAt('AllowanceCrowdsale', utils.assertDefined(addressCfg.AllowanceCrowdsale))
 
   const tx = await crowdsale.connect(nonceSigner).stopSale()
   utils.printTx('stop sale sale', tx.hash, utils.txType.tx)

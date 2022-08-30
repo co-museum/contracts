@@ -6,9 +6,7 @@ dotenv.config()
 
 async function main() {
   const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
-  const vaultFactory = await utils.deployVaultFactory(
-    utils.assertDefined(addressCfg.Settings, 'settings address undefined'),
-  )
+  const vaultFactory = await utils.deployVaultFactory(utils.assertDefined(addressCfg.Settings))
   addressCfg.ERC721VaultFactory = vaultFactory.address
   cfg.saveConfig(cfg.ConfigEnv.address, addressCfg)
 }

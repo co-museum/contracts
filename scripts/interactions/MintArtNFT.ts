@@ -13,10 +13,7 @@ async function main() {
   const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
   const tokenVaultCfg = cfg.TokenVaultConfig.check(cfg.loadConfig(cfg.ConfigEnv.tokenVault))
 
-  const artNFT = await ethers.getContractAt(
-    cfg.ContractName.artNFT,
-    utils.assertDefined(addressCfg.ERC721ArtNFT, 'art nft address undefined'),
-  )
+  const artNFT = await ethers.getContractAt(cfg.ContractName.artNFT, utils.assertDefined(addressCfg.ERC721ArtNFT))
   const tx = await artNFT.connect(nonceSigner).mint(signer.address)
   utils.printTx('Minted NFT at txn', tx.hash)
   const receipt = await tx.wait()
@@ -25,9 +22,7 @@ async function main() {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const tokenId = mintEvent.args!['tokenId']
   tokenVaultCfg.artId = tokenId
-  await artNFT
-    .connect(nonceSigner)
-    .approve(utils.assertDefined(addressCfg.ERC721VaultFactory, 'vault factory address undefined'), tokenId)
+  await artNFT.connect(nonceSigner).approve(utils.assertDefined(addressCfg.ERC721VaultFactory), tokenId)
 
   cfg.saveConfig(cfg.ConfigEnv.address, addressCfg)
   cfg.saveConfig(cfg.ConfigEnv.tokenVault, tokenVaultCfg)

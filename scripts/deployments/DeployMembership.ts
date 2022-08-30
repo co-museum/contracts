@@ -11,7 +11,7 @@ async function main() {
   const membershipCfg = cfg.MembershipConfig.check(cfg.loadConfig(cfg.ConfigEnv.membership))
   // careful with default args here
   const membership = await utils.deployMembership(
-    utils.assertDefined(addressCfg.TokenVault, 'token vault undefined'),
+    utils.assertDefined(addressCfg.TokenVault),
     undefined, // always deploy a new one
     membershipCfg.name,
     membershipCfg.symbol,

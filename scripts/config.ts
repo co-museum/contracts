@@ -7,7 +7,7 @@ import { assertDefined } from '../utils/deployment'
 
 export function loadConfig(envVar: ConfigEnv): unknown {
   // require assumes path is relative to script and we want relative to cwd
-  const fileName = resolve(assertDefined(process.env[envVar], `environment variable '${envVar}' undefined`))
+  const fileName = resolve(assertDefined(process.env[envVar]))
   console.log(`loading config from: ${fileName}`)
   if (existsSync(fileName)) {
     return require(fileName)
@@ -18,7 +18,7 @@ export function loadConfig(envVar: ConfigEnv): unknown {
 
 export function saveConfig(envVar: ConfigEnv, data: unknown): void {
   // relative paths are fine here but for visual consistency convert to absolute
-  const fileName = resolve(assertDefined(process.env[envVar], `environment variable '${envVar}' undefined`))
+  const fileName = resolve(assertDefined(process.env[envVar]))
   console.log(`saving config to: ${fileName}`)
   writeFileSync(fileName, JSON.stringify(data, undefined, 2))
 }

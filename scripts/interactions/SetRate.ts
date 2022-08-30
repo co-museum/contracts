@@ -12,7 +12,7 @@ async function main() {
   const setRateCfg = cfg.SetRateConfig.check(cfg.loadConfig(cfg.ConfigEnv.setRate))
   const crowdsale = await ethers.getContractAt(
     cfg.ContractName.crowdsale,
-    utils.assertDefined(addressCfg.AllowanceCrowdsale, 'crowdsale address undefined'),
+    utils.assertDefined(addressCfg.AllowanceCrowdsale),
   )
 
   const tx = await crowdsale.setRates(

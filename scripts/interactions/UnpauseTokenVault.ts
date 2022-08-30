@@ -11,10 +11,7 @@ async function main() {
   const nonceSigner = new NonceManager(signer)
 
   const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
-  const tokenVault = await ethers.getContractAt(
-    cfg.ContractName.tokenVault,
-    utils.assertDefined(addressCfg.TokenVault, 'token vault address undefined'),
-  )
+  const tokenVault = await ethers.getContractAt(cfg.ContractName.tokenVault, utils.assertDefined(addressCfg.TokenVault))
   await tokenVault.connect(nonceSigner).unpause()
 }
 

@@ -13,7 +13,7 @@ async function main() {
   const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
   const membership = await ethers.getContractAt(
     cfg.ContractName.membership,
-    utils.assertDefined(addressCfg.ERC721MembershipUpgradeable, 'membership address undefined'),
+    utils.assertDefined(addressCfg.ERC721MembershipUpgradeable),
   )
 
   await membership.connect(nonceSigner).unpause()

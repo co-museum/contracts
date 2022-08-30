@@ -11,21 +11,16 @@ async function main() {
   const nonceSigner = new NonceManager(signer)
 
   const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
-  const tokenVault = await ethers.getContractAt(
-    cfg.ContractName.tokenVault,
-    utils.assertDefined(addressCfg.TokenVault, 'token vault address undefined'),
-  )
+  const tokenVault = await ethers.getContractAt(cfg.ContractName.tokenVault, utils.assertDefined(addressCfg.TokenVault))
   const membership = await ethers.getContractAt(
     cfg.ContractName.membership,
-    utils.assertDefined(addressCfg.ERC721MembershipUpgradeable, 'membership address undefined'),
+    utils.assertDefined(addressCfg.ERC721MembershipUpgradeable),
   )
 
   // NOTE: crowdsale transfers tokens through membership
   let tx = await membership.connect(nonceSigner).addSender(membership.address)
   utils.printTx('add membership sender to membership', tx.hash, utils.txType.tx)
-  tx = await tokenVault
-    .connect(nonceSigner)
-    .addSender(utils.assertDefined(addressCfg.AllowanceCrowdsale, 'crowdsale address undefined'))
+  tx = await tokenVault.connect(nonceSigner).addSender(utils.assertDefined(addressCfg.AllowanceCrowdsale))
   utils.printTx('add crowdsale sender to token vault', tx.hash, utils.txType.tx)
   tx = await tokenVault.connect(nonceSigner).addSender(membership.address)
   utils.printTx('add membership sender to token vault', tx.hash, utils.txType.tx)
