@@ -26,8 +26,7 @@ async function main() {
   const whitelistIdx = 0
   // const userIdx = 0
   // const userAddress = startSaleCfg.addresses![whitelistIdx][userIdx]
-  const addresses = utils.assertDefined(startSaleCfg.addresses, 'addresses undefined')
-  const leaves = addresses[whitelistIdx].map((address) => ethers.utils.keccak256(address))
+  const leaves = startSaleCfg.addresses?.[whitelistIdx].map((address) => ethers.utils.keccak256(address))
   const tree = new MerkleTree(leaves, ethers.utils.keccak256, { sort: true })
   const proof = tree.getHexProof(keccak256(signer.address))
   console.log(proof)

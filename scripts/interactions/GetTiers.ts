@@ -1,27 +1,20 @@
 import { ethers } from 'hardhat'
-import { NonceManager } from '@ethersproject/experimental'
 import * as cfg from '../config'
 import * as dotenv from 'dotenv'
+import { assertDefined } from '../../utils/deployment'
 
 dotenv.config()
 
 async function main() {
-  //   const [signer] = await ethers.getSigners()
-  //   const nonceSigner = new NonceManager(signer)
-
   const addressCfg: cfg.AddressConfig = cfg.loadConfig(cfg.ConfigEnv.address)
-  const tokenVaultCfg: cfg.TokenVaultConfig = cfg.loadConfig(cfg.ConfigEnv.tokenVault)
 
-  const membership = await ethers.getContractAt(cfg.ContractName.membership, addressCfg.ERC721MembershipUpgradeable!)
-  const arr = membership.genesisTier
-  console.log(await arr())
-  const arr1 = membership.foundationTier
-  console.log(await arr1())
-  const arr2 = membership.friendTier
-  console.log(await arr2())
-
-  cfg.saveConfig(cfg.ConfigEnv.address, addressCfg)
-  cfg.saveConfig(cfg.ConfigEnv.tokenVault, tokenVaultCfg)
+  const membership = await ethers.getContractAt(
+    cfg.ContractName.membership,
+    assertDefined(addressCfg.ERC721MembershipUpgradeable, 'membership undefined'),
+  )
+  console.log('genesis tier details:', await membership.genesisTier())
+  console.log('foundation tier details:', await membership.foundationTier())
+  console.log('friend tier details:', await membership.friendTier())
 }
 
 main().catch((error) => {
