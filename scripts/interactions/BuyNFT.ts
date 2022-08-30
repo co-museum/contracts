@@ -37,7 +37,7 @@ async function main() {
   const tokenVaultCfg = cfg.TokenVaultConfig.check(cfg.loadConfig(cfg.ConfigEnv.tokenVault))
 
   const ethRate = calculateEthRate(setRateCfg.ethUSDPrice, tokenVaultCfg.decimals, setRateCfg.stablecoinRate)
-  const val = ethRate.mul(ethers.utils.parseUnits('400', 6))
+  const val = ethRate.mul(ethers.utils.parseUnits('450', 6))
   const tx = await crowdsale.connect(signer).buyNFTs(numNFTs, whitelistIdx, proof, true, ethers.constants.AddressZero, {
     // gasLimit: 500000,
     value: val,
