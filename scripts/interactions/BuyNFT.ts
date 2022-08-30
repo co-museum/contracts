@@ -3,7 +3,7 @@ import * as cfg from '../config'
 import * as utils from '../../utils/deployment'
 import * as dotenv from 'dotenv'
 import MerkleTree from 'merkletreejs'
-import { keccak256 } from 'ethers/lib/utils'
+import { BytesLike, keccak256 } from 'ethers/lib/utils'
 import { calculateEthRate } from '../../utils/crowdsale'
 
 dotenv.config()
@@ -26,8 +26,7 @@ async function main() {
   const whitelistIdx = 0
   // const userIdx = 0
   // const userAddress = startSaleCfg.addresses![whitelistIdx][userIdx]
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const leaves = startSaleCfg.addresses![whitelistIdx].map((address) => ethers.utils.keccak256(address))
+  const leaves = startSaleCfg.addresses?.[whitelistIdx].map((address) => ethers.utils.keccak256(address))
   const tree = new MerkleTree(leaves, ethers.utils.keccak256, { sort: true })
   const proof = tree.getHexProof(keccak256(signer.address))
   console.log(proof)

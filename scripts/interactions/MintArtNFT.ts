@@ -18,6 +18,7 @@ async function main() {
     utils.assertDefined(addressCfg.ERC721ArtNFT, 'art nft address undefined'),
   )
   const tx = await artNFT.connect(nonceSigner).mint(signer.address)
+  utils.printTx('Minted NFT at txn', tx.hash)
   const receipt = await tx.wait()
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const [mintEvent] = receipt.events!.filter((event) => event.event == 'Transfer')

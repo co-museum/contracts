@@ -32,6 +32,7 @@ const accounts =
         `0x${process.env.ACCOUNT_TWO}`,
         `0x${process.env.ACCOUNT_THREE}`,
         `0x${process.env.ACCOUNT_FOUR}`,
+        `0x${process.env.NFT_BUYER_ACCOUNT}`,
       ]
     : samplePrivateKeyList
 
