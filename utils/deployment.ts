@@ -10,6 +10,7 @@ import {
   Settings,
   TokenVault,
   VoteDelegator,
+  ERC721HonoraryMembership,
 } from '../typechain'
 
 const tokenVaultDecimals = 6
@@ -98,7 +99,7 @@ export async function deployERC721ArtNFT(receiverAddress: string, signer?: Signe
   return artNFT.deployed()
 }
 
-export async function deployHonoraryMembership(signer: string) {
+export async function deployHonoraryMembership(signer: string): Promise<ERC721HonoraryMembership> {
   const ERC721HonoraryMembership = await ethers.getContractFactory('ERC721HonoraryMembership')
   const erc721HonoraryMembership = await ERC721HonoraryMembership.deploy(signer)
   printTx('honorary membership NFT', erc721HonoraryMembership.address, txType.address)
@@ -199,9 +200,9 @@ export async function deployAllowanceCrowdsale(
 }
 
 // TODO: consider implementing custom deployment function types with runtypes
-export function assertDefined<T>(val: T, message: string): NonNullable<T> {
+export function assertDefined<T>(val: T): NonNullable<T> {
   if (val == undefined) {
-    throw new Error(message)
+    throw new Error('non-nullable variable undefined/null')
   }
   return val as NonNullable<T>
 }

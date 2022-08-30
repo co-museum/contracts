@@ -21,10 +21,7 @@ async function main() {
   const tokenVaultCfg = cfg.TokenVaultConfig.check(cfg.loadConfig(cfg.ConfigEnv.tokenVault))
   const startSaleCfg = cfg.StartSaleConfig.check(cfg.loadConfig(cfg.ConfigEnv.startSale))
 
-  const crowdsale = await ethers.getContractAt(
-    'AllowanceCrowdsale',
-    utils.assertDefined(addressCfg.AllowanceCrowdsale, 'crowdsale address unedfined'),
-  )
+  const crowdsale = await ethers.getContractAt('AllowanceCrowdsale', utils.assertDefined(addressCfg.AllowanceCrowdsale))
   const rootsFromAddresses = startSaleCfg.addresses?.map((addresses) => merkleRootFromAddresses(addresses))
   const roots = startSaleCfg.roots ? startSaleCfg.roots : []
   if (rootsFromAddresses) {

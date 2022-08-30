@@ -12,14 +12,11 @@ async function main() {
   const treasuryWallet = addressCfg.treasuryWallet ? addressCfg.treasuryWallet : signer.address
   const tokenHolder = addressCfg.tokenHolder ? addressCfg.tokenHolder : signer.address
   const crowdsale = await utils.deployAllowanceCrowdsale(
-    utils.assertDefined(addressCfg.TokenVault, 'vault address undefined'),
+    utils.assertDefined(addressCfg.TokenVault),
     treasuryWallet,
     tokenHolder,
-    utils.assertDefined(addressCfg.ERC721MembershipUpgradeable, 'membership address undefined'),
-    [
-      utils.assertDefined(addressCfg.usdcAddress, 'usdc address undefined'),
-      utils.assertDefined(addressCfg.usdtAddress, 'usdt address undefined'),
-    ],
+    utils.assertDefined(addressCfg.ERC721MembershipUpgradeable),
+    [utils.assertDefined(addressCfg.usdcAddress), utils.assertDefined(addressCfg.usdtAddress)],
   )
   addressCfg.AllowanceCrowdsale = crowdsale.address
   cfg.saveConfig(cfg.ConfigEnv.address, addressCfg)

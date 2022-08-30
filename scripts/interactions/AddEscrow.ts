@@ -11,7 +11,7 @@ async function main() {
   const escrowAddCfg = cfg.EscrowConfig.check(cfg.loadConfig(cfg.ConfigEnv.escrow))
   const membership = await ethers.getContractAt(
     'ERC721MembershipUpgradeable',
-    utils.assertDefined(addressCfg.ERC721MembershipUpgradeable, 'membership address undefined'),
+    utils.assertDefined(addressCfg.ERC721MembershipUpgradeable),
   )
   const tx = membership.connect(signer).addEscrowReleaseTime(escrowAddCfg.tokenIds, escrowAddCfg.timestamps)
   utils.printTx('Escrow add release time hash: ', (await tx).hash, utils.txType.tx)
