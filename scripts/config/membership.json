@@ -6,5 +6,6 @@
   "friendEnd": 5715,
   "genesisPrice": 40000,
   "foundationPrice": 4000,
-  "friendPrice": 400
+  "friendPrice": 400,
+  "membershipNFTBaseURI": "ipfs://QmSy7maw7f8kUA3reaWAdBz4UahcCWYBHtxRTa9xVK3JmL/"
 }
