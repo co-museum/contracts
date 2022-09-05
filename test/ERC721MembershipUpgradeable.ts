@@ -76,16 +76,20 @@ describe('ERC721MembershipUpgradeable', () => {
     })
 
     it('just redeemed', async () => {
-      expect(await membershipERC721.getTierNumRemainingNFTs(genesisCode)).to.be.equal(num)
+      let numNFTs = await membershipERC721.getTierNumRemainingNFTs()
+      expect(numNFTs.numGenesis).to.be.equal(num)
       await membershipERC721.redeem(genesisCode, signer.address, signer.address)
-      expect(await membershipERC721.getTierNumRemainingNFTs(genesisCode)).to.be.equal(num - 1)
+      numNFTs = await membershipERC721.getTierNumRemainingNFTs()
+      expect(numNFTs.numGenesis).to.be.equal(num - 1)
     })
 
     it('redeemed and released', async () => {
-      expect(await membershipERC721.getTierNumRemainingNFTs(genesisCode)).to.be.equal(num)
+      let numNFTs = await membershipERC721.getTierNumRemainingNFTs()
+      expect(numNFTs.numGenesis).to.be.equal(num)
       await membershipERC721.redeem(genesisCode, signer.address, signer.address)
       await membershipERC721.release(start)
-      expect(await membershipERC721.getTierNumRemainingNFTs(genesisCode)).to.be.equal(num)
+      numNFTs = await membershipERC721.getTierNumRemainingNFTs()
+      expect(numNFTs.numGenesis).to.be.equal(num)
     })
   })
 
