@@ -12,7 +12,7 @@ dotenv.config()
 async function main() {
   const signers = await ethers.getSigners()
   console.log(signers.length)
-  const signer = signers[7]
+  const signer = signers[4]
   console.log(signer.address)
 
   const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
@@ -21,17 +21,13 @@ async function main() {
     cfg.ContractName.crowdsale,
     utils.assertDefined(addressCfg.AllowanceCrowdsale),
   )
-  console.log(startSaleCfg.addresses)
 
   const whitelistIdx = 0
-  // const userIdx = 0
-  // const userAddress = startSaleCfg.addresses![whitelistIdx][userIdx]
   const leaves = startSaleCfg.addresses?.[whitelistIdx].map((address) => ethers.utils.keccak256(address))
   const tree = new MerkleTree(utils.assertDefined(leaves), ethers.utils.keccak256, { sort: true })
   const proof = tree.getHexProof(keccak256(signer.address))
-  console.log(proof)
+  console.log('proof:', proof)
   const numNFTs = 1
-  // const user = ethers.provider.getSigner(userAddress)
 
   const setRateCfg = cfg.SetRateConfig.check(cfg.loadConfig(cfg.ConfigEnv.setRate))
   const tokenVaultCfg = cfg.TokenVaultConfig.check(cfg.loadConfig(cfg.ConfigEnv.tokenVault))
