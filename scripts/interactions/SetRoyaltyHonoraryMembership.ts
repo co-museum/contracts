@@ -10,7 +10,10 @@ async function main() {
 
   const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
   const nftCofg = cfg.MembershipConfig.check(cfg.loadConfig(cfg.ConfigEnv.membership))
-  const honoraryMembershipNFT = await ethers.getContractAt(cfg.ContractName.honoraryMembership, utils.assertDefined(addressCfg.))
+  const honoraryMembershipNFT = await ethers.getContractAt(
+    cfg.ContractName.honoraryMembership,
+    utils.assertDefined(addressCfg.ERC721HonoraryMembership),
+  )
 
   const tx = await honoraryMembershipNFT
     .connect(signer)

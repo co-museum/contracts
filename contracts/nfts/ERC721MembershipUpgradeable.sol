@@ -114,7 +114,7 @@ contract ERC721MembershipUpgradeable is
 
     /// @notice Returns number of remaining NFTs that can be redeemed at tierCode tier
     /// @param tierCode Code for tier
-    /// @return numRemainingNFTs number of remaining NFTs that can be redeemed at the given tier
+    /// @return numRemainingNFTs number of remaining NFTs that can be redeemed at tierCode tier
     function getTierNumRemainingNFTs(TierCode tierCode) public view returns (uint256 numRemainingNFTs) {
         Tier storage tier = _getTierByCode(tierCode);
         return tier.end - tier.currId + tier.releasedIds.length;
