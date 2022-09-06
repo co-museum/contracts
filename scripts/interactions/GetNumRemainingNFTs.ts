@@ -11,9 +11,12 @@ async function main() {
     cfg.ContractName.membership,
     assertDefined(addressCfg.ERC721MembershipUpgradeable),
   )
-  console.log('genesis tier details:', await membership.genesisTier())
-  console.log('foundation tier details:', await membership.foundationTier())
-  console.log('friend tier details:', await membership.friendTier())
+
+  const remainingNFTs = await membership.getTierNumRemainingNFTs()
+
+  console.log('genesis remaining NFTs:', remainingNFTs.numGenesis)
+  console.log('foundation remaining NFTs:', remainingNFTs.numFoundation)
+  console.log('friend remaining NFTss:', remainingNFTs.numFriend)
 }
 
 main().catch((error) => {

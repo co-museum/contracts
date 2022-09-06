@@ -21,7 +21,7 @@ async function main() {
   const [mintEvent] = receipt.events!.filter((event) => event.event == 'Transfer')
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const tokenId = mintEvent.args!['tokenId']
-  tokenVaultCfg.artId = tokenId
+  tokenVaultCfg.artId = Number(tokenId)
   await artNFT.connect(nonceSigner).approve(utils.assertDefined(addressCfg.ERC721VaultFactory), tokenId)
 
   cfg.saveConfig(cfg.ConfigEnv.address, addressCfg)

@@ -1,8 +1,5 @@
 {
-  "artId": {
-    "type": "BigNumber",
-    "hex": "0x00"
-  },
+  "artId": 0,
   "name": "Art Token",
   "symbol": "ART",
   "tokenSupply": 4500000,
