@@ -113,27 +113,11 @@ contract ERC721MembershipUpgradeable is
     }
 
     /// @notice Returns number of remaining NFTs that can be redeemed at tierCode tier
-    /// @return numGenesis number of remaining NFTs that can be redeemed at genesis tier
-    /// @return numFoundation number of remaining NFTs that can be redeemed at foundation tier
-    /// @return numFriend number of remaining NFTs that can be redeemed at friend tier
-
-    function getTierNumRemainingNFTs()
-        public
-        view
-        returns (
-            uint256 numGenesis,
-            uint256 numFoundation,
-            uint256 numFriend
-        )
-    {
-        Tier storage genesis = _getTierByCode(TierCode.GENESIS);
-        Tier storage foundation = _getTierByCode(TierCode.FOUNDATION);
-        Tier storage friend = _getTierByCode(TierCode.FRIEND);
-        return (
-            genesis.end - genesis.currId + genesis.releasedIds.length,
-            foundation.end - foundation.currId + foundation.releasedIds.length,
-            friend.end - friend.currId + friend.releasedIds.length
-        );
+    /// @param tierCode Code for tier
+    /// @return numRemainingNFTs number of remaining NFTs that can be redeemed at the given tier
+    function getTierNumRemainingNFTs(TierCode tierCode) public view returns (uint256 numRemainingNFTs) {
+        Tier storage tier = _getTierByCode(tierCode);
+        return tier.end - tier.currId + tier.releasedIds.length;
     }
 
     /// @notice Returns tierPrice for tierCode

@@ -12,11 +12,13 @@ async function main() {
     assertDefined(addressCfg.ERC721MembershipUpgradeable),
   )
 
-  const remainingNFTs = await membership.getTierNumRemainingNFTs()
+  const remainingGenesisNFTs = await membership.getTierNumRemainingNFTs(0)
+  const remainingFoundationNFTs = await membership.getTierNumRemainingNFTs(1)
+  const remainingFriendNFTs = await membership.getTierNumRemainingNFTs(2)
 
-  console.log('genesis remaining NFTs:', remainingNFTs.numGenesis)
-  console.log('foundation remaining NFTs:', remainingNFTs.numFoundation)
-  console.log('friend remaining NFTss:', remainingNFTs.numFriend)
+  console.log('genesis remaining NFTs:', remainingGenesisNFTs)
+  console.log('foundation remaining NFTs:', remainingFoundationNFTs)
+  console.log('friend remaining NFTss:', remainingFriendNFTs)
 }
 
 main().catch((error) => {

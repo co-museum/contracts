@@ -10,16 +10,12 @@ async function main() {
 
   const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
   const nftCofg = cfg.MembershipConfig.check(cfg.loadConfig(cfg.ConfigEnv.membership))
-  const membershipNFT = await ethers.getContractAt(
-    cfg.ContractName.membership,
-    utils.assertDefined(addressCfg.ERC721MembershipUpgradeable),
-  )
+  const artNFT = await ethers.getContractAt(cfg.ContractName.artNFT, utils.assertDefined(addressCfg.ERC721ArtNFT))
 
-  const tokenBaseURI = utils.assertDefined(nftCofg.membershipNFTBaseURI)
-
-  const tx = await membershipNFT.connect(signer).setBaseURI(tokenBaseURI)
-  await tx.wait()
-  utils.printTx('set base URI', tx.hash, utils.txType.tx)
+  const tx = await artNFT
+    .connect(signer)
+    .setDefaultRoyalty(utils.assertDefined(nftCofg.royaltyRecieveingAddress), utils.assertDefined(nftCofg.royalty))
+  utils.printTx('set royalty art NFT', tx.hash, utils.txType.tx)
 }
 
 main().catch((error) => {

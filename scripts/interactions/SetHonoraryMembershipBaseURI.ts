@@ -12,10 +12,10 @@ async function main() {
   const nftCofg = cfg.HonoraryNFTConfig.check(cfg.loadConfig(cfg.ConfigEnv.honoraryMembership))
   const honoraryMembershipNFT = await ethers.getContractAt(
     cfg.ContractName.honoraryMembership,
-    utils.assertDefined(addressCfg.ERC721HonoraryMembership, 'membership undefined'),
+    utils.assertDefined(addressCfg.ERC721HonoraryMembership),
   )
 
-  const tokenBaseURI = nftCofg.honoraryMembershipBaseURI
+  const tokenBaseURI = utils.assertDefined(nftCofg.honoraryMembershipBaseURI)
   const tx = await honoraryMembershipNFT.connect(signer).setBaseURI(tokenBaseURI)
   utils.printTx('set base URI', tx.hash, utils.txType.tx)
 }

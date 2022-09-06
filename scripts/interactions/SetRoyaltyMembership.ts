@@ -15,11 +15,10 @@ async function main() {
     utils.assertDefined(addressCfg.ERC721MembershipUpgradeable),
   )
 
-  const tokenBaseURI = utils.assertDefined(nftCofg.membershipNFTBaseURI)
-
-  const tx = await membershipNFT.connect(signer).setBaseURI(tokenBaseURI)
-  await tx.wait()
-  utils.printTx('set base URI', tx.hash, utils.txType.tx)
+  const tx = await membershipNFT
+    .connect(signer)
+    .setDefaultRoyalty(utils.assertDefined(nftCofg.royaltyRecieveingAddress), utils.assertDefined(nftCofg.royalty))
+  utils.printTx('set royalty membership', tx.hash, utils.txType.tx)
 }
 
 main().catch((error) => {
