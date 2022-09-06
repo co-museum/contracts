@@ -7,5 +7,7 @@
   "genesisPrice": 45000,
   "foundationPrice": 4500,
   "friendPrice": 450,
-  "membershipNFTBaseURI": "ipfs://QmSy7maw7f8kUA3reaWAdBz4UahcCWYBHtxRTa9xVK3JmL/"
+  "membershipNFTBaseURI": "ipfs://QmSy7maw7f8kUA3reaWAdBz4UahcCWYBHtxRTa9xVK3JmL/",
+  "royalty": 500,
+  "royaltyRecieveingAddress": "0x46456ed10c46fb1aE0C752863c0ac23fa6C60f57"
 }

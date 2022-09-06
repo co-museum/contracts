@@ -18,6 +18,12 @@ enum State {
   REDEEMED,
 }
 
+enum Tier {
+  Genesis = 0,
+  Foundation = 1,
+  Friend = 2,
+}
+
 describe('ERC721MembershipUpgradeable', () => {
   let membershipERC721: ERC721MembershipUpgradeable
   let mockUSDC: IERC20
@@ -76,16 +82,20 @@ describe('ERC721MembershipUpgradeable', () => {
     })
 
     it('just redeemed', async () => {
-      expect(await membershipERC721.getTierNumRemainingNFTs(genesisCode)).to.be.equal(num)
+      let numNFTs = await membershipERC721.getTierNumRemainingNFTs(Tier.Genesis)
+      expect(numNFTs).to.be.equal(num)
       await membershipERC721.redeem(genesisCode, signer.address, signer.address)
-      expect(await membershipERC721.getTierNumRemainingNFTs(genesisCode)).to.be.equal(num - 1)
+      numNFTs = await membershipERC721.getTierNumRemainingNFTs(Tier.Genesis)
+      expect(numNFTs).to.be.equal(num - 1)
     })
 
     it('redeemed and released', async () => {
-      expect(await membershipERC721.getTierNumRemainingNFTs(genesisCode)).to.be.equal(num)
+      let numNFTs = await membershipERC721.getTierNumRemainingNFTs(Tier.Genesis)
+      expect(numNFTs).to.be.equal(num)
       await membershipERC721.redeem(genesisCode, signer.address, signer.address)
       await membershipERC721.release(start)
-      expect(await membershipERC721.getTierNumRemainingNFTs(genesisCode)).to.be.equal(num)
+      numNFTs = await membershipERC721.getTierNumRemainingNFTs(Tier.Genesis)
+      expect(numNFTs).to.be.equal(num)
     })
   })
 

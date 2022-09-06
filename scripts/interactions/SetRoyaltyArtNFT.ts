@@ -9,12 +9,11 @@ async function main() {
   const [signer] = await ethers.getSigners()
 
   const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
-  const nftCofg = cfg.ArtNFTConfig.check(cfg.loadConfig(cfg.ConfigEnv.artNFT))
+  const nftCofg = cfg.MembershipConfig.check(cfg.loadConfig(cfg.ConfigEnv.membership))
   const artNFT = await ethers.getContractAt(cfg.ContractName.artNFT, utils.assertDefined(addressCfg.ERC721ArtNFT))
 
-  const tokenBaseURI = nftCofg.artNFTBaseURI
-  const tx = await artNFT.connect(signer).setBaseURI(tokenBaseURI)
-  utils.printTx('set base URI', tx.hash, utils.txType.tx)
+  const tx = await artNFT.connect(signer).setDefaultRoyalty(nftCofg.royaltyRecieveingAddress, nftCofg.royalty)
+  utils.printTx('set royalty art NFT', tx.hash, utils.txType.tx)
 }
 
 main().catch((error) => {

@@ -22,6 +22,8 @@
     "deploy:goerli:12-approve": "yarn hardhat run scripts/interactions/Approve.ts --network goerli",
     "deploy:goerli:13-buy-nft": "yarn hardhat run scripts/interactions/BuyNFT.ts --network goerli",
     "deploy:goerli:all": "yarn deploy:goerli:1-settings && yarn deploy:goerli:2-vault-factory && yarn deploy:goerli:3-art-nft && yarn deploy:goerli:4-mint-art-nft && yarn deploy:goerli:5-mock-stablecoins && yarn deploy:goerli:6-token-vault && yarn deploy:goerli:7-membership && yarn deploy:goerli:8-crowdsale && yarn deploy:goerli:9-partially-pause && yarn deploy:goerli:10-set-rate && yarn deploy:goerli:11-start-sale && yarn deploy:goerli:12-approve",
+    "deploy:goerli:getTiers": "yarn hardhat run scripts/interactions/GetTiers.ts --network goerli",
+    "deploy:goerli:getNumRemainingNFTs": "yarn hardhat run scripts/interactions/GetNumRemainingNFTs.ts --network goerli",
     "deploy:localhost:1-settings": "yarn hardhat run scripts/deployments/DeploySettings.ts --network localhost",
     "deploy:localhost:2-vault-factory": "yarn hardhat run scripts/deployments/DeployVaultFactory.ts --network localhost",
     "deploy:localhost:3-art-nft": "yarn hardhat run scripts/deployments/DeployArtNFT.ts --network localhost",
@@ -35,7 +37,9 @@
     "deploy:localhost:11-start-sale": "yarn hardhat run scripts/interactions/StartSale.ts --network localhost",
     "deploy:localhost:12-approve": "yarn hardhat run scripts/interactions/Approve.ts --network localhost",
     "deploy:localhost:13-buy-nft": "yarn hardhat run scripts/interactions/BuyNFT.ts --network localhost",
-    "deploy:localhost:all": "yarn deploy:localhost:1-settings && yarn deploy:localhost:2-vault-factory && yarn deploy:localhost:3-art-nft && yarn deploy:localhost:4-mint-art-nft && deploy:localhost:5-mock-stablecoins && yarn deploy:localhost:6-token-vault && yarn deploy:localhost:7-membership && yarn deploy:localhost:8-crowdsale && yarn deploy:localhost:9-partially-pause && yarn deploy:localhost:10-set-rate && yarn deploy:localhost:11-start-sale && yarn deploy:localhost:12-approve"
+    "deploy:localhost:all": "yarn deploy:localhost:1-settings && yarn deploy:localhost:2-vault-factory && yarn deploy:localhost:3-art-nft && yarn deploy:localhost:4-mint-art-nft && yarn deploy:localhost:5-mock-stablecoins && yarn deploy:localhost:6-token-vault && yarn deploy:localhost:7-membership && yarn deploy:localhost:8-crowdsale && yarn deploy:localhost:9-partially-pause && yarn deploy:localhost:10-set-rate && yarn deploy:localhost:11-start-sale && yarn deploy:localhost:12-approve",
+    "deploy:localhost:getTiers": "yarn hardhat run scripts/interactions/GetTiers.ts --network localhost",
+    "deploy:localhost:getNumRemainingNFTs": "yarn hardhat run scripts/interactions/GetNumRemainingNFTs.ts --network localhost"
   },
   "devDependencies": {
     "@ethersproject/experimental": "5.6.3",

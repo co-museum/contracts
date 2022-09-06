@@ -64,7 +64,6 @@ async function main() {
   console.log(`art token: ${artToken.address}`)
 
   const voteDelegator = await utils.deployVoteDelegator(artToken.address)
-  console.log(`vote delegator: ${voteDelegator.address}`)
 
   const membership = await utils.deployMembership(
     artToken.address,
@@ -84,7 +83,6 @@ async function main() {
     membership.address,
     [mockUSDC.address, mockUSDT.address],
   )
-  console.log(`crowdsale: ${crowdsale.address}`)
 
   // NOTE: crowdsale transfers tokens through membership
   await artToken.connect(tokenHolder).approve(membership.address, artSupply)

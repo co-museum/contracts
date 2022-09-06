@@ -9,15 +9,16 @@ async function main() {
   const [signer] = await ethers.getSigners()
 
   const addressCfg = cfg.AddressConfig.check(cfg.loadConfig(cfg.ConfigEnv.address))
-  const nftCofg = cfg.HonoraryNFTConfig.check(cfg.loadConfig(cfg.ConfigEnv.honoraryMembership))
+  const nftCofg = cfg.MembershipConfig.check(cfg.loadConfig(cfg.ConfigEnv.membership))
   const honoraryMembershipNFT = await ethers.getContractAt(
     cfg.ContractName.honoraryMembership,
     utils.assertDefined(addressCfg.ERC721HonoraryMembership),
   )
 
-  const tokenBaseURI = nftCofg.honoraryMembershipBaseURI
-  const tx = await honoraryMembershipNFT.connect(signer).setBaseURI(tokenBaseURI)
-  utils.printTx('set base URI', tx.hash, utils.txType.tx)
+  const tx = await honoraryMembershipNFT
+    .connect(signer)
+    .setDefaultRoyalty(nftCofg.royaltyRecieveingAddress, nftCofg.royalty)
+  utils.printTx('set royalty honorary membership NFT', tx.hash, utils.txType.tx)
 }
 
 main().catch((error) => {

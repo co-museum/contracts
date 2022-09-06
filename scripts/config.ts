@@ -50,6 +50,7 @@ export const AddressConfig = Record({
   [ContractName.settings]: String.optional(),
   [ContractName.vaultFactory]: String.optional(),
   [ContractName.artNFT]: String.optional(),
+  [ContractName.honoraryMembership]: String.optional(),
   [ContractName.tokenVault]: String.optional(),
   [ContractName.membership]: String.optional(),
   [ContractName.crowdsale]: String.optional(),
@@ -115,14 +116,20 @@ export const MembershipConfig = Record({
   friendPrice: Number,
   foundationPrice: Number,
   genesisPrice: Number,
-  membershipNFTBaseURI: String.optional(),
+  membershipNFTBaseURI: String,
+  royalty: Number,
+  royaltyRecieveingAddress: String,
 })
 export type MembershipConfig = Static<typeof MembershipConfig>
 
 export const HonoraryNFTConfig = Record({
-  honoraryMembershipBaseURI: String.optional(),
+  honoraryMembershipBaseURI: String,
+  royalty: Number,
+  royaltyRecieveingAddress: String,
 })
 
 export const ArtNFTConfig = Record({
-  artNFTBaseURI: String.optional(),
+  artNFTBaseURI: String,
+  royalty: Number,
+  royaltyRecieveingAddress: String,
 })
