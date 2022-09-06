@@ -15,7 +15,7 @@ async function main() {
     utils.assertDefined(addressCfg.ERC721HonoraryMembership),
   )
 
-  const tokenBaseURI = utils.assertDefined(nftCofg.honoraryMembershipBaseURI)
+  const tokenBaseURI = nftCofg.honoraryMembershipBaseURI
   const tx = await honoraryMembershipNFT.connect(signer).setBaseURI(tokenBaseURI)
   utils.printTx('set base URI', tx.hash, utils.txType.tx)
 }

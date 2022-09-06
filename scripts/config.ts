@@ -116,20 +116,20 @@ export const MembershipConfig = Record({
   friendPrice: Number,
   foundationPrice: Number,
   genesisPrice: Number,
-  membershipNFTBaseURI: String.optional(),
-  royalty: Number.optional(),
-  royaltyRecieveingAddress: String.optional(),
+  membershipNFTBaseURI: String,
+  royalty: Number,
+  royaltyRecieveingAddress: String,
 })
 export type MembershipConfig = Static<typeof MembershipConfig>
 
 export const HonoraryNFTConfig = Record({
-  honoraryMembershipBaseURI: String.optional(),
-  royalty: Number.optional(),
-  royaltyRecieveingAddress: String.optional(),
+  honoraryMembershipBaseURI: String,
+  royalty: Number,
+  royaltyRecieveingAddress: String,
 })
 
 export const ArtNFTConfig = Record({
-  artNFTBaseURI: String.optional(),
-  royalty: Number.optional(),
-  royaltyRecieveingAddress: String.optional(),
+  artNFTBaseURI: String,
+  royalty: Number,
+  royaltyRecieveingAddress: String,
 })

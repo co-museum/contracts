@@ -3,6 +3,7 @@ import { NonceManager } from '@ethersproject/experimental'
 import * as cfg from '../config'
 import * as dotenv from 'dotenv'
 import * as utils from '../../utils/deployment'
+import { BigNumber } from 'ethers'
 
 dotenv.config()
 
@@ -20,8 +21,8 @@ async function main() {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const [mintEvent] = receipt.events!.filter((event) => event.event == 'Transfer')
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const tokenId = mintEvent.args!['tokenId']
-  tokenVaultCfg.artId = Number(tokenId)
+  const tokenId = mintEvent.args!['tokenId'] as BigNumber
+  tokenVaultCfg.artId = tokenId.toNumber()
   await artNFT.connect(nonceSigner).approve(utils.assertDefined(addressCfg.ERC721VaultFactory), tokenId)
 
   cfg.saveConfig(cfg.ConfigEnv.address, addressCfg)

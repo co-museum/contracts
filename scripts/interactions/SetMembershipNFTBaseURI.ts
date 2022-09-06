@@ -15,8 +15,7 @@ async function main() {
     utils.assertDefined(addressCfg.ERC721MembershipUpgradeable),
   )
 
-  const tokenBaseURI = utils.assertDefined(nftCofg.membershipNFTBaseURI)
-
+  const tokenBaseURI = nftCofg.membershipNFTBaseURI
   const tx = await membershipNFT.connect(signer).setBaseURI(tokenBaseURI)
   await tx.wait()
   utils.printTx('set base URI', tx.hash, utils.txType.tx)

@@ -17,7 +17,7 @@ async function main() {
 
   const tx = await honoraryMembershipNFT
     .connect(signer)
-    .setDefaultRoyalty(utils.assertDefined(nftCofg.royaltyRecieveingAddress), utils.assertDefined(nftCofg.royalty))
+    .setDefaultRoyalty(nftCofg.royaltyRecieveingAddress, nftCofg.royalty)
   utils.printTx('set royalty honorary membership NFT', tx.hash, utils.txType.tx)
 }
 

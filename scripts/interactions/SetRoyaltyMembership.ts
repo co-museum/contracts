@@ -15,9 +15,7 @@ async function main() {
     utils.assertDefined(addressCfg.ERC721MembershipUpgradeable),
   )
 
-  const tx = await membershipNFT
-    .connect(signer)
-    .setDefaultRoyalty(utils.assertDefined(nftCofg.royaltyRecieveingAddress), utils.assertDefined(nftCofg.royalty))
+  const tx = await membershipNFT.connect(signer).setDefaultRoyalty(nftCofg.royaltyRecieveingAddress, nftCofg.royalty)
   utils.printTx('set royalty membership', tx.hash, utils.txType.tx)
 }
 
