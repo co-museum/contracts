@@ -51,16 +51,16 @@ contract AllowanceCrowdsale is Ownable {
     /// @return ethRate Price of smallest unit of $ART token in wei
     uint256 public ethRate;
     /// @return treasuryWallet Address of wallet receiving crowdsale funds
-    address payable public treasuryWallet;
+    address payable public immutable treasuryWallet;
     /// @return tokenHoldingWallet Address holding the tokens, which has
     /// given allowance to the crowdsale
-    address public tokenHoldingWallet;
+    address public immutable tokenHoldingWallet;
     /// @return acceptedStablecoins An array of accepted stablecoin addresses
     address[] public acceptedStablecoins;
     /// @return tokenContract Address of $ART token contract
-    address public tokenContract;
+    address public immutable tokenContract;
     /// @return membershipContract Address holding and minting memberships
-    address public membershipContract;
+    address public immutable membershipContract;
     /// @dev Array of whitelists in ongoing sale
     Whitelist[] private whitelists;
 
