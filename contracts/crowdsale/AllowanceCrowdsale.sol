@@ -174,10 +174,10 @@ contract AllowanceCrowdsale is Ownable {
         uint256 quantity = numNFTs * price;
         _validatePurchase(allocation, quantity, price, proof, whitelist.merkleRoot);
         _receivePayment(payWithEth, quantity, _stablecoinAddress);
+        claimed[msg.sender] = true;
         for (uint256 i = 0; i < numNFTs; i++) {
             ERC721MembershipUpgradeable(membershipContract).redeem(whitelist.tierCode, tokenHoldingWallet, msg.sender);
         }
-        claimed[msg.sender] = true;
     }
 
     /// @dev Validates if the purchase is being made in a discrete number of
