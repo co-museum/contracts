@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -221,11 +222,6 @@ contract AllowanceCrowdsale is Ownable {
         return IERC20(stablecoinAddress);
     }
 
-    /// @dev Sends ETH to treasuryWallet
-    function _forwardFunds() internal {
-        treasuryWallet.transfer(msg.value);
-    }
-
     /// @dev Transfers either stablecoin or ETH to treasury wallet
     /// @param payWithEth Whether msg.sender pays with ETH or stablecoin
     /// @param quantity Number of $ART tokens a user wants to buy (For NFTs,
@@ -242,7 +238,13 @@ contract AllowanceCrowdsale is Ownable {
         } else {
             require(ethRate > 0, "crowdsale:ethRate <= 0");
             require(msg.value >= quantity * ethRate, "crowdsale:not enough eth");
-            _forwardFunds();
+            require(msg.value >= quantity * ethRate, "crowdsale:not enough eth");
+            Address.sendValue(treasuryWallet, quantity * ethRate);
+            uint256 back = msg.value - quantity * ethRate;
+            if (back > 0) {
+                (bool success, ) = msg.sender.call{value: back}("");
+                require(success, "unable to send value");
+            }
         }
     }
 }
