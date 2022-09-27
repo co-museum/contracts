@@ -30,8 +30,11 @@ contract ERC721VaultFactory is Ownable, Pausable {
     /// @param _name the desired name of the vault
     /// @param _symbol the desired symbol of the vault
     /// @param _token the ERC721 token address of the NFT
+    /// @param _usdc address of usdc stablecoin
     /// @param _id the uint256 ID of the token
+    /// @param _supply the desired total supply of the ERC20 token
     /// @param _listPrice the initial price of the NFT
+    /// @param _fee the curator fee which will be paid to the owner of the fractional asset
     /// @return the ID of the vault
     function mint(
         string memory _name,

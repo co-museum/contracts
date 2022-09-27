@@ -211,7 +211,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     }
 
     /// @notice allow curator to update the auction length
-    /// @param _length the new base price
+    /// @param _length the new auction length
     function updateAuctionLength(uint256 _length) external {
         require(msg.sender == curator, "update:not curator");
         require(
@@ -389,7 +389,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         emit Start(msg.sender, _bid);
     }
 
-    /// @notice an external function to bid on purchasing the vaults NFT. The msg.value is the bid amount
+    /// @notice an external function to bid on purchasing the vaults NFT.
     /// @custom:update accept payment in USDC and don't accept ETH
     function bid(uint256 _bid) external {
         require(auctionState == State.live, "bid:auction is not live");
