@@ -76,9 +76,6 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     /// @notice the last timestamp where fees were claimed
     uint256 public lastClaimed;
 
-    /// @notice a boolean to indicate if the vault has closed
-    bool public vaultClosed;
-
     /// @notice the number of ownership tokens voting on the reserve price at any given time
     uint256 public votingTokens;
 
