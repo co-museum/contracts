@@ -186,6 +186,7 @@ contract ERC721MembershipUpgradeable is
         __ERC721_init(name_, symbol_);
         __Ownable_init();
         __PartiallyPausableUpgradeable_init(owner());
+        require(genesisEnd < foundationEnd && foundationEnd < friendEnd);
 
         vault = vault_;
         voteDelegatorLogic = voteDelegatorLogic_;
