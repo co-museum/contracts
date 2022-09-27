@@ -216,6 +216,7 @@ contract AllowanceCrowdsale is Ownable {
         for (uint256 i = 0; i < acceptedStablecoins.length; i++) {
             if (stablecoinAddress == acceptedStablecoins[i]) {
                 hasTokenAddress = true;
+                break;
             }
         }
         require(hasTokenAddress, "crowdsale:stablecoin not supported");
