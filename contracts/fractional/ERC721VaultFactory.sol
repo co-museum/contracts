@@ -28,8 +28,8 @@ contract ERC721VaultFactory is Ownable, Pausable {
 
     /// @notice the function to mint a new vault
     /// @param _name the desired name of the vault
-    /// @param _symbol the desired sumbol of the vault
-    /// @param _token the ERC721 token address fo the NFT
+    /// @param _symbol the desired symbol of the vault
+    /// @param _token the ERC721 token address of the NFT
     /// @param _id the uint256 ID of the token
     /// @param _listPrice the initial price of the NFT
     /// @return the ID of the vault

@@ -29,10 +29,10 @@ contract AllowanceCrowdsale is Ownable {
     /// determined by the merkle root of a list of addresses, their
     /// allocations, and their tier. Each address can only ever be whitelisted once across
     /// rounds.
-    /// @param tierCode The code associated with a partcular tier in the
+    /// @param tierCode The code associated with a particular tier in the
     /// membership contract
     /// @param allocation The address allocation expressed in $ART tokens
-    /// (number of membershio NFTs is computed by dividing by NFT price)
+    /// (number of membership NFTs is computed by dividing by NFT price)
     /// @param merkleRoot The merkle root of a list of addresses
     struct Whitelist {
         ERC721MembershipUpgradeable.TierCode tierCode;
@@ -146,7 +146,7 @@ contract AllowanceCrowdsale is Ownable {
         }
     }
 
-    /// @notice Helps a whitelisted user buy membership NFTs based on thier
+    /// @notice Helps a whitelisted user buy membership NFTs based on their
     /// allocation
     /// @param numNFTs Number of NFTs a user wants to buy
     /// @param whitelistIndex Index of the whitelist in the array of whitelists
