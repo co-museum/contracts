@@ -2,10 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol";
-import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import "../lib/PartiallyPausableUpgradeable.sol";
 import "../fractional/ERC721TokenVault.sol";
 import "../fractional/InitializedProxy.sol";

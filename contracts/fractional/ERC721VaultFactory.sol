@@ -3,12 +3,8 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
-
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-
 import "./InitializedProxy.sol";
-import "./Settings.sol";
 import "./ERC721TokenVault.sol";
 
 contract ERC721VaultFactory is Ownable, Pausable {
