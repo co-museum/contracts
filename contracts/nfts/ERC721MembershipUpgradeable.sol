@@ -190,7 +190,7 @@ contract ERC721MembershipUpgradeable is
         vault = vault_;
         voteDelegatorLogic = voteDelegatorLogic_;
 
-        genesisTier = Tier({currId: 1, start: 1, end: genesisEnd, price: genesisPrice, releasedIds: friendIdStack});
+        genesisTier = Tier({currId: 1, start: 1, end: genesisEnd, price: genesisPrice, releasedIds: genesisIdStack});
 
         foundationTier = Tier({
             currId: genesisEnd,
@@ -205,7 +205,7 @@ contract ERC721MembershipUpgradeable is
             start: foundationEnd,
             end: friendEnd,
             price: friendPrice,
-            releasedIds: genesisIdStack
+            releasedIds: friendIdStack
         });
 
         releaseEnabled = false;
@@ -274,6 +274,9 @@ contract ERC721MembershipUpgradeable is
         uint256 id;
         Tier storage tier = _getTierByCode(tierCode);
 
+        require(TokenVault(vault).balanceOf(erc20From) >= tier.price, "membership:insufficient balance");
+        TokenVault(vault).transferFrom(erc20From, address(this), tier.price);
+
         if (tier.releasedIds.length > 0) {
             id = tier.releasedIds[tier.releasedIds.length - 1];
             tier.releasedIds.pop();
@@ -284,9 +287,6 @@ contract ERC721MembershipUpgradeable is
         }
         emit Redeem(nftTo, id);
         _safeMint(nftTo, id);
-
-        require(TokenVault(vault).balanceOf(erc20From) >= tier.price, "membership:insufficient balance");
-        TokenVault(vault).transferFrom(erc20From, address(this), tier.price);
     }
 
     /// @notice witdraws funds from vote delegator proxy on token transfer to
