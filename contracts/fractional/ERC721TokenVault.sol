@@ -420,10 +420,9 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
 
         _claimFees();
 
+        auctionState = State.ended;
         // transfer erc721 to winner
         IERC721(token).transferFrom(address(this), winning, id);
-
-        auctionState = State.ended;
 
         emit Won(winning, livePrice);
     }
