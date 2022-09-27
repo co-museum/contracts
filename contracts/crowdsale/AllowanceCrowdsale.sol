@@ -153,7 +153,7 @@ contract AllowanceCrowdsale is Ownable {
     /// @param numNFTs Number of NFTs a user wants to buy
     /// @param whitelistIndex Index of the whitelist in the array of whitelists
     /// @dev There can be several whitelists in a batch of token sale with
-    /// different allocations. WhiltelistIndex represents which which whitelist
+    /// different allocations. WhiltelistIndex represents which whitelist
     /// a user belongs to
     /// @param proof Merkle proof used to verify that the msg.sender is a part
     /// of a Merkle tree
