@@ -143,7 +143,7 @@ contract AllowanceCrowdsale is Ownable {
     /// @dev Whitelists array is cleared at end of batch.
     function stopSale() external onlyOwner {
         isActive = false;
-        for (uint8 i = 0; i < whitelists.length; i++) {
+        for (uint256 i = 0; i < whitelists.length; i++) {
             delete whitelists[i];
         }
     }
@@ -163,7 +163,7 @@ contract AllowanceCrowdsale is Ownable {
     /// true
     function buyNFTs(
         uint256 numNFTs,
-        uint8 whitelistIndex,
+        uint256 whitelistIndex,
         bytes32[] calldata proof,
         bool payWithEth,
         address _stablecoinAddress
