@@ -129,6 +129,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         string memory _symbol,
         address _usdc
     ) external initializer {
+        require(_supply > 0, "init:invalid supply");
         // initialize inherited contracts
         __ERC20_init(_name, _symbol);
         __ERC721Holder_init();
