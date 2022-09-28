@@ -267,6 +267,7 @@ contract ERC721MembershipUpgradeable is
         this._redeem(tierCode, erc20From, nftTo);
     }
 
+    /// @dev _redeem is external because it makes the msg.sender this membership contract for pausibility
     function _redeem(
         TierCode tierCode,
         address erc20From,
