@@ -111,7 +111,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
 
     event UpdateCuratorFee(uint256 fee);
 
-    event FeeClaimed(uint256 fee);
+    event FeeClaimed(address to, uint256 fee);
 
     event Initialize(
         address indexed curator,
@@ -288,11 +288,11 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
 
         if (curator != address(0)) {
             _mint(curator, curatorMint);
-            emit FeeClaimed(curatorMint);
+            emit FeeClaimed(curator, curatorMint);
         }
         if (govAddress != address(0)) {
             _mint(govAddress, govMint);
-            emit FeeClaimed(govMint);
+            emit FeeClaimed(govAddress, govMint);
         }
     }
 
