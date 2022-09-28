@@ -249,27 +249,29 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         uint256 currentAnnualFee = (fee * totalSupply()) / 1000;
         // get how much that is per second;
         uint256 feePerSecond = currentAnnualFee / 31536000;
-        // get how many seconds they are eligible to claim
-        uint256 sinceLastClaim = block.timestamp - lastClaimed;
-        // get the amount of tokens to mint
-        uint256 curatorMint = sinceLastClaim * feePerSecond;
+        if (feePerSecond > 0) {
+            // get how many seconds they are eligible to claim
+            uint256 sinceLastClaim = block.timestamp - lastClaimed;
+            // get the amount of tokens to mint
+            uint256 curatorMint = sinceLastClaim * feePerSecond;
 
-        // now lets do the same for governance
-        address govAddress = ISettings(settings).feeReceiver();
-        uint256 govFee = ISettings(settings).governanceFee();
-        currentAnnualFee = (govFee * totalSupply()) / 1000;
-        feePerSecond = currentAnnualFee / 31536000;
-        uint256 govMint = sinceLastClaim * feePerSecond;
+            // now lets do the same for governance
+            address govAddress = ISettings(settings).feeReceiver();
+            uint256 govFee = ISettings(settings).governanceFee();
+            currentAnnualFee = (govFee * totalSupply()) / 1000;
+            feePerSecond = currentAnnualFee / 31536000;
+            uint256 govMint = sinceLastClaim * feePerSecond;
 
-        lastClaimed = block.timestamp;
+            lastClaimed = block.timestamp;
 
-        if (curator != address(0)) {
-            _mint(curator, curatorMint);
-            emit FeeClaimed(curatorMint);
-        }
-        if (govAddress != address(0)) {
-            _mint(govAddress, govMint);
-            emit FeeClaimed(govMint);
+            if (curator != address(0)) {
+                _mint(curator, curatorMint);
+                emit FeeClaimed(curatorMint);
+            }
+            if (govAddress != address(0)) {
+                _mint(govAddress, govMint);
+                emit FeeClaimed(govMint);
+            }
         }
     }
 
