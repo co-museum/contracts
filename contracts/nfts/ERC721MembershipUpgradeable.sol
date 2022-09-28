@@ -2,10 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol";
-import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import "../lib/PartiallyPausableUpgradeable.sol";
 import "../fractional/ERC721TokenVault.sol";
 import "../fractional/InitializedProxy.sol";
@@ -190,11 +188,12 @@ contract ERC721MembershipUpgradeable is
         __ERC721_init(name_, symbol_);
         __Ownable_init();
         __PartiallyPausableUpgradeable_init(owner());
+        require(genesisEnd < foundationEnd && foundationEnd < friendEnd);
 
         vault = vault_;
         voteDelegatorLogic = voteDelegatorLogic_;
 
-        genesisTier = Tier({currId: 1, start: 1, end: genesisEnd, price: genesisPrice, releasedIds: friendIdStack});
+        genesisTier = Tier({currId: 1, start: 1, end: genesisEnd, price: genesisPrice, releasedIds: genesisIdStack});
 
         foundationTier = Tier({
             currId: genesisEnd,
@@ -209,7 +208,7 @@ contract ERC721MembershipUpgradeable is
             start: foundationEnd,
             end: friendEnd,
             price: friendPrice,
-            releasedIds: genesisIdStack
+            releasedIds: friendIdStack
         });
 
         releaseEnabled = false;
@@ -271,6 +270,7 @@ contract ERC721MembershipUpgradeable is
         this._redeem(tierCode, erc20From, nftTo);
     }
 
+    /// @dev _redeem is external because it makes the msg.sender this membership contract for pausibility
     function _redeem(
         TierCode tierCode,
         address erc20From,
@@ -278,6 +278,9 @@ contract ERC721MembershipUpgradeable is
     ) external {
         uint256 id;
         Tier storage tier = _getTierByCode(tierCode);
+
+        require(TokenVault(vault).balanceOf(erc20From) >= tier.price, "membership:insufficient balance");
+        TokenVault(vault).transferFrom(erc20From, address(this), tier.price);
 
         if (tier.releasedIds.length > 0) {
             id = tier.releasedIds[tier.releasedIds.length - 1];
@@ -289,9 +292,6 @@ contract ERC721MembershipUpgradeable is
         }
         emit Redeem(nftTo, id);
         _safeMint(nftTo, id);
-
-        require(TokenVault(vault).balanceOf(erc20From) >= tier.price, "membership:insufficient balance");
-        TokenVault(vault).transferFrom(erc20From, address(this), tier.price);
     }
 
     /// @notice witdraws funds from vote delegator proxy on token transfer to
