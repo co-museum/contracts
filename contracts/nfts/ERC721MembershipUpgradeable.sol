@@ -60,6 +60,8 @@ contract ERC721MembershipUpgradeable is
     /// @param id ID of released NFT
     event Release(address indexed owner, uint256 indexed id);
 
+    event SetBaseURI(string prev, string curr);
+
     address public voteDelegatorLogic;
 
     /// @dev Arrays holding released NFT Ids for each tier
@@ -249,6 +251,7 @@ contract ERC721MembershipUpgradeable is
     /// @notice set _baseTokenURI (reveal collection)
     /// @param membershipBaseURI_ base URI
     function setBaseURI(string calldata membershipBaseURI_) external onlyOwner {
+        emit SetBaseURI(_baseTokenURI, membershipBaseURI_);
         _baseTokenURI = membershipBaseURI_;
     }
 

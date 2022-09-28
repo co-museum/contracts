@@ -14,6 +14,8 @@ contract ERC721HonoraryMembership is ERC721Royalty, Ownable {
     string private _baseTokenURI;
     string private baseExtension = ".json";
 
+    event SetBaseURI(string prev, string curr);
+
     constructor(address payable receiverAddress_) ERC721("Co-Museum Honorary Membership", "COMUH") {
         require(receiverAddress_ != address(0), "Receiver can't be 0x0");
         receiverAddress = payable(receiverAddress_);
@@ -41,6 +43,7 @@ contract ERC721HonoraryMembership is ERC721Royalty, Ownable {
     /// @notice set _baseTokenURI (reveal collection)
     /// @param membershipBaseURI_ base URI
     function setBaseURI(string calldata membershipBaseURI_) external onlyOwner {
+        emit SetBaseURI(_baseTokenURI, membershipBaseURI_);
         _baseTokenURI = membershipBaseURI_;
     }
 
