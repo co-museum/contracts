@@ -108,7 +108,25 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
 
     event UpdateCuratorFee(uint256 fee);
 
-    event FeeClaimed(uint256 fee);
+    event FeeClaimed(address to, uint256 fee);
+
+    event Initialize(
+        address indexed curator,
+        address token,
+        uint256 id,
+        uint256 supply,
+        uint256 listPrice,
+        uint256 fee,
+        string name,
+        string symbol,
+        address usdc
+    );
+
+    event AuctionStateChange(State prev, State curr);
+
+    event KickCurator(address prev, address curr);
+
+    event UpdateCurator(address prev, address curr);
 
     constructor(address _settings) {
         settings = _settings;
@@ -143,10 +161,12 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         userPrices[_curator] = _listPrice;
         usdc = _usdc;
 
+        emit Initialize(_curator, _token, _id, _supply, _listPrice, _fee, _name, _symbol, _usdc);
         _mint(_curator, _supply);
     }
 
     function toggleAuctions() external {
+        State prevAuctionState = auctionState;
         require(msg.sender == Ownable(settings).owner(), "toggle:not gov");
         if (auctionState == State.disabled) {
             auctionState = State.inactive;
@@ -155,6 +175,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         } else {
             revert("toggle:can only toggle auction between inactive and disabled");
         }
+        emit AuctionStateChange(prevAuctionState, auctionState);
     }
 
     /// --------------------------------
@@ -177,7 +198,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     /// @param _curator the new curator
     function kickCurator(address _curator) external {
         require(msg.sender == Ownable(settings).owner(), "kick:not gov");
-
+        emit KickCurator(curator, _curator);
         curator = _curator;
     }
 
@@ -206,7 +227,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     /// @param _curator the new curator
     function updateCurator(address _curator) external {
         require(msg.sender == curator, "update:not curator");
-
+        emit UpdateCurator(curator, _curator);
         curator = _curator;
     }
 
@@ -266,11 +287,11 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
 
             if (curator != address(0)) {
                 _mint(curator, curatorMint);
-                emit FeeClaimed(curatorMint);
+                emit FeeClaimed(curator, curatorMint);
             }
             if (govAddress != address(0)) {
                 _mint(govAddress, govMint);
-                emit FeeClaimed(govMint);
+                emit FeeClaimed(govAddress, govMint);
             }
         }
     }
