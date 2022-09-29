@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "../lib/PartiallyPausableUpgradeable.sol";
 import "../fractional/ERC721TokenVault.sol";
 import "../fractional/InitializedProxy.sol";
@@ -17,7 +18,8 @@ contract ERC721MembershipUpgradeable is
     ERC721BurnableUpgradeable,
     ERC721RoyaltyUpgradeable,
     PartiallyPausableUpgradeable,
-    OwnableUpgradeable
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable
 {
     using Strings for uint256;
     /// @dev metadata url prefix
@@ -188,6 +190,8 @@ contract ERC721MembershipUpgradeable is
         __ERC721_init(name_, symbol_);
         __Ownable_init();
         __PartiallyPausableUpgradeable_init(owner());
+        __ERC721Royalty_init();
+        __ReentrancyGuard_init();
         require(genesisEnd < foundationEnd && foundationEnd < friendEnd);
 
         vault = vault_;
@@ -275,7 +279,7 @@ contract ERC721MembershipUpgradeable is
         TierCode tierCode,
         address erc20From,
         address nftTo
-    ) external {
+    ) external nonReentrant {
         uint256 id;
         Tier storage tier = _getTierByCode(tierCode);
 
