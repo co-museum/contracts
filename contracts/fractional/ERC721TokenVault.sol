@@ -7,8 +7,14 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausableUpgradeable {
+contract TokenVault is
+    ERC20Upgradeable,
+    ERC721HolderUpgradeable,
+    PartiallyPausableUpgradeable,
+    ReentrancyGuardUpgradeable
+{
     using Address for address;
 
     uint8 constant _decimals = 6;
@@ -149,7 +155,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         __ERC20_init(_name, _symbol);
         __ERC721Holder_init();
         __PartiallyPausableUpgradeable_init(Ownable(settings).owner());
-
+        __ReentrancyGuard_init();
         // set storage variables
         token = _token;
         id = _id;
@@ -435,7 +441,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     }
 
     /// @notice an external function to end an auction after the timer has run out
-    function end() external {
+    function end() external nonReentrant {
         require(auctionState == State.live, "end:vault has already closed");
         require(block.timestamp >= auctionEnd, "end:auction live");
 

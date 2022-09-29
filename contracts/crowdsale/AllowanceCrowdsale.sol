@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "../nfts/ERC721MembershipUpgradeable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /// @title A discrete whitelisted allowance crowdsale for $ART tokens and
 /// membership NFTs
@@ -17,7 +18,7 @@ import "../nfts/ERC721MembershipUpgradeable.sol";
 /// by a client software that is communicating with a backend storing the entire
 /// merkle tree. The crowdsale needs to be aware of both the token contract and
 /// the membership contract.
-contract AllowanceCrowdsale is Ownable {
+contract AllowanceCrowdsale is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /// @dev The claimed variable represents whether the user has claimed their
@@ -165,7 +166,7 @@ contract AllowanceCrowdsale is Ownable {
         bytes32[] calldata proof,
         bool payWithEth,
         address _stablecoinAddress
-    ) external payable onlyWhileOpen {
+    ) external payable onlyWhileOpen nonReentrant {
         require(!claimed[msg.sender], "crowdsale:user has already claimed allocation");
         Whitelist storage whitelist = whitelists[whitelistIndex];
         uint256 allocation = whitelist.allocation;
