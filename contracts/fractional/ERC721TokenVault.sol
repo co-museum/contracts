@@ -147,6 +147,8 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         string memory _symbol,
         address _usdc
     ) external initializer {
+        require(fee < ISettings(settings).maxCuratorFee(), "init:fee too high");
+
         // initialize inherited contracts
         __ERC20_init(_name, _symbol);
         __ERC721Holder_init();
