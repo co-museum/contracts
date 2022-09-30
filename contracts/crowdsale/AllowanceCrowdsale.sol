@@ -95,7 +95,7 @@ contract AllowanceCrowdsale is Ownable, ReentrancyGuard {
     /// stablecoins and ETH
     /// @dev We assume that stablecoin and $ART token have same decimals
     /// @param _stablecoinRate Price of smallest unit of $ART token in smallest
-    /// unit of stablecoin assuming same number of decimals in stabslecoin and
+    /// unit of stablecoin assuming same number of decimals in stablecoin and
     /// $ART token
     /// @param _ethRate Price of smallest unit of $ART token in wei
     function setRates(uint256 _stablecoinRate, uint256 _ethRate) external onlyOwner {
