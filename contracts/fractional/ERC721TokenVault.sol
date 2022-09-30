@@ -7,8 +7,14 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausableUpgradeable {
+contract TokenVault is
+    ERC20Upgradeable,
+    ERC721HolderUpgradeable,
+    PartiallyPausableUpgradeable,
+    ReentrancyGuardUpgradeable
+{
     using Address for address;
 
     uint8 constant _decimals = 6;
@@ -75,9 +81,6 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
 
     /// @notice the last timestamp where fees were claimed
     uint256 public lastClaimed;
-
-    /// @notice a boolean to indicate if the vault has closed
-    bool public vaultClosed;
 
     /// @notice the number of ownership tokens voting on the reserve price at any given time
     uint256 public votingTokens;
@@ -148,12 +151,12 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         address _usdc
     ) external initializer {
         require(fee < ISettings(settings).maxCuratorFee(), "init:fee too high");
-
+        require(_supply > 0, "init:invalid supply");
         // initialize inherited contracts
         __ERC20_init(_name, _symbol);
         __ERC721Holder_init();
         __PartiallyPausableUpgradeable_init(Ownable(settings).owner());
-
+        __ReentrancyGuard_init();
         // set storage variables
         token = _token;
         id = _id;
@@ -236,7 +239,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     }
 
     /// @notice allow curator to update the auction length
-    /// @param _length the new base price
+    /// @param _length the new auction length
     function updateAuctionLength(uint256 _length) external {
         require(msg.sender == curator, "update:not curator");
         require(
@@ -274,27 +277,29 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         uint256 currentAnnualFee = (fee * totalSupply()) / 1000;
         // get how much that is per second;
         uint256 feePerSecond = currentAnnualFee / 31536000;
-        // get how many seconds they are eligible to claim
-        uint256 sinceLastClaim = block.timestamp - lastClaimed;
-        // get the amount of tokens to mint
-        uint256 curatorMint = sinceLastClaim * feePerSecond;
+        if (feePerSecond > 0) {
+            // get how many seconds they are eligible to claim
+            uint256 sinceLastClaim = block.timestamp - lastClaimed;
+            // get the amount of tokens to mint
+            uint256 curatorMint = sinceLastClaim * feePerSecond;
 
-        // now lets do the same for governance
-        address govAddress = ISettings(settings).feeReceiver();
-        uint256 govFee = ISettings(settings).governanceFee();
-        currentAnnualFee = (govFee * totalSupply()) / 1000;
-        feePerSecond = currentAnnualFee / 31536000;
-        uint256 govMint = sinceLastClaim * feePerSecond;
+            // now lets do the same for governance
+            address govAddress = ISettings(settings).feeReceiver();
+            uint256 govFee = ISettings(settings).governanceFee();
+            currentAnnualFee = (govFee * totalSupply()) / 1000;
+            feePerSecond = currentAnnualFee / 31536000;
+            uint256 govMint = sinceLastClaim * feePerSecond;
 
-        lastClaimed = block.timestamp;
+            lastClaimed = block.timestamp;
 
-        if (curator != address(0)) {
-            _mint(curator, curatorMint);
-            emit FeeClaimed(curator, curatorMint);
-        }
-        if (govAddress != address(0)) {
-            _mint(govAddress, govMint);
-            emit FeeClaimed(govAddress, govMint);
+            if (curator != address(0)) {
+                _mint(curator, curatorMint);
+                emit FeeClaimed(curator, curatorMint);
+            }
+            if (govAddress != address(0)) {
+                _mint(govAddress, govMint);
+                emit FeeClaimed(govAddress, govMint);
+            }
         }
     }
 
@@ -414,7 +419,7 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
         emit Start(msg.sender, _bid);
     }
 
-    /// @notice an external function to bid on purchasing the vaults NFT. The msg.value is the bid amount
+    /// @notice an external function to bid on purchasing the vaults NFT.
     /// @custom:update accept payment in USDC and don't accept ETH
     function bid(uint256 _bid) external {
         require(auctionState == State.live, "bid:auction is not live");
@@ -437,16 +442,15 @@ contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable, PartiallyPausa
     }
 
     /// @notice an external function to end an auction after the timer has run out
-    function end() external {
+    function end() external nonReentrant {
         require(auctionState == State.live, "end:vault has already closed");
         require(block.timestamp >= auctionEnd, "end:auction live");
 
         _claimFees();
 
+        auctionState = State.ended;
         // transfer erc721 to winner
         IERC721(token).transferFrom(address(this), winning, id);
-
-        auctionState = State.ended;
 
         emit Won(winning, livePrice);
     }

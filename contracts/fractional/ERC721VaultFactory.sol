@@ -3,12 +3,8 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
-
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-
 import "./InitializedProxy.sol";
-import "./Settings.sol";
 import "./ERC721TokenVault.sol";
 
 contract ERC721VaultFactory is Ownable, Pausable {
@@ -32,10 +28,13 @@ contract ERC721VaultFactory is Ownable, Pausable {
 
     /// @notice the function to mint a new vault
     /// @param _name the desired name of the vault
-    /// @param _symbol the desired sumbol of the vault
-    /// @param _token the ERC721 token address fo the NFT
+    /// @param _symbol the desired symbol of the vault
+    /// @param _token the ERC721 token address of the NFT
+    /// @param _usdc address of usdc stablecoin
     /// @param _id the uint256 ID of the token
+    /// @param _supply the desired total supply of the ERC20 token
     /// @param _listPrice the initial price of the NFT
+    /// @param _fee the curator fee which will be paid to the owner of the fractional asset
     /// @return the ID of the vault
     function mint(
         string memory _name,
