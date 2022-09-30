@@ -150,6 +150,7 @@ contract TokenVault is
         string memory _symbol,
         address _usdc
     ) external initializer {
+        require(fee < ISettings(settings).maxCuratorFee(), "init:fee too high");
         require(_supply > 0, "init:invalid supply");
         // initialize inherited contracts
         __ERC20_init(_name, _symbol);
