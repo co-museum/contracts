@@ -50,10 +50,10 @@ contract AllowanceCrowdsale is Ownable, ReentrancyGuard {
     /// @return ethRate Price of smallest unit of $ART token in wei
     uint256 public ethRate;
     /// @return treasuryWallet Address of wallet receiving crowdsale funds
-    address payable public immutable treasuryWallet;
+    address payable public treasuryWallet;
     /// @return tokenHoldingWallet Address holding the tokens, which has
     /// given allowance to the crowdsale
-    address public immutable tokenHoldingWallet;
+    address public tokenHoldingWallet;
     /// @return acceptedStablecoins An array of accepted stablecoin addresses
     address[] public acceptedStablecoins;
     /// @return tokenContract Address of $ART token contract
@@ -89,6 +89,17 @@ contract AllowanceCrowdsale is Ownable, ReentrancyGuard {
     modifier onlyWhileOpen() {
         require(isActive, "crowdsale:not open");
         _;
+    }
+
+    /// @param _tokenHoldingWallet Address holding the tokens, which has
+    /// approved allowance to the crowdsale
+    function setTokenHoldingWallet(address _tokenHoldingWallet) external onlyOwner {
+        tokenHoldingWallet = _tokenHoldingWallet;
+    }
+
+    /// @param _treasuryWallet Address of wallet receiving crowdsale funds
+    function setTreasuryWallet(address payable _treasuryWallet) external onlyOwner {
+        treasuryWallet = _treasuryWallet;
     }
 
     /// @notice Sets the rate for the smallest unit of $ART token for
