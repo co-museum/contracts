@@ -103,7 +103,9 @@ contract Settings is Ownable, ISettings {
     }
 
     function setMaxCuratorFee(uint256 _fee) external onlyOwner {
-        emit UpdateCuratorFee(governanceFee, _fee);
+        require(_fee <= 1000, "fee higher than 100%");
+
+        emit UpdateCuratorFee(maxCuratorFee, _fee);
 
         maxCuratorFee = _fee;
     }
