@@ -13,6 +13,7 @@ contract ERC721ArtNFT is ERC721Royalty, Ownable {
     address payable public immutable receiverAddress;
     string private _baseTokenURI;
     string private baseExtension = ".json";
+    event SetBaseURI(string prev, string curr);
 
     constructor(address payable receiverAddress_) ERC721("Co-Museum Art", "COMUA") {
         require(receiverAddress_ != address(0), "Receiver can't be 0x0");
@@ -40,6 +41,7 @@ contract ERC721ArtNFT is ERC721Royalty, Ownable {
     /// @notice set _baseTokenURI (reveal collection)
     /// @param tokenBaseURI_ base URI
     function setBaseURI(string calldata tokenBaseURI_) external onlyOwner {
+        emit SetBaseURI(_baseTokenURI, tokenBaseURI_);
         _baseTokenURI = tokenBaseURI_;
     }
 
