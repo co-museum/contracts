@@ -28,7 +28,7 @@ contract ERC721MembershipUpgradeable is
     /// @return vault address of associated token vault
     address public vault;
 
-    /// @return vault address of associated with crowdsale contract
+    /// @return crowdsale address of crowdsale contract
     address public crowdsale;
     /// @dev wallet holding $ART tokens
     address private tokenHoldingWallet;
