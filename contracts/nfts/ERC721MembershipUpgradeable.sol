@@ -28,6 +28,11 @@ contract ERC721MembershipUpgradeable is
     /// @return vault address of associated token vault
     address public vault;
 
+    /// @return vault address of associated with crowdsale contract
+    address public crowdsale;
+    /// @dev wallet holding $ART tokens
+    address private tokenHoldingWallet;
+
     /// @return releaseEnabled toggle to check if NFTs can be released
     bool public releaseEnabled;
 
@@ -263,6 +268,11 @@ contract ERC721MembershipUpgradeable is
         return string(abi.encodePacked(_baseTokenURI, tokenId.toString(), baseExtension));
     }
 
+    function setCrowdsale(address crowdsale_, address tokenHoldingWallet_) external onlyOwner {
+        crowdsale = crowdsale_;
+        tokenHoldingWallet = tokenHoldingWallet_;
+    }
+
     /// @notice redeem membership associated with tierCode
     /// @param tierCode tier code associated with tier by _getTierByCode
     /// @param nftTo to send membership to (only != msg.sender in Crowdsale contract)
@@ -271,6 +281,10 @@ contract ERC721MembershipUpgradeable is
         address erc20From,
         address nftTo
     ) external {
+        require(
+            msg.sender == erc20From || (msg.sender == crowdsale && erc20From == tokenHoldingWallet),
+            "Redeem: msg.sender cannot redeem"
+        );
         this._redeem(tierCode, erc20From, nftTo);
     }
 
@@ -280,6 +294,7 @@ contract ERC721MembershipUpgradeable is
         address erc20From,
         address nftTo
     ) external nonReentrant {
+        require(msg.sender == address(this), "Redeem: Call redeem() directly.");
         uint256 id;
         Tier storage tier = _getTierByCode(tierCode);
 

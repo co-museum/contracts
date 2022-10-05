@@ -157,3 +157,11 @@ export function findWhiteListArrIdx(whiteListArr: string[][], address: string): 
   }
   return -1
 }
+
+export async function setCrowdsale(
+  membership: ERC721MembershipUpgradeable,
+  crowdsale: string,
+  tokenHoldingWallet: string,
+): Promise<void> {
+  await membership.setCrowdsale(crowdsale, tokenHoldingWallet)
+}
