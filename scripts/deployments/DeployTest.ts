@@ -95,6 +95,8 @@ async function main() {
 
   await membership.pause()
   await artToken.pause()
+
+  membership.setCrowdsale(crowdsale.address, tokenHolder.address)
 }
 
 main().catch((error) => {
