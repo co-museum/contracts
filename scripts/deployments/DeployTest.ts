@@ -96,7 +96,7 @@ async function main() {
   await membership.pause()
   await artToken.pause()
 
-  membership.setCrowdsale(crowdsale.address, tokenHolder.address)
+  membership.setRedeemer(crowdsale.address)
 }
 
 main().catch((error) => {
