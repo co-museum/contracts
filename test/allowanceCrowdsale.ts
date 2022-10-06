@@ -98,7 +98,7 @@ describe('AllowanceCrowdsale', () => {
       mockUSDT.connect(user).approve(allowanceCrowdsale.address, ethers.constants.MaxUint256)
     }
 
-    await helpers.setCrowdsale(membershipContract, allowanceCrowdsale.address, tokenHoldingWallet.address)
+    await helpers.setRedeemer(membershipContract, allowanceCrowdsale.address)
 
     // one NFT allocated for user 1
     const leavesSingle = whitelistOneFriend.map((address) => utils.keccak256(address))

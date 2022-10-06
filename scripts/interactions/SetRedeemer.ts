@@ -19,8 +19,7 @@ async function main() {
     utils.assertDefined(addressCfg.AllowanceCrowdsale),
   )
 
-  const tokenHolder = addressCfg.tokenHolder ? addressCfg.tokenHolder : signer.address
-  const tx = await membershipNFT.connect(signer).setCrowdsale(crowdsale.address, tokenHolder)
+  const tx = await membershipNFT.connect(signer).setRedeemer(crowdsale.address)
   await tx.wait()
   utils.printTx('set crowdsale details in memberhsip', tx.hash, utils.txType.tx)
 }
