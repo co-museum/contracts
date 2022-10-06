@@ -2,6 +2,7 @@
 
 [![Tests](https://github.com/co-museum/fractional/actions/workflows/main.yml/badge.svg)](https://github.com/co-museum/fractional/actions/workflows/main.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Gitbook](https://img.shields.io/badge/docs-%F0%9F%93%84-blue)](https://docs.co-museum.com/about-co-museum/readme)
 
 <h1 align="center">
   <br>
