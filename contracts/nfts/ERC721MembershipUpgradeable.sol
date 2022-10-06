@@ -280,7 +280,7 @@ contract ERC721MembershipUpgradeable is
         address erc20From,
         address nftTo
     ) external {
-        require(msg.sender == erc20From || msg.sender == redeemer, "Redeem: msg.sender cannot redeem");
+        require(msg.sender == erc20From || msg.sender == redeemer, "redeem:msg.sender cannot redeem");
         this._redeem(tierCode, erc20From, nftTo);
     }
 
@@ -290,7 +290,7 @@ contract ERC721MembershipUpgradeable is
         address erc20From,
         address nftTo
     ) external nonReentrant {
-        require(msg.sender == address(this), "Redeem: Call redeem() directly.");
+        require(msg.sender == address(this), "redeem:call redeem() directly");
         uint256 id;
         Tier storage tier = _getTierByCode(tierCode);
 
